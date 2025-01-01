@@ -1,2 +1,3 @@
 pub mod foliage;
-pub mod texture;
+pub mod animation;
+pub mod tree;

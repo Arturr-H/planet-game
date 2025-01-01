@@ -2,6 +2,7 @@
 use std::hash::Hash;
 use bevy::{prelude::*, utils::{HashMap, HashSet}};
 use crate::{components::{slot::Slot, tile::{empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}, PLANET_SLOTS};
+use super::Resources;
 
 /// App state
 #[derive(Resource)]
@@ -9,6 +10,8 @@ pub struct GameState {
     /// All slots on the planet (id, tile)
     pub slots: HashMap<usize, Tile>,
     pub slot_id: usize,
+
+    pub resources: Resources
 }
 
 impl Default for GameState {
@@ -21,6 +24,7 @@ impl Default for GameState {
         Self {
             slots,
             slot_id: PLANET_SLOTS,
+            resources: Resources::default()
         }
     }
 }

@@ -4,6 +4,7 @@ use bevy::render::view::window;
 use bevy::sprite::Sprite;
 
 use crate::camera::OuterCamera;
+use crate::systems::game::{GameState, PlanetResource};
 use crate::utils::color::hex;
 use crate::utils::sprite_bounds::point_in_sprite_bounds;
 use crate::{RES_HEIGHT, RES_WIDTH};
@@ -14,6 +15,7 @@ pub struct Damageable {
     pub health: f32,
     pub max_health: f32,
     pub flash_timer: Timer,
+    drop: Option<(PlanetResource, usize)>
 }
 
 /// Component for damage impact effect 
@@ -27,11 +29,11 @@ pub struct DamageEvent {
     pub damage: f32,
 }
 
-
 impl Damageable {
-    pub fn new(max_health: f32) -> Self {
+    /// drop: (resource, amount)
+    pub fn new(max_health: f32, drop: Option<(PlanetResource, usize)>) -> Self {
         Self {
-            health: max_health, max_health,
+            health: max_health, max_health, drop,
             flash_timer: Timer::from_seconds(0.1, TimerMode::Once),
         }
     }
@@ -50,12 +52,17 @@ impl Damageable {
         mut commands: Commands,
         mut query: Query<(Entity, &mut Damageable)>,
         mut damage_events: EventReader<DamageEvent>,
+        mut game_state: ResMut<GameState>,
     ) {
         for event in damage_events.read() {
             if let Ok((entity, mut damageable)) = query.get_mut(event.entity) {
                 damageable.health -= event.damage;
                 if damageable.health <= 0.0 {
                     commands.entity(entity).despawn();
+                    if let Some((resource, amount)) = damageable.drop {
+                        println!("Dropped {:?} x{}", resource, amount);
+                        game_state.resources.add(resource, amount);
+                    }
                 }
             }
         }
