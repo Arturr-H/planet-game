@@ -1,7 +1,7 @@
 /* Imports */
 use std::hash::Hash;
 use bevy::{prelude::*, utils::{HashMap, HashSet}};
-use crate::{components::{slot::Slot, tile::{empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}, PLANET_SLOTS};
+use crate::{components::{cable::slot::Slot, tile::{empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}, PLANET_SLOTS};
 use super::Resources;
 
 /// App state

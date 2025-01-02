@@ -1,11 +1,12 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::slot::Slot, utils::color::hex};
+use crate::{camera::OuterCamera, utils::color::hex};
+use super::slot::Slot;
 
 /* Constants */
 const CABLE_Z_INDEX: f32 = 3.0;
 const CABLE_THICKNESS: f32 = 1.25;
-const CABLE_COLOR: &str = "#000000cc";
+const CABLE_COLOR: &str = "#020410";
 pub const MAX_CABLE_LENGTH: f32 = 200.0;
 
 /// Plugin to add cable rendering functionality

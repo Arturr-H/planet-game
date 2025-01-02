@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::slot::SLOT_SIZE, systems::{game::GameState, traits::{EnergyStorage, Generator, GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::SLOT_SIZE, systems::{game::GameState, traits::{EnergyStorage, Generator, GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /// Something that can be placed in a slot

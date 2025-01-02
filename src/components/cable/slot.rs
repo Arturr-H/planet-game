@@ -1,7 +1,7 @@
 /* Imports */
-use super::state::SlotCablePlacementResource;
+use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet, tile::Tile}, systems::traits::GenericTile, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState, RES_HEIGHT, RES_WIDTH
+    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
 };
 use bevy::{prelude::*, text::FontSmoothing};
 
@@ -28,10 +28,8 @@ pub struct Slot { id: usize }
 impl Slot {
     /// [UTILITY] Spawns a slot
     pub fn spawn(
-        tile: Tile,
         commands: &mut ChildBuilder,
         asset_server: &Res<AssetServer>,
-        game_state: &mut ResMut<GameState>,
         id: usize,
         transform: Transform,
     ) -> () {
@@ -68,9 +66,6 @@ impl Slot {
         .observe(Self::on_pointer_over)
         .observe(Self::on_pointer_out)
         .observe(Self::on_click);
-        
-        /* Tile */
-        tile.spawn(commands, transform, asset_server, game_state);
     }
 
     /// On click
@@ -103,7 +98,11 @@ impl Slot {
                 }else {
                     /* Spawn cable */
                     commands.entity(planet).with_children(|parent| {
-                        Cable::spawn_between_slots(parent, click.entity(), other_entity);
+                        Cable::spawn_between_slots(
+                            parent,
+                            click.entity(),
+                            other_entity
+                        );
                     });
 
                     /* Register connection to game state and reset */
@@ -112,6 +111,7 @@ impl Slot {
                 }
             } else {
                 slot_res.set_active(slot.id, click.entity(), transform.translation);
+                Cable::spawn_preview(&mut commands, click.entity());
                 Self::highlight(
                     Some(true),
                     Some(true),
@@ -120,7 +120,6 @@ impl Slot {
                     &mut children_q,
                     &slot_res
                 );
-                Cable::spawn_preview(&mut commands, click.entity());
 
                 highlight_all = true;
             }

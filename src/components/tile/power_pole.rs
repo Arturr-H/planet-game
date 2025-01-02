@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::slot::Slot, systems::{game::GameState, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::Slot, systems::{game::GameState, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{empty::EmptyTile, solar_panel::SolarPanel, Tile};
 
 /* Constants */
@@ -31,7 +31,8 @@ impl GenericTile for PowerPole {
                 image: asset_server.load("machines/power-pole.png"),
                 ..default()
             },
-            transform.with_translation((transform.translation + forward_2d * 15.0).with_z(-0.4)),
+            transform
+                .with_translation((transform.translation + forward_2d * 15.0).with_z(-0.4)),
             Tile::PowerPole(self.clone()),
             PIXEL_PERFECT_LAYERS,
         ));
@@ -43,8 +44,7 @@ impl GenericTile for PowerPole {
         game_state.slots.insert(slot_id, tile.clone());
 
         Slot::spawn(
-            tile,
-            commands, asset_server, game_state, slot_id,
+            commands, asset_server, slot_id,
             transform.with_translation(transform.translation + forward_2d * POWER_SLOT_OFFSET)
         );
     }

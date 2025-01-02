@@ -11,12 +11,11 @@ mod functional;
 use bevy::{
     prelude::*, utils::HashSet, window::{ PresentMode, WindowTheme }
 };
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
 use systems::game::{self, GameState};
 use utils::color::hex;
-use components::{cable::cable, slot, planet::planet};
+use components::{cable::{cable, slot}, planet::planet};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -24,19 +23,12 @@ pub const RES_WIDTH: f32 = 240.0 * 2.0;
 pub const RES_HEIGHT: f32 = 120.0 * 2.0;
 
 /// How many slots each planet will have
-pub const PLANET_SLOTS: usize = 20;
+pub const PLANET_SLOTS: usize = 30;
 
 fn main() {
     App::new()
-        .add_plugins((
-            slot::SlotPlugin,
-            planet::PlanetPlugin,
-            cable::CablePlugin,
-            game::GamePlugin,
-            damageable::DamageablePlugin,
-
-            /* Default */
-            DefaultPlugins
+        /* Default */
+        .add_plugins(DefaultPlugins
             .set(ImagePlugin::default_nearest())
             .set(WindowPlugin {
                 primary_window: Some(Window {
@@ -56,8 +48,14 @@ fn main() {
                 }),
                 ..default()
             })
+        )
+        .add_plugins((
+            slot::SlotPlugin,
+            cable::CablePlugin,
+            planet::PlanetPlugin,
+            game::GamePlugin,
+            damageable::DamageablePlugin
         ))
-        // .add_plugins(WorldInspectorPlugin)
         .insert_resource(ClearColor(hex!("#87CEEB")))
         .add_systems(Startup, camera::initialize)
         .add_systems(Update, camera::fit_canvas)
