@@ -5,15 +5,9 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.0"
-bevy-inspector-egui = "0.28.0"
 enum_delegate = "0.2.0"
 rand = "0.8.5"
-rand_distr = "0.4.3"
  
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
- 
-# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
-[profile.dev.package."*"]
-opt-level = 3
