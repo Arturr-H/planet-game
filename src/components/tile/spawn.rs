@@ -2,8 +2,8 @@ use std::f32::consts::PI;
 
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::planet::planet::Planet, systems::{game::GameState, traits::GenericTile}};
-use super::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel, Tile, TileType};
+use crate::{camera::OuterCamera, components::planet::planet::{Planet, PLANET_CIRCUMFERENCE, PLANET_RADIUS}, systems::{game::GameState, traits::GenericTile}};
+use super::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel, Tile, TileType, TILE_SIZE};
 
 #[derive(Resource)]
 pub struct TilePluginResource {
@@ -109,12 +109,18 @@ impl TilePlugin {
 
             if let Ok(mut transform) = query.get_single_mut() {
                 tile_plugin_resource.transform = *transform;
-                let degree = - planet_rotation_z - angle;
-                let p = Planet::degree_to_transform(degree, -8.0, 2.0);
+                let angular_step = TILE_SIZE / PLANET_RADIUS; // Degrees per tile
+                let degree = Self::snap(- planet_rotation_z - angle, angular_step);
+                let p = Planet::degree_to_transform(degree, 0.0, 2.0);
                 transform.translation = p.translation.with_z(-0.4);
                 transform.rotation = p.rotation;
             }
         }
+    }
+
+    #[inline]
+    fn snap(value: f32, snap_to: f32) -> f32 {
+        (value / snap_to).round() * snap_to
     }
 }
 
