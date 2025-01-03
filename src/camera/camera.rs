@@ -1,6 +1,5 @@
 use bevy::{
-    prelude::*,
-    render::{
+    input::mouse::MouseWheel, prelude::*, render::{
         camera::RenderTarget,
         render_resource::{
             Extent3d,
@@ -13,13 +12,31 @@ use bevy::{
     }, window::WindowResized
 };
 
-use crate::{RES_HEIGHT, RES_WIDTH};
+use crate::{utils::color::hex, RES_HEIGHT, RES_WIDTH};
 
 /// Default render layers for pixel-perfect rendering.
 /// You can skip adding this component, as this is the default.
 pub const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 /// Render layers for high-resolution rendering.
 pub const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
+
+pub struct CameraPlugin;
+impl Plugin for CameraPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .insert_resource(ClearColor(hex!("#87CEEB")))
+            .add_systems(Startup, initialize)
+            .add_systems(Update, fit_canvas);
+    }
+}
+
+pub struct CameraDebugPlugin;
+impl Plugin for CameraDebugPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(Update, debug_control);
+    }
+}
 
 /// Camera that renders the pixel-perfect world to the [`Canvas`].
 #[derive(Component)]
@@ -95,5 +112,17 @@ pub fn fit_canvas(
         let v_scale = event.height / RES_HEIGHT as f32;
         let mut projection = projections.single_mut();
         projection.scale = 1. / h_scale.min(v_scale).round();
+    }
+}
+
+/// Zooms the camera in and out using the mouse wheel.
+pub fn debug_control(
+    mut query: Query<&mut OrthographicProjection, With<InGameCamera>>,
+    mut scroll: EventReader<MouseWheel>,
+) {
+    for event in scroll.read() {
+        for mut projection in query.iter_mut() {
+            projection.scale *= 1. + event.y * -0.0002;
+        }
     }
 }

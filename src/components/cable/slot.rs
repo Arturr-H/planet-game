@@ -1,7 +1,7 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
+    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet, tile::{Tile, TileType}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
 };
 use bevy::{prelude::*, text::FontSmoothing};
 
@@ -13,29 +13,32 @@ const SLOT_ACTIVE_COLOR: &'static str = "#00000066";
 const SLOT_INACTIVE_COLOR: &'static str = "#00000000";
 const SLOT_HIGHLIGHT_COLOR: &'static str = "#00000044";
 
-pub struct SlotPlugin;
-impl Plugin for SlotPlugin {
+pub struct CableSlotPlugin;
+impl Plugin for CableSlotPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Slot::breathe)
+        app.add_systems(Update, CableSlot::breathe)
         .init_resource::<SlotCablePlacementResource>();
     }
 }
 
-// Marker component for our square
-#[derive(Component)]
-pub struct Slot { id: usize }
+// A slot is a square where cables can be connected to
+#[derive(Component, Clone)]
+pub struct CableSlot {
+    pub tile_id: usize,
+}
 
-impl Slot {
+impl CableSlot {
     /// [UTILITY] Spawns a slot
     pub fn spawn(
         commands: &mut ChildBuilder,
         asset_server: &Res<AssetServer>,
-        id: usize,
+        tile_id: usize,
         transform: Transform,
     ) -> () {
+        // Slot sprite (light gray if hovered)
         commands.spawn((
-            transform.with_translation(transform.translation.with_z(0.1)),
-            Slot { id },
+            transform.with_translation(transform.translation.with_z(10.0)),
+            Self { tile_id },
             Sprite {
                 color: hex!(SLOT_INACTIVE_COLOR),
                 custom_size: Some(Vec2::new(SLOT_SIZE, SLOT_SIZE)),
@@ -73,8 +76,8 @@ impl Slot {
         mut click: Trigger<Pointer<Click>>,
         mut commands: Commands,
         planet_q: Query<Entity, With<Planet>>,
-        mut slots_q: Query<(&Slot, &mut Sprite, &Children, &Transform), With<Slot>>,
-        mut children_q: Query<&mut Sprite, Without<Slot>>,
+        mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
+        mut children_q: Query<&mut Sprite, Without<Self>>,
         mut slot_res: ResMut<SlotCablePlacementResource>,
         mut game_state: ResMut<GameState>,
         cable_preview_q: Query<Entity, With<CablePreview>>
@@ -89,13 +92,15 @@ impl Slot {
             if let Some((id, other_entity)) = slot_res.active() {
                 Cable::remove_previews(&mut commands, cable_preview_q);
                 needs_highlight_reset = true;
-                let occupied = game_state.powergrid_tiles_are_connected(id, slot.id);
+                let occupied = game_state.powergrid_tiles_are_connected(id, slot.tile_id);
 
                 if occupied
-                    || id == slot.id
+                    || id == slot.tile_id
                     || slot_res.start_entity_pos.distance(transform.translation.truncate().xy()) > MAX_CABLE_LENGTH {
                     slot_res.reset();
                 }else {
+                    println!("Spawning cable between {} and {}", id, slot.tile_id);
+
                     /* Spawn cable */
                     commands.entity(planet).with_children(|parent| {
                         Cable::spawn_between_slots(
@@ -106,11 +111,11 @@ impl Slot {
                     });
 
                     /* Register connection to game state and reset */
-                    game_state.powergrid_register_connection(id, slot.id);
+                    game_state.powergrid_register_connection(id, slot.tile_id);
                     slot_res.reset();
                 }
             } else {
-                slot_res.set_active(slot.id, click.entity(), transform.translation);
+                slot_res.set_active(slot.tile_id, click.entity(), transform.translation);
                 Cable::spawn_preview(&mut commands, click.entity());
                 Self::highlight(
                     Some(true),
@@ -140,8 +145,8 @@ impl Slot {
     // System to handle hover detection and highlighting
     fn on_pointer_over(
         mut hover: Trigger<Pointer<Over>>,
-        mut slots_q: Query<(&Slot, &mut Sprite, &Children, &Transform), With<Slot>>,
-        mut children_q: Query<&mut Sprite, Without<Slot>>,
+        mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
+        mut children_q: Query<&mut Sprite, Without<Self>>,
         slot_res: ResMut<SlotCablePlacementResource>,
     ) {
         hover.propagate(false);
@@ -158,8 +163,8 @@ impl Slot {
     }
     fn on_pointer_out(
         mut hover: Trigger<Pointer<Out>>,
-        mut slots_q: Query<(&Slot, &mut Sprite, &Children, &Transform), With<Slot>>,
-        mut children_q: Query<&mut Sprite, Without<Slot>>,
+        mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
+        mut children_q: Query<&mut Sprite, Without<Self>>,
         slot_res: ResMut<SlotCablePlacementResource>,
     ) {
         hover.propagate(false);
@@ -179,7 +184,7 @@ impl Slot {
         change_selection: Option<bool>,
         sprite: &mut Sprite,
         children: &Children,
-        children_q: &mut Query<&mut Sprite, Without<Slot>>,
+        children_q: &mut Query<&mut Sprite, Without<Self>>,
         slot_res: &ResMut<SlotCablePlacementResource>
     ) -> () {
         let mut outline = children_q.get_mut(children[0]).unwrap();
@@ -209,7 +214,7 @@ impl Slot {
     }
     fn highlight_all(
         highlight: bool,
-        mut slot_q: Query<(&Slot, &mut Sprite, &Children, &Transform), With<Slot>>,
+        mut slot_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
     ) -> () {
         for (_, mut sprite, _, _) in slot_q.iter_mut() {
             if highlight {
@@ -220,8 +225,8 @@ impl Slot {
         }
     }
     fn clear_all_highlight(
-        slots_q: &mut Query<(&Slot, &mut Sprite, &Children, &Transform), With<Slot>>,
-        children_q: &mut Query<&mut Sprite, Without<Slot>>,
+        slots_q: &mut Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
+        children_q: &mut Query<&mut Sprite, Without<Self>>,
         slot_res: &ResMut<SlotCablePlacementResource>
     ) -> () {
         for (_, mut sprite, children, _) in slots_q.iter_mut() {
@@ -235,9 +240,9 @@ impl Slot {
     }
 
     // Idle animation
-    fn breathe(time: Res<Time>, mut query: Query<(&mut Transform, &Slot)>) {
+    fn breathe(time: Res<Time>, mut query: Query<(&mut Transform, &Self)>) {
         for (mut transform, slot) in query.iter_mut() {
-            let scale = 1.0 + (time.elapsed_secs() * 2.0 + slot.id as f32 * 12.124511).sin() * 0.1;
+            let scale = 1.0 + (time.elapsed_secs() * 2.0 + slot.tile_id as f32 * 12.124511).sin() * 0.1;
             transform.scale = Vec3::new(scale, scale, 1.0);
         }
     }

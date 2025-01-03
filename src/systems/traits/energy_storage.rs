@@ -1,7 +1,5 @@
-use super::GenericTile;
-
 /// All tiles that can store energy
-pub trait EnergyStorage: GenericTile {
+pub trait EnergyStorage {
     /// Maximum amount of energy that can be stored
     fn capacity(&self) -> f32 { 50.0 }
 

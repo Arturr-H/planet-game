@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::prelude::*;
 use crate::{camera::OuterCamera, utils::color::hex};
-use super::slot::Slot;
+use super::slot::CableSlot;
 
 /* Constants */
 const CABLE_Z_INDEX: f32 = 3.0;
@@ -56,7 +56,7 @@ impl Cable {
     /// Update system
     fn update_cables(
         mut query: Query<(&mut Transform, &Cable)>,
-        slots_q: Query<&Transform, (With<Slot>, Without<Cable>)>,
+        slots_q: Query<&Transform, (With<CableSlot>, Without<Cable>)>,
     ) {
         for (mut transform, cable) in query.iter_mut() {
             if let (Ok(start_transform), Ok(end_transform)) = (
@@ -96,7 +96,7 @@ impl Cable {
     /// Update system for cable preview
     pub fn update_previews(
         mut query: Query<(&mut Transform, &mut Sprite, &CablePreview)>,
-        slots_q: Query<&GlobalTransform, (With<Slot>, Without<Cable>)>,
+        slots_q: Query<&GlobalTransform, (With<CableSlot>, Without<Cable>)>,
         windows_q: Query<&Window>,
         camera_q: Query<(&Camera, &GlobalTransform), With<OuterCamera>>,
     ) {

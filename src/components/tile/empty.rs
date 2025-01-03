@@ -1,17 +1,26 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, systems::{game::GameState, traits::{EnergyStorage, Generator, GenericTile, PowergridStatus}}, utils::color::hex};
-use super::Tile;
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
+use super::{tile, Tile, TileType};
 
-#[derive(Component, Clone)]
-pub struct EmptyTile {
-    pub slot_id: usize,
-    pub powergrid_status: PowergridStatus,
-}
+#[derive(Component, Clone, Debug)]
+pub struct EmptyTile;
 
 impl GenericTile for EmptyTile {
-    fn slot_id(&self) -> usize { self.slot_id }
-    fn spawn(&self, commands: &mut ChildBuilder, transform: Transform, _: &Res<AssetServer>, _: &mut ResMut<GameState>) -> () {
+    fn spawn(
+        &self,
+        commands: &mut ChildBuilder,
+        preview: bool,
+        transform: Transform,
+        asset_server: &Res<AssetServer>,
+        tile_id: usize,
+    ) -> Entity {
+        if !preview {
+            CableSlot::spawn(
+                commands, asset_server, tile_id, transform
+            );
+        }
+
         commands.spawn((
             transform,
             Sprite {
@@ -19,20 +28,8 @@ impl GenericTile for EmptyTile {
                 custom_size: Some(Vec2::new(20.0, 20.0)),
                 ..default()
             },
-            Tile::Empty(self.clone()),
+            self.clone(),
             PIXEL_PERFECT_LAYERS,
-        ));
-    }
-
-    fn powergrid_status(&self) ->  &PowergridStatus { &self.powergrid_status }
-    fn powergrid_status_mut(&mut self) -> &mut PowergridStatus { &mut self.powergrid_status }
-}
-
-impl EmptyTile {
-    pub fn new(slot_id: usize) -> Self {
-        Self {
-            slot_id,
-            powergrid_status: PowergridStatus::default(),
-        }
+        )).id()
     }
 }

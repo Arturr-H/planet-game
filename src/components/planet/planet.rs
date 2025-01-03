@@ -2,12 +2,13 @@
 use std::{f32::consts::PI, fmt::Debug};
 use bevy::prelude::*;
 use rand::Rng;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, cable::slot::Slot, tile::Tile}, functional::damageable::Damageable, systems::game::GameState, PLANET_SLOTS, RES_HEIGHT, RES_WIDTH};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, tile::Tile}, functional::damageable::Damageable, systems::game::GameState, RES_HEIGHT, RES_WIDTH};
 
 /* Constants */
+pub const PLANET_RADIUS: f32 = RES_WIDTH * 0.625;
+const PLANET_SIZE: f32 = PLANET_RADIUS * 2.0;
 const PLANET_ROTATION_SPEED: f32 = 1.7;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
-const PLANET_SIZE: f32 = RES_WIDTH * 1.25;
 
 #[derive(Component)]
 pub struct Planet;
@@ -40,22 +41,7 @@ impl Planet {
             PickingBehavior::IGNORE,
             Planet,
         ));
-
-        // /* Initialize slots */
-        // const DEGREE_STEP: f32 = 360.0 / PLANET_SLOTS as f32;
-        // for slot_id in 0..PLANET_SLOTS {
-        //     let degree = (slot_id as f32 * DEGREE_STEP).to_radians();
-        //     let transform = Self::degree_to_transform(degree, 5.0, 1.0);
-
-        //     /* Add slot as child of the planet */
-        //     planet.with_children(|parent| {
-        //         Slot::spawn(
-        //             Tile::random(&mut game_state, slot_id),
-        //             parent, &asset_server, &mut game_state,
-        //             slot_id, transform
-        //         );
-        //     });
-        // }
+        game_state.planet_entity = Some(planet.id());
 
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
@@ -91,10 +77,17 @@ impl Planet {
     }
 
     // Helper
-    fn degree_to_transform(degree: f32, origin_offset: f32, z: f32) -> Transform {
+    pub fn degree_to_transform(degree: f32, origin_offset: f32, z: f32) -> Transform {
         let x = degree.cos() * (PLANET_SIZE / 2.0 + origin_offset);
         let y = degree.sin() * (PLANET_SIZE / 2.0 + origin_offset);
         let rotation = Quat::from_rotation_z(degree - std::f32::consts::PI / 2.0);
         Transform { translation: Vec3::new(x, y, z), rotation, ..default() }
+    }
+
+    // Get forward
+    pub fn forward(transform: &Transform) -> Vec3 {
+        let forward = transform.rotation * Vec3::Y;
+        let forward_2d = Vec2::new(forward.x, forward.y).normalize().extend(0.0);
+        forward_2d
     }
 }

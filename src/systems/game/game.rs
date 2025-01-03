@@ -1,30 +1,27 @@
 /* Imports */
 use std::hash::Hash;
 use bevy::{prelude::*, utils::{HashMap, HashSet}};
-use crate::{components::{cable::slot::Slot, tile::{empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}, PLANET_SLOTS};
+use crate::{components::{cable::slot::CableSlot, tile::{empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}};
 use super::Resources;
 
 /// App state
 #[derive(Resource)]
 pub struct GameState {
-    /// All slots on the planet (id, tile)
-    pub slots: HashMap<usize, Tile>,
-    pub slot_id: usize,
+    /// All tiles on the planet (id, tile)
+    pub tiles: HashMap<usize, Tile>,
+    cable_slot_id: usize,
 
-    pub resources: Resources
+    pub resources: Resources,
+    pub planet_entity: Option<Entity>,
 }
 
 impl Default for GameState {
     fn default() -> Self {
-        let mut slots = HashMap::new();
-        for slot_id in 0..PLANET_SLOTS {
-            slots.insert(slot_id, Tile::Empty(EmptyTile::new(slot_id)));
-        }
-
         Self {
-            slots,
-            slot_id: PLANET_SLOTS,
-            resources: Resources::default()
+            tiles: HashMap::new(),
+            cable_slot_id: 0,
+            resources: Resources::default(),
+            planet_entity: None,
         }
     }
 }
@@ -32,7 +29,6 @@ impl Default for GameState {
 impl GameState {
     fn tick(
         mut game_state: ResMut<Self>,
-        tile_q: Query<&Tile, With<Tile>>,
         time: Res<Time>,
         mut timer: Local<Option<Timer>>,
     ) -> () {
@@ -41,34 +37,45 @@ impl GameState {
         );
 
         if timer.tick(time.delta()).just_finished() {
-            for tile in tile_q.iter() {
-                tile.distribute_energy(&mut game_state);
+            let keys = game_state.tiles.keys().cloned().collect::<Vec<usize>>();
+            for key in keys {
+                let tile = game_state.tiles.get(&key).unwrap();
+                if tile.can_distribute_energy() {
+                    Tile::distribute_energy(
+                        tile.energy_output(),
+                        tile.tile_id,
+                        &mut game_state
+                    );
+                }
             }
         }
     }
 
-    /// Increments the slot id and then returns it
-    pub fn new_slot_id(&mut self) -> usize {
-        let slot_id = self.slot_id;
-        self.slot_id += 1;
+    /// Increments the cable slot id and then returns it
+    pub fn new_cable_slot_id(&mut self) -> usize {
+        let slot_id = self.cable_slot_id;
+        self.cable_slot_id += 1;
         slot_id
     }
 
-    /// If two slots are connected
+    /// If two tiles are connected via cables
     pub fn powergrid_tiles_are_connected(&self, a: usize, b: usize) -> bool {
-        match self.slots.get(&a) {
+        match self.tiles.get(&a) {
             Some(e) => e.powergrid_status().connected_tiles.contains(&b),
             None => false,
         }
     }
     pub fn powergrid_register_connection(&mut self, a: usize, b: usize) -> () {
-        if let Some(e) = self.slots.get_mut(&a) {
+        if let Some(e) = self.tiles.get_mut(&a) {
             e.powergrid_status_mut().connected_tiles.push(b);
         }
-        if let Some(e) = self.slots.get_mut(&b) {
+        if let Some(e) = self.tiles.get_mut(&b) {
             e.powergrid_status_mut().connected_tiles.push(a);
         }
     }
+
+    /// Get planet entity or panic
+    pub fn planet_entity(&self) -> Entity { self.planet_entity.unwrap() }
 }
 
 /// Game plugin

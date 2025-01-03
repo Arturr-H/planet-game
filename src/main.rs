@@ -15,15 +15,12 @@ use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
 use systems::game::{self, GameState};
 use utils::color::hex;
-use components::{cable::{cable, slot}, planet::planet};
+use components::{cable::{cable, slot}, planet::planet, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
 /// In-game resolution height.
 pub const RES_HEIGHT: f32 = 120.0 * 2.0;
-
-/// How many slots each planet will have
-pub const PLANET_SLOTS: usize = 30;
 
 fn main() {
     App::new()
@@ -50,14 +47,15 @@ fn main() {
             })
         )
         .add_plugins((
-            slot::SlotPlugin,
+            slot::CableSlotPlugin,
             cable::CablePlugin,
             planet::PlanetPlugin,
             game::GamePlugin,
-            damageable::DamageablePlugin
+            damageable::DamageablePlugin,
+            tile::plugin::TilePlugin,
+
+            camera::CameraPlugin,
+            camera::CameraDebugPlugin
         ))
-        .insert_resource(ClearColor(hex!("#87CEEB")))
-        .add_systems(Startup, camera::initialize)
-        .add_systems(Update, camera::fit_canvas)
         .run();
 }
