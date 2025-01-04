@@ -35,7 +35,7 @@ impl TilePlugin {
 
         // Place tile
         if mb.just_pressed(MouseButton::Left) {
-            if let Some((tile_type, tile_entity)) = &tile_plugin_resource.selected {
+            if let Some((tile_type, tile_preview_entity)) = &tile_plugin_resource.selected {
                 let planet_position_index = Self::snap_index(tile_plugin_resource.degree, planet.angular_step());
 
                 // Check if position is occupied
@@ -52,16 +52,16 @@ impl TilePlugin {
                     return
                 };
 
-                let tile_id = planet.new_tile_id();
-                commands.entity(*tile_entity).despawn();
-
+                // Remove preview
+                commands.entity(*tile_preview_entity).despawn();
+                
                 // Add new tile to game state
+                let tile_id = planet.new_tile_id();
                 planet.tiles.insert(tile_id, Tile::new(
                     tile_id,
                     planet_position_index,
                     tile_type.clone()
                 ));
-
                 commands.entity(planet.planet_entity()).with_children(|parent| {
                     tile_type.spawn(
                         parent,

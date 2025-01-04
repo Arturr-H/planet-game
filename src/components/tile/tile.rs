@@ -99,7 +99,7 @@ impl Tile {
     pub fn add_energy(&mut self, energy: f32) -> () {
         use TileType::*;
 
-        logger::log::yellow("energy", format!("{:?} recieved energy: {}", self.tile_type, energy));
+        logger::log::yellow("energy", format!("{:?} (id: {}) recieved energy: {}", self.tile_type, self.tile_id, energy));
         match &mut self.tile_type {
             DebugTile(_) => self.powergrid_status.energy_stored += energy,
             SolarPanel(_) | Empty(_) => (),
