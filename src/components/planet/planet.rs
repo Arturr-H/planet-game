@@ -48,7 +48,7 @@ impl Planet {
         mut game_state: ResMut<GameState>,
         asset_server: Res<AssetServer>
     ) -> () {
-        let radius = RES_WIDTH * 2.0;
+        let radius = RES_WIDTH * 0.625 / 2.0;
         let mut planet_bundle = commands.spawn((
             Sprite {
                 image: asset_server.load("../assets/planet/planet.png"),
@@ -146,17 +146,16 @@ impl Planet {
         }
     }
 
-    pub fn radius(&self) -> f32 { self.radius }
-    pub fn diameter(&self) -> f32 { self.radius * 2.0 }
-    pub fn circumference(&self) -> f32 { self.diameter() * PI }
-    // pub fn rotation_speed(&self) -> f32 { PLANET_ROTATION_SPEED * self.circumference() }
+    pub const fn radius(&self) -> f32 { self.radius }
+    pub const fn diameter(&self) -> f32 { self.radius * 2.0 }
+    pub const fn circumference(&self) -> f32 { self.diameter() * PI }
 
     /// The angular step between two tiles on the planet. Each tile
     /// is placed somewhere on the circumference of the planet, and
     /// the position of the tile is just stored as an angle. This constant
     /// is the angular distance between two tiles.
-    pub fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
-    pub fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
+    pub const fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
+    pub const fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
 
     /// Get planet entity or panic
     pub fn planet_entity(&self) -> Entity { self.planet_entity.unwrap() }
