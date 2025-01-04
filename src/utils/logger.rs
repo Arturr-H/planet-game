@@ -7,11 +7,7 @@ pub enum Color {
 /* Constants */
 const TITLE_WIDTH: usize = 16;
 lazy_static::lazy_static! {
-    static ref DEBUG: bool = {
-        let a = std::env::var("DEBUG_LOG").unwrap();
-        println!("[[[[[[[[[[[[[DEBUG_LOG env: {a}]]]]]]]]]]]]]");
-        a.parse::<bool>().unwrap()
-    };
+    static ref DEBUG: bool = std::env::var("DEBUG_LOG").unwrap().parse::<bool>().unwrap();
 }
 
 /// Diffrent methods for printing debug stuff

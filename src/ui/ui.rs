@@ -12,7 +12,6 @@ impl Plugin for UiPlugin {
 
 /* Systems */
 fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    println!("haha");
     commands.spawn((
         Node {
             width: Val::Percent(100.0),
