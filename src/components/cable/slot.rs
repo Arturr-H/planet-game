@@ -35,12 +35,12 @@ impl CableSlot {
     ) -> () {
         // Slot sprite (light gray if hovered)
         commands.spawn((
-            transform.with_translation(transform.translation.with_z(10.0)),
             Self { tile_id },
+            transform.with_translation(transform.translation
+                + Planet::forward(&transform) * TILE_SIZE / 2.0),
             Sprite {
                 color: hex!(SLOT_INACTIVE_COLOR),
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
-                anchor: Anchor::BottomCenter,
                 ..default()
             },
         ))
@@ -55,7 +55,6 @@ impl CableSlot {
                         TILE_SIZE + OUTLINE_SIZE,
                         TILE_SIZE + OUTLINE_SIZE,
                     )),
-                    anchor: Anchor::BottomCenter,
                     image: asset_server.load("../assets/planet/selection.png"),
                     ..default()
                 },

@@ -40,6 +40,7 @@ impl Cable {
         end_entity: Entity,
     ) {
         commands.spawn((
+            PickingBehavior::IGNORE,
             Sprite {
                 color: hex!(CABLE_COLOR),
                 custom_size: Some(Vec2::new(1.0, CABLE_THICKNESS)),
@@ -83,6 +84,7 @@ impl Cable {
         start_entity: Entity,
     ) {
         commands.spawn((
+            PickingBehavior::IGNORE,
             Sprite {
                 color: hex!(CABLE_COLOR),
                 custom_size: Some(Vec2::new(1.0, CABLE_THICKNESS)),

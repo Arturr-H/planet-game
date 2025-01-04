@@ -4,7 +4,7 @@ use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, p
 use super::{empty::EmptyTile, solar_panel::SolarPanel, Tile, TileType};
 
 /* Constants */
-const POWER_SLOT_OFFSET: f32 = 60.0;
+const POWER_SLOT_OFFSET: f32 = 50.0;
 const POLE_GROUND_INSERTION: f32 = -15.0; // How much the pole is inserted into the ground
 
 /// Has a cable slot for keeping cables connected (and above ground)
