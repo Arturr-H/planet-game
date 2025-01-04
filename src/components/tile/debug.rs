@@ -23,7 +23,7 @@ impl GenericTile for DebugTile {
         commands.spawn((
             transform,
             Sprite {
-                color: hex!("#ff0000"),
+                image: asset_server.load("machines/debug.png"),
                 custom_size: Some(Vec2::new(20.0, 20.0)),
                 ..default()
             },
