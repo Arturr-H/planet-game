@@ -1,12 +1,20 @@
 /* Imports */
-use std::{f32::consts::PI, fmt::Debug};
+use std::{f32::consts::{PI, TAU}, fmt::Debug};
 use bevy::prelude::*;
 use rand::Rng;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, tile::Tile}, functional::damageable::Damageable, systems::game::GameState, RES_HEIGHT, RES_WIDTH};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, tile::{Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::game::GameState, RES_HEIGHT, RES_WIDTH};
 
 /* Constants */
 pub const PLANET_RADIUS: f32 = RES_WIDTH * 0.625;
-const PLANET_SIZE: f32 = PLANET_RADIUS * 2.0;
+pub const PLANET_CIRCUMFERENCE: f32 = 2.0 * PI * PLANET_RADIUS;
+pub const PLANET_DIAMETER: f32 = PLANET_RADIUS * 2.0;
+
+/// The angular step between two tiles on the planet. Each tile
+/// is placed somewhere on the circumference of the planet, and
+/// the position of the tile is just stored as an angle. This constant
+/// is the angular distance between two tiles.
+pub const PLANET_ANGULAR_STEP: f32 = TILE_SIZE / PLANET_RADIUS;
+pub const PLANET_TILE_PLACES: usize = (TAU / PLANET_ANGULAR_STEP) as usize;
 const PLANET_ROTATION_SPEED: f32 = 1.7;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 
@@ -32,16 +40,19 @@ impl Planet {
         let mut planet = commands.spawn((
             Sprite {
                 image: asset_server.load("../assets/planet/planet.png"),
-                custom_size: Some(Vec2::new(PLANET_SIZE, PLANET_SIZE)),
+                custom_size: Some(Vec2::new(PLANET_DIAMETER, PLANET_DIAMETER)),
                 ..default()
             },
-            Transform::from_xyz(0.0, -(PLANET_SIZE / 2.0) * 1.1, 1.0)
+            Transform::from_xyz(0.0, -(PLANET_DIAMETER / 2.0) * 1.1, 1.0)
             .with_rotation(Quat::from_rotation_z(PI / 2.0)),
             PIXEL_PERFECT_LAYERS,
             PickingBehavior::IGNORE,
             Planet,
         ));
         game_state.planet_entity = Some(planet.id());
+        planet.with_children(|parent| {
+            DebugComponent::setup(parent, "0deg", Self::degree_to_transform(0.0, 5.0, 5.0));
+        });
 
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
@@ -78,8 +89,8 @@ impl Planet {
 
     // Helper
     pub fn degree_to_transform(degree: f32, origin_offset: f32, z: f32) -> Transform {
-        let x = degree.cos() * (PLANET_SIZE / 2.0 + origin_offset);
-        let y = degree.sin() * (PLANET_SIZE / 2.0 + origin_offset);
+        let x = degree.cos() * (PLANET_DIAMETER / 2.0 + origin_offset);
+        let y = degree.sin() * (PLANET_DIAMETER / 2.0 + origin_offset);
         let rotation = Quat::from_rotation_z(degree - std::f32::consts::PI / 2.0);
         Transform { translation: Vec3::new(x, y, z), rotation, ..default() }
     }

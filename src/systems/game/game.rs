@@ -9,7 +9,7 @@ use super::Resources;
 pub struct GameState {
     /// All tiles on the planet (id, tile)
     pub tiles: HashMap<usize, Tile>,
-    cable_slot_id: usize,
+    tile_id: usize,
 
     pub resources: Resources,
     pub planet_entity: Option<Entity>,
@@ -19,7 +19,7 @@ impl Default for GameState {
     fn default() -> Self {
         Self {
             tiles: HashMap::new(),
-            cable_slot_id: 0,
+            tile_id: 0,
             resources: Resources::default(),
             planet_entity: None,
         }
@@ -51,10 +51,10 @@ impl GameState {
         }
     }
 
-    /// Increments the cable slot id and then returns it
-    pub fn new_cable_slot_id(&mut self) -> usize {
-        let slot_id = self.cable_slot_id;
-        self.cable_slot_id += 1;
+    /// Increments the tile_id and then returns it
+    pub fn new_tile_id(&mut self) -> usize {
+        let slot_id = self.tile_id;
+        self.tile_id += 1;
         slot_id
     }
 

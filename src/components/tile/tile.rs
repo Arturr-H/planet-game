@@ -1,7 +1,10 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::SLOT_SIZE, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
+
+/* Constants */
+pub const TILE_SIZE: f32 = 20.0;
 
 /// A tile is something that can be placed on
 /// a planet. Can contain e.g solar panels,
@@ -11,6 +14,12 @@ pub struct Tile {
     pub tile_type: TileType,
     pub tile_id: usize,
     pub powergrid_status: PowergridStatus,
+
+    /// This multiplied by the planets angular step yields
+    /// an angle in radians where this tile is located.
+    ///
+    /// Will be between 0..(planets tile places - 1)
+    pub planet_position_index: usize,
 }
 
 /// Something that can be placed in a slot
@@ -25,11 +34,12 @@ pub enum TileType {
 
 impl Tile {
     /// Creates a new tile
-    pub fn new(tile_id: usize, tile_type: TileType) -> Self {
+    pub fn new(tile_id: usize, planet_position_index: usize, tile_type: TileType) -> Self {
         Self {
             tile_type,
             tile_id,
-            powergrid_status: PowergridStatus::default()
+            powergrid_status: PowergridStatus::default(),
+            planet_position_index
         }
     }
 

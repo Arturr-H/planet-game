@@ -1,14 +1,12 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet, tile::{Tile, TileType}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
+    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
 };
 use bevy::{prelude::*, text::FontSmoothing};
 
 /* Constants */
-pub const SLOT_SIZE: f32 = 20.0;
 const OUTLINE_SIZE: f32 = 6.0;
-
 const SLOT_ACTIVE_COLOR: &'static str = "#00000066";
 const SLOT_INACTIVE_COLOR: &'static str = "#00000000";
 const SLOT_HIGHLIGHT_COLOR: &'static str = "#00000044";
@@ -41,7 +39,7 @@ impl CableSlot {
             Self { tile_id },
             Sprite {
                 color: hex!(SLOT_INACTIVE_COLOR),
-                custom_size: Some(Vec2::new(SLOT_SIZE, SLOT_SIZE)),
+                custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
                 ..default()
             },
         ))
@@ -53,8 +51,8 @@ impl CableSlot {
                 Sprite {
                     color: Color::NONE,
                     custom_size: Some(Vec2::new(
-                        SLOT_SIZE + OUTLINE_SIZE,
-                        SLOT_SIZE + OUTLINE_SIZE,
+                        TILE_SIZE + OUTLINE_SIZE,
+                        TILE_SIZE + OUTLINE_SIZE,
                     )),
                     image: asset_server.load("../assets/planet/selection.png"),
                     ..default()

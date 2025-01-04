@@ -17,11 +17,12 @@ impl Tree {
         )).with_children(|parent| {
             parent.spawn((
                 Sprite {
-                    image: asset_server.load(format!("foliage/birch/0{}.png", rng.gen_range(0..5))),
+                    image: asset_server.load(format!("foliage/birch/0{}.png", rng.gen_range(0..4))),
                     anchor: Anchor::BottomCenter,
                     flip_x: rng.gen_bool(0.5),
                     ..default()
                 },
+                
                 WindSway::new(),
                 Damageable::new(50.0, Some((PlanetResource::Wood, rng.gen_range(2..5)))),
             ))

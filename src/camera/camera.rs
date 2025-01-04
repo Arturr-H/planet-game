@@ -19,6 +19,8 @@ use crate::{utils::color::hex, RES_HEIGHT, RES_WIDTH};
 pub const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 /// Render layers for high-resolution rendering.
 pub const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
+/// Render layers for UI rendering.
+pub const UI_LAYERS: RenderLayers = RenderLayers::layer(2);
 
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
@@ -47,6 +49,10 @@ pub struct InGameCamera;
 /// other high-resolution entities like UI.
 #[derive(Component)]
 pub struct OuterCamera;
+
+/// Renders pixel perfect UI
+#[derive(Component)]
+pub struct UiCamera;
 
 /// Rendered to the high-resolution camera. The pixel-perfect
 /// game view is rendered to this Canvas.
@@ -99,6 +105,18 @@ pub fn initialize(
 
     commands.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
     commands.spawn((Camera2d, Msaa::Off, OuterCamera, HIGH_RES_LAYERS));
+    commands.spawn((
+        Camera2d,
+        IsDefaultUiCamera,
+        Camera {
+            order: 1,
+            clear_color: ClearColorConfig::None,
+            ..default()
+        },
+        Msaa::Off,
+        UiCamera,
+        UI_LAYERS,
+    ));
 }
 
 /// Scales camera projection to fit the window (integer

@@ -6,6 +6,7 @@ mod camera;
 mod components;
 mod systems;
 mod functional;
+mod ui;
 
 /* Imports */
 use bevy::{
@@ -52,10 +53,12 @@ fn main() {
             planet::PlanetPlugin,
             game::GamePlugin,
             damageable::DamageablePlugin,
-            tile::plugin::TilePlugin,
+            tile::spawn::TilePlugin,
 
             camera::CameraPlugin,
-            camera::CameraDebugPlugin
+            camera::CameraDebugPlugin,
+
+            ui::UiPlugin,
         ))
         .run();
 }
