@@ -5,20 +5,10 @@ use rand::Rng;
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, tile::{Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::game::{GameState, PlanetResources}, RES_HEIGHT, RES_WIDTH};
 
 /* Constants */
-pub const PLANET_RADIUS: f32 = RES_WIDTH * 0.625;
-pub const PLANET_CIRCUMFERENCE: f32 = 2.0 * PI * PLANET_RADIUS;
-pub const PLANET_DIAMETER: f32 = PLANET_RADIUS * 2.0;
-
-/// The angular step between two tiles on the planet. Each tile
-/// is placed somewhere on the circumference of the planet, and
-/// the position of the tile is just stored as an angle. This constant
-/// is the angular distance between two tiles.
-pub const PLANET_ANGULAR_STEP: f32 = TILE_SIZE / PLANET_RADIUS;
-pub const PLANET_TILE_PLACES: usize = (TAU / PLANET_ANGULAR_STEP) as usize;
 const PLANET_ROTATION_SPEED: f32 = 1.7;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Planet {
     id: usize,
 
@@ -37,6 +27,10 @@ pub struct Planet {
     /// The entity of the planet, used for e.g getting
     /// the center of the planets (transforms) and such.
     pub planet_entity: Option<Entity>,
+
+    /// The radius of the planet, used to calculate
+    /// the position of tiles and such.
+    pub radius: f32,
 }
 
 /// This struct is used to mark a planet as the
@@ -54,43 +48,41 @@ impl Planet {
         mut game_state: ResMut<GameState>,
         asset_server: Res<AssetServer>
     ) -> () {
-        let mut planet = commands.spawn((
+        let radius = RES_WIDTH * 0.625;
+        let mut planet_bundle = commands.spawn((
             Sprite {
                 image: asset_server.load("../assets/planet/planet.png"),
-                custom_size: Some(Vec2::new(PLANET_DIAMETER, PLANET_DIAMETER)),
+                custom_size: Some(Vec2::new(radius * 2.0, radius * 2.0)),
                 ..default()
             },
-            Transform::from_xyz(0.0, -(PLANET_DIAMETER / 2.0) * 1.1, 1.0)
+            Transform::from_xyz(0.0, -radius * 1.1, 1.0)
             .with_rotation(Quat::from_rotation_z(PI / 2.0)),
             PIXEL_PERFECT_LAYERS,
             PickingBehavior::IGNORE,
         ));
 
         /* Insert planet component */
-        planet.insert(Planet {
+        let planet = Planet {
             id: game_state.new_planet_id(),
             tiles: HashMap::new(),
             tile_id: 0,
             resources: PlanetResources::default(),
-            planet_entity: Some(planet.id()),
-        });
+            planet_entity: Some(planet_bundle.id()),
+            radius
+        };
+        planet_bundle.insert(planet.clone());
 
         // TODO: Only insert if it's the players own
-        planet.insert(PlayerPlanet);
-
-        /* Debug for knowing where 0degrees is on the planet */
-        planet.with_children(|parent| {
-            DebugComponent::setup(parent, "0deg", Self::degree_to_transform(0.0, 5.0, 5.0));
-        });
+        planet_bundle.insert(PlayerPlanet);
 
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
         for degree in Foliage::generate_foliage_positions(20) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let z = -0.5 - rng.gen_range(-0.1..0.1);
-            let transform = Self::degree_to_transform(degree * 180.0 / PI, origin_offset, z);
+            let transform = planet.degree_to_transform(degree * 180.0 / PI, origin_offset, z);
             let scale = rng.gen_range(0.8..1.3);
-            planet.with_children(|parent| {
+            planet_bundle.with_children(|parent| {
                 Tree::spawn(
                     parent,
                     &asset_server,
@@ -116,6 +108,7 @@ impl Planet {
         }
     }
 
+    /// What will happen each tick.
     pub fn tick(&mut self) -> () {
         let keys = self.tiles.keys().cloned().collect::<Vec<usize>>();
         for key in keys {
@@ -153,13 +146,25 @@ impl Planet {
         }
     }
 
+    pub fn radius(&self) -> f32 { self.radius }
+    pub fn diameter(&self) -> f32 { self.radius * 2.0 }
+    pub fn circumference(&self) -> f32 { self.diameter() * PI }
+
+    /// The angular step between two tiles on the planet. Each tile
+    /// is placed somewhere on the circumference of the planet, and
+    /// the position of the tile is just stored as an angle. This constant
+    /// is the angular distance between two tiles.
+    pub fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
+    pub fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
+
     /// Get planet entity or panic
     pub fn planet_entity(&self) -> Entity { self.planet_entity.unwrap() }
 
-    // Helper
-    pub fn degree_to_transform(degree: f32, origin_offset: f32, z: f32) -> Transform {
-        let x = degree.cos() * (PLANET_DIAMETER / 2.0 + origin_offset);
-        let y = degree.sin() * (PLANET_DIAMETER / 2.0 + origin_offset);
+    /// Returns a transform from a radians on the planet, somwhere on the
+    /// circumference of the planet.
+    pub fn degree_to_transform(&self, degree: f32, origin_offset: f32, z: f32) -> Transform {
+        let x = degree.cos() * (self.radius + origin_offset);
+        let y = degree.sin() * (self.radius + origin_offset);
         let rotation = Quat::from_rotation_z(degree - std::f32::consts::PI / 2.0);
         Transform { translation: Vec3::new(x, y, z), rotation, ..default() }
     }

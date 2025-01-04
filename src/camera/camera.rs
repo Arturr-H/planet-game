@@ -1,5 +1,5 @@
 use bevy::{
-    input::mouse::MouseWheel, prelude::*, render::{
+    input::{keyboard::KeyboardInput, mouse::MouseWheel}, prelude::*, render::{
         camera::RenderTarget,
         render_resource::{
             Extent3d,
@@ -137,10 +137,17 @@ pub fn fit_canvas(
 pub fn debug_control(
     mut query: Query<&mut OrthographicProjection, With<InGameCamera>>,
     mut scroll: EventReader<MouseWheel>,
+    kb: Res<ButtonInput<KeyCode>>
 ) {
     for event in scroll.read() {
         for mut projection in query.iter_mut() {
             projection.scale *= 1. + event.y * -0.0002;
+        }
+    }
+
+    if kb.just_pressed(KeyCode::Backspace) {
+        for mut projection in query.iter_mut() {
+            projection.scale = 1.;
         }
     }
 }

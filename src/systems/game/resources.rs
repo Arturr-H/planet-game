@@ -10,7 +10,7 @@ pub enum PlanetResource {
 }
 
 /// The resources that the player has
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlanetResources {
     map: HashMap<PlanetResource, usize>,
 }

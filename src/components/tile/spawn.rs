@@ -2,7 +2,7 @@ use std::f32::consts::{PI, TAU};
 
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::planet::planet::{Planet, PlayerPlanet, PLANET_ANGULAR_STEP, PLANET_CIRCUMFERENCE, PLANET_RADIUS, PLANET_TILE_PLACES}, systems::{game::GameState, traits::GenericTile}};
+use crate::{camera::OuterCamera, components::planet::planet::{Planet, PlayerPlanet}, systems::{game::GameState, traits::GenericTile}};
 use super::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel, Tile, TileType, TILE_SIZE};
 
 #[derive(Resource)]
@@ -36,7 +36,7 @@ impl TilePlugin {
         /* Place tile */
         if mb.just_pressed(MouseButton::Left) {
             if let Some((tile_type, tile_entity)) = &tile_plugin_resource.selected {
-                let planet_position_index = Self::snap_index(tile_plugin_resource.degree, PLANET_ANGULAR_STEP);
+                let planet_position_index = Self::snap_index(tile_plugin_resource.degree, planet.angular_step());
 
                 /* Check if position is occupied */
                 let occupied = planet.tiles.values()
@@ -108,15 +108,15 @@ impl TilePlugin {
     fn update_preview(
         mut query: Query<&mut Transform, With<TilePreview>>,
         mut tile_plugin_resource: ResMut<TilePluginResource>,
-        planet_q: Query<&Transform, (With<Planet>, Without<TilePreview>)>,
+        planet_q: Query<(&Planet, &Transform), (With<Planet>, With<PlayerPlanet>, Without<TilePreview>)>,
         windows_q: Query<&Window>,
         camera_q: Query<(&Camera, &GlobalTransform), With<OuterCamera>>,
     ) -> () {
         let window = windows_q.single();
         let (camera, camera_transform) = camera_q.single();
-        let planet = planet_q.single();
-        let planet_rotation_z = planet.rotation.to_euler(EulerRot::XYZ).2 - PI / 2.0;
-        let planet_pos = planet.translation.truncate();
+        let (planet, planet_transform) = planet_q.single();
+        let planet_rotation_z = planet_transform.rotation.to_euler(EulerRot::XYZ).2 - PI / 2.0;
+        let planet_pos = planet_transform.translation.truncate();
 
         if let Some(cursor_pos) = window
             .cursor_position()
@@ -125,8 +125,8 @@ impl TilePlugin {
             let angle = (cursor_pos - planet_pos).angle_to(Vec2::Y);
 
             if let Ok(mut transform) = query.get_single_mut() {
-                let degree = Self::snap(- planet_rotation_z - angle, PLANET_ANGULAR_STEP);
-                let p = Planet::degree_to_transform(degree, 0.0, 2.0);
+                let degree = Self::snap(- planet_rotation_z - angle, planet.angular_step());
+                let p = planet.degree_to_transform(degree, 0.0, 2.0);
 
                 tile_plugin_resource.transform = *transform;
                 tile_plugin_resource.degree = degree;
