@@ -24,6 +24,8 @@ pub const RES_WIDTH: f32 = 240.0 * 2.0;
 pub const RES_HEIGHT: f32 = 120.0 * 2.0;
 
 fn main() {
+    dotenv::dotenv().ok();
+    
     App::new()
         /* Default */
         .add_plugins(DefaultPlugins

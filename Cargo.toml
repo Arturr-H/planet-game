@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.15.1"
+dotenv = "0.15.0"
 enum_delegate = "0.2.0"
+lazy_static = "1.5.0"
 rand = "0.8.5"
  
 # Enable a small amount of optimization in debug mode
