@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::prelude::*;
 
-use crate::{camera::UI_LAYERS, systems::game::{GameState, PlanetResource}};
+use crate::{camera::UI_LAYERS, components::planet::planet::{Planet, PlayerPlanet}, systems::game::{GameState, PlanetResource}};
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
@@ -60,12 +60,12 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
 }
 
 fn update(
-    game_state: Res<GameState>,
+    planet_q: Query<&Planet, With<PlayerPlanet>>,
     mut query: Query<&mut Text, With<Label>>,
 ) {
-    if game_state.is_changed() {
-        for mut text in &mut query {
-            text.0 = format!("Wood: {}", game_state.resources.get(PlanetResource::Wood));
-        }
+    // TODO: Something like Resouce.is_changed()
+    let planet = planet_q.single();
+    for mut text in &mut query {
+        text.0 = format!("Wood: {}", planet.resources.get(PlanetResource::Wood));
     }
 }

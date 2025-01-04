@@ -48,9 +48,12 @@ fn main() {
             })
         )
         .add_plugins((
+            /* Preferrable called first as many
+                plugins depend on the planet existing */
+            planet::PlanetPlugin,
+
             slot::CableSlotPlugin,
             cable::CablePlugin,
-            planet::PlanetPlugin,
             game::GamePlugin,
             damageable::DamageablePlugin,
             tile::spawn::TilePlugin,

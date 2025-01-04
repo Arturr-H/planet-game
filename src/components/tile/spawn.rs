@@ -2,7 +2,7 @@ use std::f32::consts::{PI, TAU};
 
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::planet::planet::{Planet, PLANET_ANGULAR_STEP, PLANET_CIRCUMFERENCE, PLANET_RADIUS, PLANET_TILE_PLACES}, systems::{game::GameState, traits::GenericTile}};
+use crate::{camera::OuterCamera, components::planet::planet::{Planet, PlayerPlanet, PLANET_ANGULAR_STEP, PLANET_CIRCUMFERENCE, PLANET_RADIUS, PLANET_TILE_PLACES}, systems::{game::GameState, traits::GenericTile}};
 use super::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel, Tile, TileType, TILE_SIZE};
 
 #[derive(Resource)]
@@ -25,33 +25,35 @@ impl TilePlugin {
     fn update(
         mut commands: Commands,
         mut tile_plugin_resource: ResMut<TilePluginResource>,
-        mut game_state: ResMut<GameState>,
+        mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
         preview_q: Query<Entity, With<TilePreview>>,
         asset_server: Res<AssetServer>,
         kb: Res<ButtonInput<KeyCode>>,
         mb: Res<ButtonInput<MouseButton>>,
     ) -> () {
+        let mut planet = planet_q.single_mut();
+
         /* Place tile */
         if mb.just_pressed(MouseButton::Left) {
             if let Some((tile_type, tile_entity)) = &tile_plugin_resource.selected {
                 let planet_position_index = Self::snap_index(tile_plugin_resource.degree, PLANET_ANGULAR_STEP);
 
                 /* Check if position is occupied */
-                let occupied = game_state.tiles.values()
+                let occupied = planet.tiles.values()
                     .any(|tile| tile.planet_position_index == planet_position_index);
 
                 if !occupied {
-                    let tile_id = game_state.new_tile_id();
+                    let tile_id = planet.new_tile_id();
                     commands.entity(*tile_entity).despawn();
 
                     /* Add new tile to game state */
-                    game_state.tiles.insert(tile_id, Tile::new(
+                    planet.tiles.insert(tile_id, Tile::new(
                         tile_id,
                         planet_position_index,
                         tile_type.clone()
                     ));
 
-                    commands.entity(game_state.planet_entity()).with_children(|parent| {
+                    commands.entity(planet.planet_entity()).with_children(|parent| {
                         tile_type.spawn(
                             parent,
                             false,
@@ -82,7 +84,7 @@ impl TilePlugin {
             let mut tile_entity = None;
 
             // Spawn preview 
-            commands.entity(game_state.planet_entity()).with_children(|parent| {
+            commands.entity(planet.planet_entity()).with_children(|parent| {
                 tile_entity = Some(tile.spawn(
                     parent,
                     true,

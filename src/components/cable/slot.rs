@@ -1,7 +1,7 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::Planet, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
+    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
 };
 use bevy::{prelude::*, text::FontSmoothing};
 
@@ -73,16 +73,15 @@ impl CableSlot {
     fn on_click(
         mut click: Trigger<Pointer<Click>>,
         mut commands: Commands,
-        planet_q: Query<Entity, With<Planet>>,
+        mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
         mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
         mut children_q: Query<&mut Sprite, Without<Self>>,
         mut slot_res: ResMut<SlotCablePlacementResource>,
-        mut game_state: ResMut<GameState>,
         cable_preview_q: Query<Entity, With<CablePreview>>
     ) {
         click.propagate(false);
 
-        let planet = planet_q.single();
+        let mut planet = planet_q.single_mut();
         let mut highlight_all = false;
         let mut needs_highlight_reset = false;
         
@@ -90,7 +89,7 @@ impl CableSlot {
             if let Some((id, other_entity)) = slot_res.active() {
                 Cable::remove_previews(&mut commands, cable_preview_q);
                 needs_highlight_reset = true;
-                let occupied = game_state.powergrid_tiles_are_connected(id, slot.tile_id);
+                let occupied = planet.powergrid_tiles_are_connected(id, slot.tile_id);
 
                 if occupied
                     || id == slot.tile_id
@@ -100,7 +99,7 @@ impl CableSlot {
                     println!("Spawning cable between {} and {}", id, slot.tile_id);
 
                     /* Spawn cable */
-                    commands.entity(planet).with_children(|parent| {
+                    commands.entity(planet.planet_entity()).with_children(|parent| {
                         Cable::spawn_between_slots(
                             parent,
                             click.entity(),
@@ -109,7 +108,7 @@ impl CableSlot {
                     });
 
                     /* Register connection to game state and reset */
-                    game_state.powergrid_register_connection(id, slot.tile_id);
+                    planet.powergrid_register_connection(id, slot.tile_id);
                     slot_res.reset();
                 }
             } else {

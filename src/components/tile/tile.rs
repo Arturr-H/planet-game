@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{camera::PIXEL_PERFECT_LAYERS, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::planet::Planet, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */
@@ -45,14 +45,14 @@ impl Tile {
 
     /// Distribute energy across cables from this tile.
     /// Only runs from generators.
-    pub fn distribute_energy(energy_output: f32, cable_slot_id: usize, game_state: &mut GameState) -> () {
+    pub fn distribute_energy(energy_output: f32, cable_slot_id: usize, planet: &mut Planet) -> () {
         // HashMap<tile_id, will_recieve_energy>
         let mut visited: HashMap<usize, bool> = HashMap::new();
         let mut recievers = 0;
 
         Self::search_tile(
             &mut recievers,
-            game_state,
+            planet,
             cable_slot_id,
             &mut visited
         );
@@ -60,7 +60,7 @@ impl Tile {
         let energy_per_reciever = energy_output / recievers.max(1) as f32;
         for (tile_id, will_recieve_energy) in visited {
             if will_recieve_energy {
-                match game_state.tiles.get_mut(&tile_id) {
+                match planet.tiles.get_mut(&tile_id) {
                     Some(e) => e.add_energy(energy_per_reciever),
                     None => ()
                 };
@@ -69,11 +69,11 @@ impl Tile {
     }
     fn search_tile(
         recievers: &mut usize,
-        game_state: &GameState,
+        planet: &Planet,
         tile_id: usize,
         visited: &mut HashMap<usize, bool>,
     ) -> () {
-        let Some(tile) = game_state.tiles.get(&tile_id) else { return };
+        let Some(tile) = planet.tiles.get(&tile_id) else { return };
         visited.insert(tile_id, tile.can_store_energy());
         if tile.can_store_energy() {
             *recievers += 1;
@@ -81,7 +81,7 @@ impl Tile {
         
         for tile_id in &tile.powergrid_status().connected_tiles {
             if !visited.contains_key(tile_id) {
-                Self::search_tile(recievers, game_state, *tile_id, visited);
+                Self::search_tile(recievers, planet, *tile_id, visited);
             }
         }
     }

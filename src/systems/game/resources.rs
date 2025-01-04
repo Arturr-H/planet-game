@@ -11,11 +11,11 @@ pub enum PlanetResource {
 
 /// The resources that the player has
 #[derive(Debug)]
-pub struct Resources {
+pub struct PlanetResources {
     map: HashMap<PlanetResource, usize>,
 }
 
-impl Default for Resources {
+impl Default for PlanetResources {
     fn default() -> Self {
         Self {
             map: HashMap::from([
@@ -25,7 +25,7 @@ impl Default for Resources {
     }
 }
 
-impl Resources {
+impl PlanetResources {
     pub fn get(&self, resource: PlanetResource) -> usize {
         self.map[&resource]
     }

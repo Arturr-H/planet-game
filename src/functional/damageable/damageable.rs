@@ -4,6 +4,7 @@ use bevy::render::view::window;
 use bevy::sprite::Sprite;
 
 use crate::camera::OuterCamera;
+use crate::components::planet::planet::{Planet, PlayerPlanet};
 use crate::systems::game::{GameState, PlanetResource};
 use crate::utils::color::hex;
 use crate::utils::sprite_bounds::point_in_sprite_bounds;
@@ -52,8 +53,9 @@ impl Damageable {
         mut commands: Commands,
         mut query: Query<(Entity, &mut Damageable)>,
         mut damage_events: EventReader<DamageEvent>,
-        mut game_state: ResMut<GameState>,
+        mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
     ) {
+        let mut planet = planet_q.single_mut();
         for event in damage_events.read() {
             if let Ok((entity, mut damageable)) = query.get_mut(event.entity) {
                 damageable.health -= event.damage;
@@ -61,7 +63,7 @@ impl Damageable {
                     commands.entity(entity).despawn();
                     if let Some((resource, amount)) = damageable.drop {
                         println!("Dropped {:?} x{}", resource, amount);
-                        game_state.resources.add(resource, amount);
+                        planet.resources.add(resource, amount);
                     }
                 }
             }
