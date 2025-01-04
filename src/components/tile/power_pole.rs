@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::GameState, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{empty::EmptyTile, solar_panel::SolarPanel, Tile, TileType};
 
 /* Constants */
@@ -44,5 +44,11 @@ impl GenericTile for PowerPole {
         }
 
         id
+    }
+
+    fn cost(&self) -> Vec<(PlanetResource,usize)> {
+        vec![
+            (PlanetResource::Wood, 6)
+        ]
     }
 }

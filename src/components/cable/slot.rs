@@ -1,7 +1,7 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
+    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, logger, sprite_bounds::point_in_sprite_bounds}, GameState
 };
 use bevy::{prelude::*, text::FontSmoothing};
 
@@ -96,7 +96,7 @@ impl CableSlot {
                     || slot_res.start_entity_pos.distance(transform.translation.truncate().xy()) > MAX_CABLE_LENGTH {
                     slot_res.reset();
                 }else {
-                    println!("Spawning cable between {} and {}", id, slot.tile_id);
+                    logger::log::blue("cable", format!("Spawning cable between {} and {}", id, slot.tile_id));
 
                     /* Spawn cable */
                     commands.entity(planet.planet_entity()).with_children(|parent| {

@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::GameState, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{empty::EmptyTile, Tile, TileType};
 
 /// A solar panel is a tile that generates energy
@@ -32,5 +32,11 @@ impl GenericTile for SolarPanel {
             SolarPanel,
             PIXEL_PERFECT_LAYERS,
         )).id()
+    }
+
+    fn cost(&self) -> Vec<(PlanetResource, usize)> {
+        vec![
+            (PlanetResource::Wood, 4)
+        ]
     }
 }

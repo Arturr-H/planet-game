@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::systems::{game::GameState, traits::PowergridStatus};
+use crate::systems::{game::{GameState, PlanetResource}, traits::PowergridStatus};
 
 #[enum_delegate::register]
 pub trait GenericTile {
@@ -13,4 +13,7 @@ pub trait GenericTile {
         asset_server: &Res<AssetServer>,
         tile_id: usize,
     ) -> Entity;
+
+    /// What resources this tile costs
+    fn cost(&self) -> Vec<(PlanetResource, usize)>;
 }
