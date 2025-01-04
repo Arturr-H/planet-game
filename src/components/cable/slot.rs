@@ -14,7 +14,7 @@ const SLOT_HIGHLIGHT_COLOR: &'static str = "#00000044";
 pub struct CableSlotPlugin;
 impl Plugin for CableSlotPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, CableSlot::breathe)
+        app.add_systems(Update, (CableSlot::breathe, CableSlot::on_cancel))
         .init_resource::<SlotCablePlacementResource>();
     }
 }
@@ -233,6 +233,22 @@ impl CableSlot {
                 &mut sprite, &children, children_q,
                 slot_res
             );
+        }
+    }
+
+    // Esc
+    fn on_cancel(
+        kb: Res<ButtonInput<KeyCode>>,
+        mut slot_res: ResMut<SlotCablePlacementResource>,
+        mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
+        mut children_q: Query<&mut Sprite, Without<Self>>,
+        mut commands: Commands,
+        cable_preview_q: Query<Entity, With<CablePreview>>
+    ) {
+        if kb.just_pressed(KeyCode::Escape) {
+            Cable::remove_previews(&mut commands, cable_preview_q);
+            Self::clear_all_highlight(&mut slots_q, &mut children_q, &slot_res);
+            slot_res.reset();
         }
     }
 
