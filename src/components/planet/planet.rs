@@ -48,7 +48,7 @@ impl Planet {
         mut game_state: ResMut<GameState>,
         asset_server: Res<AssetServer>
     ) -> () {
-        let radius = RES_WIDTH * 0.625 / 2.0;
+        let radius = RES_WIDTH * 0.625;
         let mut planet_bundle = commands.spawn((
             Sprite {
                 image: asset_server.load("../assets/planet/planet.png"),

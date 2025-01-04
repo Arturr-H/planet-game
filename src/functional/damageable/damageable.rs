@@ -44,9 +44,14 @@ impl Damageable {
         click: Trigger<Pointer<Down>>,
         mut commands: Commands,
         mut damage_events: ResMut<Events<DamageEvent>>,
+        asset_server: Res<AssetServer>,
     ) {
         damage_events.send(DamageEvent { entity: click.entity(), damage: 10.0 });
         commands.entity(click.entity()).insert(Flashing);
+
+        // Play damage sound
+        let damage_sound = asset_server.load("../assets/audio/damage.wav");
+        commands.spawn((AudioPlayer::new(damage_sound), PlaybackSettings::DESPAWN));
     }
     
     // Apply damage from events

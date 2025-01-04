@@ -55,6 +55,12 @@ impl TilePlugin {
                 // Remove preview
                 commands.entity(*tile_preview_entity).despawn();
                 
+                //Play sound
+                let place_sound = asset_server.load("../assets/audio/place.wav");
+                commands.spawn((AudioPlayer::new(place_sound), PlaybackSettings::DESPAWN));
+
+
+
                 // Add new tile to game state
                 let tile_id = planet.new_tile_id();
                 planet.tiles.insert(tile_id, Tile::new(
