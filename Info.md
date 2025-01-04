@@ -1,5 +1,8 @@
 # Här står allting om spelet och hur allting fungerar etc.
 
+## Keybinds
+Klicka Q, W eller E för att välja en tile (esc om du vill sluta) och klicka med musen för att sätta ner den. Du kan snurra runt planeten med A&D. Du kan scrolla för att zooma ut (fungerar inte så bra just nu) och klicka backspace (eller delete tror jag på windows) om du vill resetta scroll.
+
 ## Planeter
 Eftersom själva idéen med spelet är att det ska finnas som ett solsystem med flera olika planeter, som spelare kan bosätta, så måste det finnas ett sätt att veta vems planet är vems. Just nu har jag gjort så att den spelare som spelar får en planet med component `PlayerPlanet`. Alltså kan man querya `&Planet, With<PlayerPlanet>` för att få info m.m. om den planeten som spelaren själv använder.
 
