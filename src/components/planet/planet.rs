@@ -5,7 +5,7 @@ use rand::Rng;
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, tile::{Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::game::{GameState, PlanetResources}, RES_HEIGHT, RES_WIDTH};
 
 /* Constants */
-const PLANET_ROTATION_SPEED: f32 = 1.7;
+const PLANET_ROTATION_SPEED: f32 = 170.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 
 #[derive(Component, Clone)]
@@ -97,14 +97,16 @@ impl Planet {
         time: Res<Time>,
         mut query: Query<&mut Transform, With<Planet>>,
         keyboard_input: Res<ButtonInput<KeyCode>>,
+        planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
+        let planet = planet_q.single();
         if keyboard_input.pressed(KeyCode::ArrowRight)
         || keyboard_input.pressed(KeyCode::KeyD) {
-            query.single_mut().rotate_z(time.delta_secs() * PLANET_ROTATION_SPEED);
+            query.single_mut().rotate_z(time.delta_secs() * planet.rotation_speed());
         }
         else if keyboard_input.pressed(KeyCode::ArrowLeft)
             || keyboard_input.pressed(KeyCode::KeyA) {
-            query.single_mut().rotate_z(-time.delta_secs() * PLANET_ROTATION_SPEED);
+            query.single_mut().rotate_z(-time.delta_secs() * planet.rotation_speed());
         }
     }
 
@@ -149,6 +151,7 @@ impl Planet {
     pub const fn radius(&self) -> f32 { self.radius }
     pub const fn diameter(&self) -> f32 { self.radius * 2.0 }
     pub const fn circumference(&self) -> f32 { self.diameter() * PI }
+    pub const fn rotation_speed(&self) -> f32 { PLANET_ROTATION_SPEED / self.radius }
 
     /// The angular step between two tiles on the planet. Each tile
     /// is placed somewhere on the circumference of the planet, and

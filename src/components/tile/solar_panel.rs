@@ -25,7 +25,7 @@ impl GenericTile for SolarPanel {
         commands.spawn((
             transform,
             Sprite {
-                image: asset_server.load("machines/solar.png"),
+                image: asset_server.load("machines/solar-panel.png"),
                 anchor: Anchor::BottomCenter,
                 // custom_size: Some(Vec2::new(20.0, 20.0)),
                 ..default()
