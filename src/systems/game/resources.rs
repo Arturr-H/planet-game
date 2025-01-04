@@ -1,10 +1,10 @@
-/* Constants */
-const RESOURCE_TYPES: usize = 1;
+use bevy::utils::HashMap;
 
 /// The resources that can be found on a planet
 /// 
 /// * Important: Don't forget to update the `RESOURCE_TYPES` constant
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[repr(u8)]
 pub enum PlanetResource {
     Wood,
 }
@@ -12,13 +12,13 @@ pub enum PlanetResource {
 /// The resources that the player has
 #[derive(Debug)]
 pub struct Resources {
-    map: micromap::Map<PlanetResource, usize, RESOURCE_TYPES>,
+    map: HashMap<PlanetResource, usize>,
 }
 
 impl Default for Resources {
     fn default() -> Self {
         Self {
-            map: micromap::Map::from([
+            map: HashMap::from([
                 (PlanetResource::Wood, 0),
             ]),
         }
@@ -32,11 +32,11 @@ impl Resources {
 
     /// Adds a resource to the player
     pub fn add(&mut self, resource: PlanetResource, amount: usize) {
-        self.map[&resource] += amount;
+        *self.map.get_mut(&resource).unwrap() += amount;
     }
 
     /// Removes a resource from the player
     pub fn remove(&mut self, resource: PlanetResource, amount: usize) {
-        self.map[&resource] -= amount;
+        *self.map.get_mut(&resource).unwrap() -= amount;
     }
 }
