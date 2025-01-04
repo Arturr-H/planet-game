@@ -35,6 +35,18 @@ impl GameState {
         }
     }
 
+    fn background_audio(
+        mut commands: Commands,
+        asset_server: Res<AssetServer>,
+    ) {
+        let background_audio = asset_server.load("../assets/audio/forest.wav");
+
+        commands.spawn((
+            AudioPlayer::new(background_audio),
+            PlaybackSettings::LOOP,
+        ));
+    }
+
     /// Returns a new planet ID
     pub fn new_planet_id(&mut self) -> usize {
         let id = self.planet_id;
@@ -49,6 +61,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app
             .init_resource::<GameState>()
+            .add_systems(Startup, GameState::background_audio)
             .add_systems(Update, GameState::tick);
     }
 }
