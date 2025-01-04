@@ -3,7 +3,7 @@ use super::slot_state::SlotCablePlacementResource;
 use crate::{
     camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, logger, sprite_bounds::point_in_sprite_bounds}, GameState
 };
-use bevy::{prelude::*, text::FontSmoothing};
+use bevy::{prelude::*, sprite::Anchor, text::FontSmoothing};
 
 /* Constants */
 const OUTLINE_SIZE: f32 = 6.0;
@@ -40,6 +40,7 @@ impl CableSlot {
             Sprite {
                 color: hex!(SLOT_INACTIVE_COLOR),
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
+                anchor: Anchor::BottomCenter,
                 ..default()
             },
         ))
@@ -54,6 +55,7 @@ impl CableSlot {
                         TILE_SIZE + OUTLINE_SIZE,
                         TILE_SIZE + OUTLINE_SIZE,
                     )),
+                    anchor: Anchor::BottomCenter,
                     image: asset_server.load("../assets/planet/selection.png"),
                     ..default()
                 },
