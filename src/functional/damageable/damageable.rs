@@ -7,6 +7,7 @@ use crate::camera::OuterCamera;
 use crate::components::planet::planet::{Planet, PlayerPlanet};
 use crate::systems::game::{GameState, PlanetResource};
 use crate::utils::color::hex;
+use crate::utils::logger;
 use crate::utils::sprite_bounds::point_in_sprite_bounds;
 use crate::{RES_HEIGHT, RES_WIDTH};
 
@@ -62,7 +63,7 @@ impl Damageable {
                 if damageable.health <= 0.0 {
                     commands.entity(entity).despawn();
                     if let Some((resource, amount)) = damageable.drop {
-                        println!("Dropped {:?} x{}", resource, amount);
+                        logger::log::bright_green("resource", format!("Dropped {:?} x{}", resource, amount));
                         planet.resources.add(resource, amount);
                     }
                 }

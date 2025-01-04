@@ -34,4 +34,10 @@ impl GenericTile for SolarPanel {
             PIXEL_PERFECT_LAYERS,
         )).id()
     }
+
+    fn cost(&self) -> Vec<(PlanetResource, usize)> {
+        vec![
+            (PlanetResource::Wood, 4)
+        ]
+    }
 }

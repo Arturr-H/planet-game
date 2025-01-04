@@ -25,7 +25,7 @@ impl GameState {
         mut timer: Local<Option<Timer>>,
     ) -> () {
         let timer = timer.get_or_insert_with(||
-            Timer::from_seconds(1.0, TimerMode::Repeating)
+            Timer::from_seconds(10.0, TimerMode::Repeating)
         );
 
         if timer.tick(time.delta()).just_finished() {

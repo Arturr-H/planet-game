@@ -39,4 +39,24 @@ impl PlanetResources {
     pub fn remove(&mut self, resource: PlanetResource, amount: usize) {
         *self.map.get_mut(&resource).unwrap() -= amount;
     }
+    pub fn has(&self, resource: PlanetResource, amount: usize) -> bool {
+        self.get(resource) >= amount
+    }
+
+    /// Returns a user-friendly error message if player has
+    /// insufficient amount of materials (e.g buying a powerpole)
+    pub fn try_spend(&mut self, resources: Vec<(PlanetResource, usize)>) -> Result<(), String> {
+        /* Try spend materials */
+        for (resource, cost) in &resources {
+            if !self.has(*resource, *cost) {
+                let player_has = self.get(*resource);
+                let items_left = cost - player_has;
+                return Err(format!("Need {items_left}x more {resource:?}"))
+            }
+        }
+
+        /* Spend */
+        for (resource, cost) in resources { self.remove(resource, cost); }
+        Ok(())
+    }
 }

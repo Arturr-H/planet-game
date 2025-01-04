@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
 use super::{empty::EmptyTile, Tile, TileType};
 
 #[derive(Component, Clone, Debug)]
@@ -30,5 +30,11 @@ impl GenericTile for DebugTile {
             self.clone(),
             PIXEL_PERFECT_LAYERS,
         )).id()
+    }
+
+    fn cost(&self) -> Vec<(PlanetResource, usize)> {
+        vec![
+            (PlanetResource::Wood, 2)
+        ]
     }
 }

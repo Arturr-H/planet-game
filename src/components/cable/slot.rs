@@ -1,7 +1,7 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, sprite_bounds::point_in_sprite_bounds}, GameState
+    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, logger, sprite_bounds::point_in_sprite_bounds}, GameState
 };
 use bevy::{prelude::*, text::FontSmoothing};
 
@@ -14,7 +14,7 @@ const SLOT_HIGHLIGHT_COLOR: &'static str = "#00000044";
 pub struct CableSlotPlugin;
 impl Plugin for CableSlotPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, CableSlot::breathe)
+        app.add_systems(Update, (CableSlot::breathe, CableSlot::on_cancel))
         .init_resource::<SlotCablePlacementResource>();
     }
 }
@@ -96,7 +96,7 @@ impl CableSlot {
                     || slot_res.start_entity_pos.distance(transform.translation.truncate().xy()) > MAX_CABLE_LENGTH {
                     slot_res.reset();
                 }else {
-                    println!("Spawning cable between {} and {}", id, slot.tile_id);
+                    logger::log::blue("cable", format!("Spawning cable between {} and {}", id, slot.tile_id));
 
                     /* Spawn cable */
                     commands.entity(planet.planet_entity()).with_children(|parent| {
@@ -233,6 +233,22 @@ impl CableSlot {
                 &mut sprite, &children, children_q,
                 slot_res
             );
+        }
+    }
+
+    // Esc
+    fn on_cancel(
+        kb: Res<ButtonInput<KeyCode>>,
+        mut slot_res: ResMut<SlotCablePlacementResource>,
+        mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
+        mut children_q: Query<&mut Sprite, Without<Self>>,
+        mut commands: Commands,
+        cable_preview_q: Query<Entity, With<CablePreview>>
+    ) {
+        if kb.just_pressed(KeyCode::Escape) {
+            Cable::remove_previews(&mut commands, cable_preview_q);
+            Self::clear_all_highlight(&mut slots_q, &mut children_q, &slot_res);
+            slot_res.reset();
         }
     }
 

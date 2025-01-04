@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::planet::Planet, systems::{game::GameState, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
 use super::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */
@@ -99,7 +99,7 @@ impl Tile {
     pub fn add_energy(&mut self, energy: f32) -> () {
         use TileType::*;
 
-        println!("{:?} recieved energy: {}", self.tile_type, energy);
+        logger::log::yellow("energy", format!("{:?} (id: {}) recieved energy: {}", self.tile_type, self.tile_id, energy));
         match &mut self.tile_type {
             DebugTile(_) => self.powergrid_status.energy_stored += energy,
             SolarPanel(_) | Empty(_) => (),
