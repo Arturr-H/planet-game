@@ -6,8 +6,9 @@ use bevy::sprite::Sprite;
 use crate::camera::OuterCamera;
 use crate::components::planet::planet::{Planet, PlayerPlanet};
 use crate::systems::game::{GameState, PlanetResource};
+use crate::utils::audio::{game_sounds, play_audio};
 use crate::utils::color::hex;
-use crate::utils::logger;
+use crate::utils::{audio, logger};
 use crate::utils::sprite_bounds::point_in_sprite_bounds;
 use crate::{RES_HEIGHT, RES_WIDTH};
 
@@ -50,8 +51,9 @@ impl Damageable {
         commands.entity(click.entity()).insert(Flashing);
 
         // Play damage sound
-        let damage_sound = asset_server.load("../assets/audio/damage.wav");
-        commands.spawn((AudioPlayer::new(damage_sound), PlaybackSettings::DESPAWN));
+        // let damage_sound = asset_server.load("../assets/audio/damage.wav");
+        // commands.spawn((AudioPlayer::new(damage_sound), PlaybackSettings::DESPAWN));
+        play_audio(&mut commands, &asset_server, game_sounds::tree::DAMAGE, false);
     }
     
     // Apply damage from events
