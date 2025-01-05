@@ -1,12 +1,11 @@
 /* Imports */
-use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
-use super::{tile, Tile, TileType};
+use bevy::{prelude::*, sprite::Anchor};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
 
 #[derive(Component, Clone, Debug)]
-pub struct EmptyTile;
+pub struct LandedRocket;
 
-impl GenericTile for EmptyTile {
+impl GenericTile for LandedRocket {
     fn spawn(
         &self,
         commands: &mut ChildBuilder,
@@ -24,8 +23,8 @@ impl GenericTile for EmptyTile {
         commands.spawn((
             transform,
             Sprite {
-                color: hex!("#ffffff00"),
-                custom_size: Some(Vec2::new(20.0, 20.0)),
+                image: asset_server.load("machines/rocketship.png"),
+                anchor: Anchor::BottomCenter,
                 ..default()
             },
             self.clone(),

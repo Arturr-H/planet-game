@@ -1,2 +1,2 @@
-mod ui;
-pub use ui::*;
+pub mod hud;
+pub mod inventory;

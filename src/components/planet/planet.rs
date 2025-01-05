@@ -2,7 +2,7 @@
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
 use bevy::{prelude::*, utils::HashMap};
 use rand::Rng;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, foliage::Foliage, tree::Tree}, tile::{Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::game::{GameState, PlanetResources}, RES_HEIGHT, RES_WIDTH};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, Foliage, tree::Tree}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, RES_HEIGHT, RES_WIDTH};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 170.0;
@@ -75,6 +75,15 @@ impl Planet {
         // TODO: Only insert if it's the players own
         planet_bundle.insert(PlayerPlanet);
 
+        // let rocket_tile_id = planet.new_tile_id();
+        // planet_bundle.with_children(|parent| {
+        //     LandedRocket.spawn(
+        //         parent, false,
+        //         planet.degree_to_transform(0.0, 0.0, 2.0),
+        //         &asset_server, rocket_tile_id
+        //     );
+        // });
+
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
         for degree in Foliage::generate_foliage_positions(20) {
@@ -110,17 +119,19 @@ impl Planet {
         }
     }
 
-    /// What will happen each tick.
-    pub fn tick(&mut self) -> () {
-        let keys = self.tiles.keys().cloned().collect::<Vec<usize>>();
-        for key in keys {
-            let tile = self.tiles.get(&key).unwrap();
-            if tile.can_distribute_energy() {
-                Tile::distribute_energy(
-                    tile.energy_output(),
-                    tile.tile_id,
-                    self
-                );
+    /// Ticks every planet
+    fn tick(mut planets: Query<&mut Planet>) -> () {
+        for mut planet in planets.iter_mut() {
+            let keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
+            for key in keys {
+                let tile = planet.tiles.get(&key).unwrap();
+                if tile.can_distribute_energy() {
+                    Tile::distribute_energy(
+                        tile.energy_output(),
+                        tile.tile_id,
+                        &mut planet
+                    );
+                }
             }
         }
     }
@@ -172,7 +183,12 @@ impl Planet {
         Transform { translation: Vec3::new(x, y, z), rotation, ..default() }
     }
 
-    // Get forward
+    /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3
+    /// som man kan multiplicera med ett värde, exempelvis 5.0, vilket ger tillbaka
+    /// en Vec3 som är 5.0 units längre ifrån origo av planeten.
+    /// 
+    /// Eftersom om man skulle addera 5.0 på y koordinaten blir det inte rätt för
+    /// de flesta vinklarna. 
     pub fn forward(transform: &Transform) -> Vec3 {
         let forward = transform.rotation * Vec3::Y;
         let forward_2d = Vec2::new(forward.x, forward.y).normalize().extend(0.0);

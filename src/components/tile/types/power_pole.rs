@@ -1,7 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
-use super::{empty::EmptyTile, solar_panel::SolarPanel, Tile, TileType};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
 
 /* Constants */
 const POWER_SLOT_OFFSET: f32 = 50.0;

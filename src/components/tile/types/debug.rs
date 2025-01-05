@@ -1,13 +1,10 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{GenericTile, PowergridStatus}}, utils::color::hex};
-use super::{empty::EmptyTile, Tile, TileType};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
 
-/// A solar panel is a tile that generates energy
-/// if sun is shining on it.
 #[derive(Component, Clone, Debug)]
-pub struct SolarPanel;
-impl GenericTile for SolarPanel {
+pub struct DebugTile;
+impl GenericTile for DebugTile {
     fn spawn(
         &self,
         commands: &mut ChildBuilder,
@@ -25,19 +22,18 @@ impl GenericTile for SolarPanel {
         commands.spawn((
             transform,
             Sprite {
-                image: asset_server.load("machines/solar-panel.png"),
+                image: asset_server.load("machines/debug.png"),
                 anchor: Anchor::BottomCenter,
-                // custom_size: Some(Vec2::new(20.0, 20.0)),
                 ..default()
             },
-            SolarPanel,
+            self.clone(),
             PIXEL_PERFECT_LAYERS,
         )).id()
     }
 
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![
-            (PlanetResource::Wood, 4)
+            (PlanetResource::Wood, 2)
         ]
     }
 }

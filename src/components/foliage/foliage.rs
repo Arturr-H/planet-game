@@ -1,7 +1,9 @@
 /* Imports */
 use bevy::prelude::*;
 use rand::Rng;
-use std::f32::consts::TAU; // 2π
+use std::f32::consts::TAU;
+
+use super::tree::TreePlugin; // 2π
 
 /* Constants */
 const FOLIAGE_MIN_ANGLE_DISTANCE: f32 = 0.25;
@@ -51,5 +53,13 @@ impl Foliage {
     fn angular_distance(a1: f32, a2: f32) -> f32 {
         let diff = (a1 - a2).abs() % TAU;
         diff.min(TAU - diff)
+    }
+}
+
+pub struct FoliagePlugin;
+impl Plugin for FoliagePlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_plugins(TreePlugin);
     }
 }
