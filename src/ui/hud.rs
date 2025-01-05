@@ -2,8 +2,8 @@
 use bevy::prelude::*;
 
 use crate::{camera::UI_LAYERS, components::planet::planet::{Planet, PlayerPlanet}, systems::game::{GameState, PlanetResource}};
-pub struct UiPlugin;
-impl Plugin for UiPlugin {
+pub struct HudPlugin;
+impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup)
             .add_systems(Update, update);
