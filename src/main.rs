@@ -16,7 +16,7 @@ use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
 use systems::game::{self, GameState};
 use utils::color::hex;
-use components::{cable::{cable, slot}, planet::planet, tile};
+use components::{cable::{cable, slot}, foliage, planet::planet, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -49,10 +49,12 @@ fn main() {
                 ..default()
             })
         )
+        .add_plugins(game::GameTickPlugin)
         .add_plugins((
             /* Preferrable called first as many
                 plugins depend on the planet existing */
             planet::PlanetPlugin,
+            foliage::FoliagePlugin,
 
             slot::CableSlotPlugin,
             cable::CablePlugin,
@@ -63,7 +65,8 @@ fn main() {
             camera::CameraPlugin,
             camera::CameraDebugPlugin,
 
-            ui::UiPlugin,
+            ui::hud::HudPlugin,
+            // ui::inventory::InventoryPlugin,
         ))
         .run();
 }
