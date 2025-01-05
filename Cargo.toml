@@ -14,7 +14,3 @@ rand = "0.8.5"
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
-
-# Enable a large amount of optimization in the dev profile for dependencies.
-[profile.dev.package."*"]
-opt-level = 3
