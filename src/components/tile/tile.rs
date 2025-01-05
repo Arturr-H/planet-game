@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
 use super::types::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */

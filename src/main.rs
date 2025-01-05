@@ -16,7 +16,7 @@ use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
 use systems::game::{self, GameState};
 use utils::color::hex;
-use components::{cable::{cable, slot}, foliage, planet::planet, tile};
+use components::{cable::{cable, slot}, foliage, planet, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -66,6 +66,8 @@ fn main() {
             camera::CameraDebugPlugin,
 
             ui::hud::HudPlugin,
+            
+            // planet::mesh::ColoredMesh2dPlugin,
             // ui::inventory::InventoryPlugin,
         ))
         .run();

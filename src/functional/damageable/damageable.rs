@@ -4,7 +4,7 @@ use bevy::render::view::window;
 use bevy::sprite::Sprite;
 
 use crate::camera::OuterCamera;
-use crate::components::planet::planet::{Planet, PlayerPlanet};
+use crate::components::planet::{Planet, PlayerPlanet};
 use crate::systems::game::{GameState, PlanetResource};
 use crate::utils::color::hex;
 use crate::utils::logger;

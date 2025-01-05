@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::prelude::*;
 
-use crate::{camera::UI_LAYERS, components::planet::planet::{Planet, PlayerPlanet}, systems::game::{GameState, PlanetResource}};
+use crate::{camera::UI_LAYERS, components::planet::{Planet, PlayerPlanet}, systems::game::{GameState, PlanetResource}};
 pub struct HudPlugin;
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {

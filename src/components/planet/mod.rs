@@ -1,1 +1,2 @@
-pub mod planet;
+mod planet;
+pub use planet::*;
