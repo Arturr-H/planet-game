@@ -1,7 +1,7 @@
 /* Imports */
 use std::hash::Hash;
 use bevy::{prelude::*, utils::{HashMap, HashSet}};
-use crate::{components::{cable::slot::CableSlot, planet::planet::Planet, tile::{empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}};
+use crate::{components::{cable::slot::CableSlot, planet::planet::Planet, tile::{types::empty::EmptyTile, Tile}}, systems::traits::{EnergyStorage, GenericTile}};
 
 /// The state of the game. 
 #[derive(Resource)]
@@ -18,23 +18,6 @@ impl Default for GameState {
 }
 
 impl GameState {
-    /// Runs the `tick` method for every planet (after a certain time interval)
-    fn tick(
-        mut planets: Query<&mut Planet>,
-        time: Res<Time>,
-        mut timer: Local<Option<Timer>>,
-    ) -> () {
-        let timer = timer.get_or_insert_with(||
-            Timer::from_seconds(10.0, TimerMode::Repeating)
-        );
-
-        if timer.tick(time.delta()).just_finished() {
-            for mut planet in planets.iter_mut() {
-                planet.tick();
-            }
-        }
-    }
-
     fn background_audio(
         mut commands: Commands,
         asset_server: Res<AssetServer>,
@@ -61,7 +44,6 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app
             .init_resource::<GameState>()
-            .add_systems(Startup, GameState::background_audio)
-            .add_systems(Update, GameState::tick);
+            .add_systems(Startup, GameState::background_audio);
     }
 }
