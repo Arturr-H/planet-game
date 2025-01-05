@@ -1,9 +1,8 @@
-use std::f32::consts::{PI, TAU};
-
 /* Imports */
+use std::f32::consts::{PI, TAU};
 use bevy::prelude::*;
 use crate::{camera::OuterCamera, components::planet::planet::{Planet, PlayerPlanet}, systems::{game::GameState, traits::GenericTile}, utils::logger};
-use super::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel, Tile, TileType, TILE_SIZE};
+use super::{types::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
 #[derive(Resource)]
 pub struct TilePluginResource {

@@ -1,7 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
-use super::{empty::EmptyTile, Tile, TileType};
 
 #[derive(Component, Clone, Debug)]
 pub struct DebugTile;

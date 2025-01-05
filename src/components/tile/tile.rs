@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
-use super::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
+use super::types::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
