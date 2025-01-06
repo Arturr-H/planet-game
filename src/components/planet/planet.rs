@@ -1,7 +1,9 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
 use bevy::{prelude::*, utils::HashMap};
-use rand::Rng;
+use noise::{NoiseFn, Perlin};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, Foliage, tree::Tree}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, RES_HEIGHT, RES_WIDTH};
 
 /* Constants */
@@ -117,6 +119,31 @@ impl Planet {
             || keyboard_input.pressed(KeyCode::KeyA) {
             query.single_mut().rotate_z(-time.delta_secs() * planet.rotation_speed());
         }
+    }
+
+    /// Returns a vector of all (radii) (multiple radiusses) of 
+    /// the planet. 
+    /// 
+    /// These radii will be placed every radii.len() / 2π radians
+    /// I don't really know how to explain it. Think of multiple
+    /// poles being placed from the circle origin, with differing
+    /// heights, all being placed next to eachother.
+    pub fn get_surface_radii(seed: u64, points: usize) -> Vec<f32> {
+        /* I think it's one radius many radii but idk */
+        let mut radii: Vec<f32> = Vec::new();
+        let mut rng = ChaCha8Rng::seed_from_u64(seed);
+        let perlin = Perlin::new(rng.gen_range(0..10000));
+        let radius: f32 = 100.0;
+        let noise_amplitude: f32 = 30.0;
+        let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
+        
+        /* Generate radii */
+        for i in 0..points {
+            let noise = perlin.get([noise_freq + (i as f64) * noise_freq]);
+            radii.push(radius + noise as f32 * (noise_amplitude + rng.gen_range(-0.05..0.05)));
+        }
+
+        radii
     }
 
     /// Ticks every planet
