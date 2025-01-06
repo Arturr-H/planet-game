@@ -19,9 +19,9 @@ use utils::color::hex;
 use components::{cable::{cable, slot}, foliage, planet::{self, mesh::{generate_planet_mesh, update_star}}, tile};
 
 /// In-game resolution width.
-pub const RES_WIDTH: f32 = 240.0 * 2.0;
+pub const RES_WIDTH: f32 = 240.0 * 3.0;
 /// In-game resolution height.
-pub const RES_HEIGHT: f32 = 120.0 * 2.0;
+pub const RES_HEIGHT: f32 = 120.0 * 3.0;
 
 fn main() {
     dotenv::dotenv().ok();
@@ -52,19 +52,19 @@ fn main() {
 
         /* Important plugins */
         .add_plugins((
-            // game::GameTickPlugin
+            game::GameTickPlugin
         ))
         .add_plugins((
             /* Preferrable called first as many
                 plugins depend on the planet existing */
-            // planet::PlanetPlugin,
-            // foliage::FoliagePlugin,
+            planet::PlanetPlugin,
+            foliage::FoliagePlugin,
 
-            // slot::CableSlotPlugin,
-            // cable::CablePlugin,
-            // game::GamePlugin,
-            // damageable::DamageablePlugin,
-            // tile::spawn::TilePlugin,
+            slot::CableSlotPlugin,
+            cable::CablePlugin,
+            game::GamePlugin,
+            damageable::DamageablePlugin,
+            tile::spawn::TilePlugin,
 
             camera::CameraPlugin,
             camera::CameraDebugPlugin,
@@ -74,7 +74,7 @@ fn main() {
             // ui::inventory::InventoryPlugin,
         ))
         // ahhahahahahahah
-        .add_systems(Startup, generate_planet_mesh)
-        .add_systems(Update, update_star)
+        // .add_systems(Startup, generate_planet_mesh)
+        // .add_systems(Update, update_star)
         .run();
 }

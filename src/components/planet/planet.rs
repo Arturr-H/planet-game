@@ -4,11 +4,14 @@ use bevy::{prelude::*, utils::HashMap};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, Foliage, tree::Tree}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, RES_HEIGHT, RES_WIDTH};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, tree::Tree, Foliage}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, utils::color::hex, RES_HEIGHT, RES_WIDTH};
+
+use super::mesh::{generate_planet_mesh, VeryStupidMesh};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 170.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
+const SEED: u64 = 1239372178378;
 
 #[derive(Component, Clone)]
 pub struct Planet {
@@ -33,6 +36,10 @@ pub struct Planet {
     /// The radius of the planet, used to calculate
     /// the position of tiles and such.
     pub radius: f32,
+
+    /// The seed of the planet, used to generate the
+    /// surface of the planet.
+    pub seed: u64,
 }
 
 /// This struct is used to mark a planet as the
@@ -47,20 +54,30 @@ impl Planet {
     // Init
     fn setup(
         mut commands: Commands,
+        mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
+        mut materials: ResMut<Assets<ColorMaterial>>,
+        // time: Res<Time>,
         asset_server: Res<AssetServer>
     ) -> () {
-        let radius = RES_WIDTH * 0.625;
+        let radius: f32 = RES_WIDTH * 0.625;
+        // let mut planet_bundle = commands.spawn((
+        //     Sprite {
+        //         image: asset_server.load("../assets/planet/planet.png"),
+        //         custom_size: Some(Vec2::new(radius * 2.0, radius * 2.0)),
+        //         ..default()
+        //     },
+        //     Transform::from_xyz(0.0, -radius * 1.1, 1.0)
+        //     .with_rotation(Quat::from_rotation_z(PI / 2.0)),
+        //     PIXEL_PERFECT_LAYERS,
+        //     PickingBehavior::IGNORE,
+        // ));
+        let mesh = generate_planet_mesh(&mut meshes, radius, SEED);
         let mut planet_bundle = commands.spawn((
-            Sprite {
-                image: asset_server.load("../assets/planet/planet.png"),
-                custom_size: Some(Vec2::new(radius * 2.0, radius * 2.0)),
-                ..default()
-            },
+            Mesh2d(mesh),
+            MeshMaterial2d(materials.add(hex!("#213823"))),
+            VeryStupidMesh,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0)
-            .with_rotation(Quat::from_rotation_z(PI / 2.0)),
-            PIXEL_PERFECT_LAYERS,
-            PickingBehavior::IGNORE,
         ));
 
         /* Insert planet component */
@@ -70,7 +87,8 @@ impl Planet {
             tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
-            radius
+            radius,
+            seed: SEED,
         };
         planet_bundle.insert(planet.clone());
 
@@ -128,13 +146,13 @@ impl Planet {
     /// I don't really know how to explain it. Think of multiple
     /// poles being placed from the circle origin, with differing
     /// heights, all being placed next to eachother.
-    pub fn get_surface_radii(seed: u64, points: usize) -> Vec<f32> {
+    pub fn get_surface_radii(seed: u64, points: usize, radius: f32) -> Vec<f32> {
         /* I think it's one radius many radii but idk */
         let mut radii: Vec<f32> = Vec::new();
         let mut rng = ChaCha8Rng::seed_from_u64(seed);
         let perlin = Perlin::new(rng.gen_range(0..10000));
-        let radius: f32 = 100.0;
-        let noise_amplitude: f32 = 30.0;
+        // let radius: f32 = 100.0;
+        let noise_amplitude: f32 = 5.0;
         let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         
         /* Generate radii */
