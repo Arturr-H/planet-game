@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
-use super::types::{debug::DebugTile, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
+use super::types::{debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
@@ -27,6 +27,7 @@ pub struct Tile {
 #[derive(Component, Clone, Debug)]
 pub enum TileType {
     Empty(EmptyTile),
+    Drill(Drill),
     SolarPanel(SolarPanel),
     DebugTile(DebugTile),
     PowerPole(PowerPole)
@@ -74,8 +75,8 @@ impl Tile {
         visited: &mut HashMap<usize, bool>,
     ) -> () {
         let Some(tile) = planet.tiles.get(&tile_id) else { return };
-        visited.insert(tile_id, tile.can_store_energy());
-        if tile.can_store_energy() {
+        visited.insert(tile_id, tile.can_recieve_energy());
+        if tile.can_recieve_energy() {
             *recievers += 1;
         }
         
@@ -92,6 +93,7 @@ impl Tile {
             SolarPanel(_) => 1.0,
             DebugTile(_) | Empty(_) => 0.0,
             PowerPole(_) => 0.0,
+            Drill(_) => 0.0,
         }
     }
 
@@ -102,15 +104,16 @@ impl Tile {
         logger::log::yellow("energy", format!("{:?} (id: {}) recieved energy: {}", self.tile_type, self.tile_id, energy));
         match &mut self.tile_type {
             DebugTile(_) => self.powergrid_status.energy_stored += energy,
-            SolarPanel(_) | Empty(_) => (),
+            SolarPanel(_) | Empty(_) |
             PowerPole(_) => (),
+            Drill(_) => { println!("I am drilling" ); },
         }
     }
-    pub fn can_store_energy(&self) -> bool {
+    pub fn can_recieve_energy(&self) -> bool {
         use TileType::*;
 
         match self.tile_type {
-            DebugTile(_) => true,
+            DebugTile(_) | Drill(_) => true,
             SolarPanel(_) | PowerPole(_) | Empty(_) => false,
         }
     }
@@ -119,7 +122,7 @@ impl Tile {
 
         match self.tile_type {
             SolarPanel(_) => true,
-            DebugTile(_) | PowerPole(_) | Empty(_) => false,
+            DebugTile(_) | PowerPole(_) | Empty(_) | Drill(_) => false,
         }
     }
 

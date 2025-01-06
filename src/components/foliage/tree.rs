@@ -32,7 +32,7 @@ impl Tree {
                 },
                 Tree { age: initial_age },
                 WindSway::new(),
-                Damageable::new(50.0, Some((PlanetResource::Wood, rng.gen_range(1..5)))),
+                Damageable::new(50.0, Some((PlanetResource::Wood, rng.gen_range(8..15)))),
             ))
             .observe(Damageable::on_clicked);
         });

@@ -14,6 +14,7 @@ use bevy::{
 };
 use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
+use noise::{NoiseFn, Perlin};
 use systems::game::{self, GameState};
 use utils::color::hex;
 use components::{cable::{cable, slot}, foliage, planet::{self, mesh::{generate_planet_mesh, update_star}}, tile};
@@ -25,7 +26,7 @@ pub const RES_HEIGHT: f32 = 120.0 * 2.0;
 
 fn main() {
     dotenv::dotenv().ok();
-    
+
     App::new()
         /* Default */
         .add_plugins(DefaultPlugins
@@ -51,9 +52,7 @@ fn main() {
         )
 
         /* Important plugins */
-        .add_plugins((
-            game::GameTickPlugin
-        ))
+        .add_plugins(game::GameTickPlugin)
         .add_plugins((
             /* Preferrable called first as many
                 plugins depend on the planet existing */
@@ -69,12 +68,8 @@ fn main() {
             camera::CameraPlugin,
             camera::CameraDebugPlugin,
 
-            // ui::hud::HudPlugin,
-            
+            ui::hud::HudPlugin,
             // ui::inventory::InventoryPlugin,
         ))
-        // ahhahahahahahah
-        // .add_systems(Startup, generate_planet_mesh)
-        // .add_systems(Update, update_star)
         .run();
 }

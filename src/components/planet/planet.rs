@@ -1,16 +1,15 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, utils::HashMap};
+use bevy::{prelude::*, utils::HashMap};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, tree::Tree, Foliage}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, utils::color::hex, RES_HEIGHT, RES_WIDTH};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, stone::Stone, tree::Tree, Foliage}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, utils::color::hex, RES_HEIGHT, RES_WIDTH};
 use super::mesh::{generate_planet_mesh, VeryStupidMesh};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
-const SEED: u64 = 1239372178378;
 const SURFACE_RESOLUTION: usize = 100; // How many different vertices for the suface
 
 #[derive(Component, Clone)]
@@ -39,11 +38,20 @@ pub struct Planet {
 
     /// The seed of the planet, used to generate the
     /// surface of the planet.
-    pub seed: u64,
+    pub seed: u32,
 
     /// The planets radii
     /// Vec<(angle, radius or height)>
     pub radii: Vec<(f32, f32)>,
+
+    /// Planet POI:s
+    pub points_of_interest: HashMap<usize, PlanetPointOfInterest>,
+}
+
+/// Something that can be interacted with other machines
+#[derive(Component, Clone)]
+pub enum PlanetPointOfInterest {
+    Stone
 }
 
 /// This struct is used to mark a planet as the
@@ -65,7 +73,7 @@ impl Planet {
     ) -> () {
         let mut rng = rand::thread_rng();
         let seed = rng.gen_range(0..100_000_000);
-        let radius: f32 = RES_WIDTH * 0.625;
+        let radius: f32 = RES_WIDTH * 0.8;
 
         /* Spawn mesh & other things */
         let radii = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
@@ -77,20 +85,21 @@ impl Planet {
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0),
         ));
-        planet_bundle.with_children(|parent| {
-            Self::generate_water(radius, parent, &mut meshes, &mut materials);
-        });
+        // planet_bundle.with_children(|parent| {
+        //     Self::generate_water(radius, parent, &mut meshes, &mut materials);
+        // });
 
         /* Insert the Planet component */
-        let planet = Self {
+        let mut planet = Self {
             id: game_state.new_planet_id(),
+            points_of_interest: HashMap::new(),
             tiles: HashMap::new(),
             tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
             radius,
             radii,
-            seed: SEED,
+            seed,
         };
         planet_bundle.insert(planet.clone());
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
@@ -102,7 +111,7 @@ impl Planet {
 
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
-        for degree in Foliage::generate_foliage_positions(20) {
+        for degree in Foliage::generate_foliage_positions(0.8, seed) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let z = -0.5 - rng.gen_range(-0.1..0.1);
             let transform = planet.radians_to_transform(degree, origin_offset, z);
@@ -115,6 +124,19 @@ impl Planet {
                 );
             });
         }
+
+        let origin_offset = -10.0 - rng.gen_range(0.0..5.0);
+        let z = -0.5 - rng.gen_range(-0.1..0.1);
+        let index = 4;
+        let transform = planet.index_to_transform(index, origin_offset, z);
+        planet.points_of_interest.insert(index, PlanetPointOfInterest::Stone);
+        planet_bundle.with_children(|parent| {
+            Stone::spawn(
+                parent,
+                &asset_server,
+                transform
+            );
+        });
     }
 
     // Update
@@ -147,9 +169,9 @@ impl Planet {
     pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> Vec<(f32, f32)> {
         /* I think it's one radius many radii but idk */
         let mut radii: Vec<(f32, f32)> = Vec::with_capacity(resolution);
+        let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         let perlin = Perlin::new(seed);
         let noise_amplitude: f32 = 30.0;
-        let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         
         /* Generate radii */
         for i in 0..resolution {
@@ -242,6 +264,20 @@ impl Planet {
     pub const fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
     pub const fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
 
+    /// If number lies within range of in_ also wraps around
+    /// the function `tile_places`
+    pub const fn in_range(&self, number: usize, in_: usize, range: usize) -> bool {
+        let start = in_ - range;
+        let end = in_ + range;
+        if start < 0 {
+            number >= start + self.tile_places() || number <= end
+        } else if end >= self.tile_places() {
+            number >= start || number <= end - self.tile_places()
+        } else {
+            number >= start && number <= end
+        }
+    }
+
     /// Get planet entity or panic
     pub fn planet_entity(&self) -> Entity { self.planet_entity.unwrap() }
 
@@ -260,8 +296,10 @@ impl Planet {
 
         let (curr_angle, curr_height) = self.radii[radii_index_int];
         let (next_angle, next_height) = self.radii[(radii_index_int + 1) % self.radii.len()];
-        let point_a = Vec2::new(curr_angle.cos() * curr_height, curr_angle.sin() * curr_height);
-        let point_b = Vec2::new(next_angle.cos() * next_height, next_angle.sin() * next_height);
+        let curr_amp = curr_height + origin_offset;
+        let next_amp = next_height + origin_offset;
+        let point_a = Vec2::new(curr_angle.cos() * curr_amp, curr_angle.sin() * curr_amp);
+        let point_b = Vec2::new(next_angle.cos() * next_amp, next_angle.sin() * next_amp);
         let delta = point_b - point_a;
         let new = point_a + delta * radii_index_decimals;
 
@@ -272,6 +310,11 @@ impl Planet {
 
         let rotation = Quat::from_rotation_z(surface_radians + PI);
         Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
+    }
+    pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32) -> Transform {
+        assert!(index < self.tile_places(), "Index needs to be less than the amount of tile places on the planet");
+        let radians = index as f32 * self.angular_step();
+        self.radians_to_transform(radians, origin_offset, z)
     }
 
     /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3
@@ -293,6 +336,7 @@ impl Plugin for PlanetPlugin {
         app
             .add_plugins(WindSwayPlugin)
             .add_systems(Startup, Planet::setup)
-            .add_systems(Update, Planet::update);
+            .add_systems(Update, Planet::update)
+            .add_systems(FixedUpdate, Planet::tick);
     }
 }

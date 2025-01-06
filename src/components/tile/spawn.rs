@@ -2,7 +2,7 @@
 use std::f32::consts::{PI, TAU};
 use bevy::prelude::*;
 use crate::{camera::OuterCamera, components::planet::{Planet, PlayerPlanet}, systems::{game::GameState, traits::GenericTile}, utils::logger};
-use super::{types::{debug::DebugTile, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
+use super::{types::{debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
 #[derive(Resource)]
 pub struct TilePluginResource {
@@ -84,6 +84,7 @@ impl TilePlugin {
         if kb.just_pressed(KeyCode::KeyQ) { tile = Some(TileType::PowerPole(PowerPole)); }
         if kb.just_pressed(KeyCode::KeyW) { tile = Some(TileType::DebugTile(DebugTile)); }
         if kb.just_pressed(KeyCode::KeyE) { tile = Some(TileType::SolarPanel(SolarPanel)); }
+        if kb.just_pressed(KeyCode::KeyR) { tile = Some(TileType::Drill(Drill)); }
         if kb.just_pressed(KeyCode::Escape) {
             for entity in preview_q.iter() { commands.entity(entity).despawn(); }
             tile_plugin_resource.selected = None;

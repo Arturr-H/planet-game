@@ -46,7 +46,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             .with_children(|parent| {
                 // text
                 parent.spawn((
-                    Text::new("Wood: 0"),
+                    Text::new("Wood: 0, Stone: 0"),
                     TextFont {
                         font_size: 12.0,
                         ..default()
@@ -65,6 +65,9 @@ fn update(
     // TODO: Something like Resouce.is_changed()
     let planet = planet_q.single();
     for mut text in &mut query {
-        text.0 = format!("Wood: {}", planet.resources.get(PlanetResource::Wood));
+        text.0 = format!("Wood: {}, Stone: {}",
+            planet.resources.get(PlanetResource::Wood),
+            planet.resources.get(PlanetResource::Stone)
+        );
     }
 }
