@@ -143,7 +143,7 @@ impl TilePlugin {
                 tile_plugin_resource.degree = degree;
 
                 //Offset the placement with 1 unit to make sure the object is wedged into the ground
-                transform.translation = p.translation.with_z(-0.4) - Planet::forward(&transform) * 1.; 
+                transform.translation = p.translation.with_z(-0.4) - Planet::forward(&transform) * 5.; 
                 transform.rotation = p.rotation;
             }
         }

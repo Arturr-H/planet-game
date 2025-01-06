@@ -1,6 +1,6 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
-use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2d, Material2dPlugin}, utils::HashMap};
+use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}, utils::HashMap};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -25,6 +25,10 @@ struct PlanetMaterial {
 impl Material2d for PlanetMaterial {
     fn fragment_shader() -> ShaderRef {
         PLANET_SHADER_PATH.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
     }
 }
 
@@ -106,6 +110,7 @@ impl Planet {
             })),
             VeryStupidMesh,
             PickingBehavior::IGNORE,
+            // AlphaMode2d::Blend,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0),
         ));
         // planet_bundle.with_children(|parent| {
