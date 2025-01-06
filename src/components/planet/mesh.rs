@@ -3,11 +3,12 @@ use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use std::f32::consts::PI;
-use super::Planet;
+use super::{planet, Planet};
 
 pub fn generate_planet_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
     radii: &Vec<(f32, f32)>,
+    arc_length: f32,
 ) -> Handle<Mesh> {
     let mut mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
@@ -17,15 +18,39 @@ pub fn generate_planet_mesh(
     let resolution = radii.len();
     let mut indices = Vec::new();
     let mut vertices = Vec::new();
+    let mut uvs = Vec::new();
+
+let total_circumference: f32 = radii.windows(2).map(|w| {
+        let (angle1, r1) = w[0];
+        let (angle2, r2) = w[1];
+        let arc_length = ((angle2 - angle1) * (r1 + r2) / 2.0).abs();
+        arc_length
+    }).sum::<f32>() + ((radii[0].0 - radii.last().unwrap().0 + 2.0 * PI) * (radii[0].1 + radii.last().unwrap().1) / 2.0).abs();
+    let mut current_length = 0.0;
+
     for i in 0..resolution {
 
         let curr_radius = radii[i].1;
         let next_radius = radii[(i + 1) % resolution].1;
+
+        let u = current_length / total_circumference;
+        let next_u = (current_length + arc_length) / total_circumference;
+        uvs.push([u, 1.0]);
+        uvs.push([next_u, 1.0]);
+        uvs.push([u, 0.0]);
+
+        current_length += arc_length;
+
+
         let (x, y) = (radii[i].0.cos() * curr_radius, radii[i].0.sin() * curr_radius);
         let (nx, ny) = (radii[(i + 1) % resolution].0.cos() * next_radius, radii[(i + 1) % resolution].0.sin() * next_radius);
         vertices.push([x, y, 0.0]);
         vertices.push([nx, ny, 0.0]);
         vertices.push([0.0, 0.0, 0.0]);
+
+        //uv
+        
+
         let i = i as u32;
         indices.push(i * 3);
         indices.push(i * 3 + 1);
@@ -33,11 +58,13 @@ pub fn generate_planet_mesh(
     }
     
     mesh.insert_indices(Indices::U32(indices));
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        vertices,
-    );
-
+    // mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0., 1., 0.]; vertices.len()]);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+    
+    let normals: Vec<[f32; 3]> = vec![[0., 0., 1.]; vertices.len()];
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+    
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
     meshes.add(mesh)
 }
 
