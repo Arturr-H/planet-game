@@ -134,10 +134,9 @@ impl TilePlugin {
             .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())
         {
             let angle = (cursor_pos - planet_pos).angle_to(Vec2::Y);
-
             if let Ok(mut transform) = query.get_single_mut() {
                 let degree = Self::snap(- planet_rotation_z - angle, planet.angular_step());
-                let p = planet.degree_to_transform(degree, 0.0, 2.0);
+                let p = planet.radians_to_transform(degree, 0.0, 2.0);
 
                 tile_plugin_resource.transform = *transform;
                 tile_plugin_resource.degree = degree;

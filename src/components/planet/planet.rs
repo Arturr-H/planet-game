@@ -1,6 +1,6 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle, utils::HashMap};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -72,11 +72,14 @@ impl Planet {
         let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
-            MeshMaterial2d(materials.add(hex!("#213823"))),
+            MeshMaterial2d(materials.add(hex!("#2c6327"))),
             VeryStupidMesh,
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0),
         ));
+        planet_bundle.with_children(|parent| {
+            Self::generate_water(radius, parent, &mut meshes, &mut materials);
+        });
 
         /* Insert the Planet component */
         let planet = Self {
@@ -193,6 +196,22 @@ impl Planet {
         let slot_id = self.tile_id;
         self.tile_id += 1;
         slot_id
+    }
+
+    fn generate_water(
+        radius: f32,
+        commands: &mut ChildBuilder,
+        meshes: &mut ResMut<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+    ) -> () {
+        let circle = Mesh::from(Circle::new(radius));
+
+        commands.spawn((
+            Mesh2d(meshes.add(circle)),
+            MeshMaterial2d(materials.add(hex!("#003080"))),
+            Transform::from_xyz(0.0, 0.0, -1.),
+        ));
+
     }
 
     /// If two tiles are connected via cables
