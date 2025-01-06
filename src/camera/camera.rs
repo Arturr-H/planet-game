@@ -150,4 +150,13 @@ pub fn debug_control(
             projection.scale = 1.;
         }
     }
+    if kb.pressed(KeyCode::KeyL) {
+        for mut projection in query.iter_mut() {
+            projection.scale *= 1.01;
+        }
+    }else if kb.pressed(KeyCode::KeyO) {
+        for mut projection in query.iter_mut() {
+            projection.scale *= 0.99;
+        }
+    }
 }
