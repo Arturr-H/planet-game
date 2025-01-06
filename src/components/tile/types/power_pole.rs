@@ -4,7 +4,7 @@ use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, p
 
 /* Constants */
 const POWER_SLOT_OFFSET: f32 = 50.0;
-const POLE_GROUND_INSERTION: f32 = -15.0; // How much the pole is inserted into the ground
+// const POLE_GROUND_INSERTION: f32 = -15.0; // How much the pole is inserted into the ground
 
 /// Has a cable slot for keeping cables connected (and above ground)
 #[derive(Component, Clone, Debug)]
@@ -18,8 +18,6 @@ impl GenericTile for PowerPole {
         asset_server: &Res<AssetServer>,
         tile_id: usize,
     ) -> Entity {
-        let translation = transform.translation.with_z(-0.4)
-            + Planet::forward(&transform) * POLE_GROUND_INSERTION;
 
         /* Power pole sprite */
         let id = commands.spawn((
@@ -28,7 +26,7 @@ impl GenericTile for PowerPole {
                 anchor: Anchor::BottomCenter,
                 ..default()
             },
-            transform.with_translation(translation),
+            transform,
             PowerPole,
             PIXEL_PERFECT_LAYERS,
         )).id();
@@ -36,7 +34,7 @@ impl GenericTile for PowerPole {
         if !preview {
             CableSlot::spawn(
                 commands, asset_server, tile_id,
-                transform.with_translation(translation
+                transform.with_translation(transform.translation
                     + Planet::forward(&transform) * POWER_SLOT_OFFSET
                 )
             );

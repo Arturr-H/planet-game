@@ -1,6 +1,6 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{Material2d, Material2dPlugin}, utils::HashMap};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -11,6 +11,23 @@ use super::mesh::{generate_planet_mesh, VeryStupidMesh};
 const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const SURFACE_RESOLUTION: usize = 100; // How many different vertices for the suface
+
+const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+struct PlanetMaterial {
+    #[uniform(0)]
+    color1: LinearRgba,
+    #[uniform(1)]
+    color2: LinearRgba,
+}
+
+impl Material2d for PlanetMaterial {
+    fn fragment_shader() -> ShaderRef {
+        PLANET_SHADER_PATH.into()
+    }
+}
+
 
 #[derive(Component, Clone)]
 pub struct Planet {
@@ -37,8 +54,7 @@ pub struct Planet {
     pub radius: f32,
 
     /// The seed of the planet, used to generate the
-    /// surface of the planet.
-    pub seed: u32,
+    /// surface of the planet.    pub seed: u32,
 
     /// The planets radii
     /// Vec<(angle, radius or height)>
@@ -46,12 +62,16 @@ pub struct Planet {
 
     /// Planet POI:s
     pub points_of_interest: HashMap<usize, PlanetPointOfInterest>,
+
+    pub arc_length: f32,
 }
 
 /// Something that can be interacted with other machines
 #[derive(Component, Clone)]
 pub enum PlanetPointOfInterest {
     Stone
+
+    pub arc_length: f32,
 }
 
 /// This struct is used to mark a planet as the
@@ -68,19 +88,23 @@ impl Planet {
         mut commands: Commands,
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
+        mut planet_materials: ResMut<Assets<PlanetMaterial>>,
         mut materials: ResMut<Assets<ColorMaterial>>,
         asset_server: Res<AssetServer>
     ) -> () {
         let mut rng = rand::thread_rng();
-        let seed = rng.gen_range(0..100_000_000);
-        let radius: f32 = RES_WIDTH * 0.8;
+        let seed: u32 = rng.gen_range(0..100_000_000);
+        let radius: f32 = RES_WIDTH * 0.625;
 
         /* Spawn mesh & other things */
-        let radii = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
-        let mesh = generate_planet_mesh(&mut meshes, &radii);
+        let (radii, arc_length) = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
+        let mesh = generate_planet_mesh(&mut meshes, &radii, arc_length);
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
-            MeshMaterial2d(materials.add(hex!("#2c6327"))),
+            MeshMaterial2d(planet_materials.add(PlanetMaterial {
+                color1: LinearRgba::rgb(0.5, 0.27, 0.16),
+                color2: LinearRgba::rgb(0.34, 0.19, 0.11),
+            })),
             VeryStupidMesh,
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0),
@@ -99,15 +123,16 @@ impl Planet {
             planet_entity: Some(planet_bundle.id()),
             radius,
             radii,
+            arc_length,
             seed,
         };
         planet_bundle.insert(planet.clone());
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
-        planet_bundle.with_children(|parent| {
-            DebugComponent::setup(parent, "0*pi rad (right)", planet.radians_to_transform(0.0, 0.0, 5.0));
-            DebugComponent::setup(parent, "pi/4 rad", planet.radians_to_transform(PI / 4.0, 0.0, 5.0));
-            DebugComponent::setup(parent, "pi/2 rad", planet.radians_to_transform(PI / 2.0, 0.0, 5.0));
-        });
+        // planet_bundle.with_children(|parent| {
+        //     DebugComponent::setup(parent, "0*pi rad (right)", planet.radians_to_transform(0.0, 0.0, 5.0));
+        //     DebugComponent::setup(parent, "pi/4 rad", planet.radians_to_transform(PI / 4.0, 0.0, 5.0));
+        //     DebugComponent::setup(parent, "pi/2 rad", planet.radians_to_transform(PI / 2.0, 0.0, 5.0));
+        // });
 
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
@@ -166,13 +191,17 @@ impl Planet {
     /// heights, all being placed next to eachother.
     /// 
     /// Returns Vec<(angle, radius)>
-    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> Vec<(f32, f32)> {
+    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> (Vec<(f32, f32)>, f32) {
         /* I think it's one radius many radii but idk */
         let mut radii: Vec<(f32, f32)> = Vec::with_capacity(resolution);
         let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         let perlin = Perlin::new(seed);
-        let noise_amplitude: f32 = 30.0;
+        let noise_amplitude: f32 = 10.0;
+        let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         
+        let mut total_arc_length = 0.0;
+        let angle_step = TAU / resolution as f32;
+
         /* Generate radii */
         for i in 0..resolution {
             let noise = perlin.get([noise_freq + (i as f64) * noise_freq]) as f32;
@@ -190,10 +219,21 @@ impl Planet {
                 height = (radii[0].1 + height) / 2.0;
             }
 
+            if i > 0 {
+                let prev_height = radii[i - 1].1;
+                let chord_length = ((height - prev_height).powi(2) + (angle_step * radius).powi(2)).sqrt();
+                total_arc_length += chord_length;
+            }
+
             radii.push((angle, height));
         }
 
-        radii
+        let first_height = radii[0].1;
+        let last_height = radii[resolution - 1].1;
+        let last_chord_length = ((first_height - last_height).powi(2) + (angle_step * radius).powi(2)).sqrt();
+        total_arc_length += last_chord_length;
+
+        (radii, total_arc_length)
     }
 
     /// Ticks every planet
@@ -334,7 +374,10 @@ pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins(WindSwayPlugin)
+            .add_plugins((
+                WindSwayPlugin,
+                Material2dPlugin::<PlanetMaterial>::default(),
+            ))
             .add_systems(Startup, Planet::setup)
             .add_systems(Update, Planet::update)
             .add_systems(FixedUpdate, Planet::tick);
