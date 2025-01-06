@@ -54,7 +54,8 @@ pub struct Planet {
     pub radius: f32,
 
     /// The seed of the planet, used to generate the
-    /// surface of the planet.    pub seed: u32,
+    /// surface of the planet.
+    pub seed: u32,
 
     /// The planets radii
     /// Vec<(angle, radius or height)>
@@ -70,8 +71,6 @@ pub struct Planet {
 #[derive(Component, Clone)]
 pub enum PlanetPointOfInterest {
     Stone
-
-    pub arc_length: f32,
 }
 
 /// This struct is used to mark a planet as the
