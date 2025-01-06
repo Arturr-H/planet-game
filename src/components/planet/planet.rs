@@ -5,13 +5,13 @@ use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, tree::Tree, Foliage}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, utils::color::hex, RES_HEIGHT, RES_WIDTH};
-
 use super::mesh::{generate_planet_mesh, VeryStupidMesh};
 
 /* Constants */
-const PLANET_ROTATION_SPEED: f32 = 170.0;
+const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const SEED: u64 = 1239372178378;
+const SURFACE_RESOLUTION: usize = 100; // How many different vertices for the suface
 
 #[derive(Component, Clone)]
 pub struct Planet {
@@ -40,6 +40,10 @@ pub struct Planet {
     /// The seed of the planet, used to generate the
     /// surface of the planet.
     pub seed: u64,
+
+    /// The planets radii
+    /// Vec<(angle, radius or height)>
+    pub radii: Vec<(f32, f32)>,
 }
 
 /// This struct is used to mark a planet as the
@@ -57,59 +61,48 @@ impl Planet {
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
         mut materials: ResMut<Assets<ColorMaterial>>,
-        // time: Res<Time>,
         asset_server: Res<AssetServer>
     ) -> () {
+        let mut rng = rand::thread_rng();
+        let seed = rng.gen_range(0..100_000_000);
         let radius: f32 = RES_WIDTH * 0.625;
-        // let mut planet_bundle = commands.spawn((
-        //     Sprite {
-        //         image: asset_server.load("../assets/planet/planet.png"),
-        //         custom_size: Some(Vec2::new(radius * 2.0, radius * 2.0)),
-        //         ..default()
-        //     },
-        //     Transform::from_xyz(0.0, -radius * 1.1, 1.0)
-        //     .with_rotation(Quat::from_rotation_z(PI / 2.0)),
-        //     PIXEL_PERFECT_LAYERS,
-        //     PickingBehavior::IGNORE,
-        // ));
-        let mesh = generate_planet_mesh(&mut meshes, radius, SEED);
+
+        /* Spawn mesh & other things */
+        let radii = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
+        let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
             MeshMaterial2d(materials.add(hex!("#213823"))),
             VeryStupidMesh,
-            Transform::from_xyz(0.0, -radius * 1.1, 1.0)
+            PickingBehavior::IGNORE,
+            Transform::from_xyz(0.0, -radius * 1.1, 1.0),
         ));
 
-        /* Insert planet component */
-        let planet = Planet {
+        /* Insert the Planet component */
+        let planet = Self {
             id: game_state.new_planet_id(),
             tiles: HashMap::new(),
             tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
             radius,
+            radii,
             seed: SEED,
         };
         planet_bundle.insert(planet.clone());
-
-        // TODO: Only insert if it's the players own
-        planet_bundle.insert(PlayerPlanet);
-
-        // let rocket_tile_id = planet.new_tile_id();
-        // planet_bundle.with_children(|parent| {
-        //     LandedRocket.spawn(
-        //         parent, false,
-        //         planet.degree_to_transform(0.0, 0.0, 2.0),
-        //         &asset_server, rocket_tile_id
-        //     );
-        // });
+        planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
+        planet_bundle.with_children(|parent| {
+            DebugComponent::setup(parent, "0*pi rad (right)", planet.radians_to_transform(0.0, 0.0, 5.0));
+            DebugComponent::setup(parent, "pi/4 rad", planet.radians_to_transform(PI / 4.0, 0.0, 5.0));
+            DebugComponent::setup(parent, "pi/2 rad", planet.radians_to_transform(PI / 2.0, 0.0, 5.0));
+        });
 
         /* Initialize foliage */
         let mut rng = rand::thread_rng();
         for degree in Foliage::generate_foliage_positions(20) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let z = -0.5 - rng.gen_range(-0.1..0.1);
-            let transform = planet.degree_to_transform(degree * 180.0 / PI, origin_offset, z);
+            let transform = planet.radians_to_transform(degree, origin_offset, z);
             let scale = rng.gen_range(0.8..1.3);
             planet_bundle.with_children(|parent| {
                 Tree::spawn(
@@ -146,19 +139,33 @@ impl Planet {
     /// I don't really know how to explain it. Think of multiple
     /// poles being placed from the circle origin, with differing
     /// heights, all being placed next to eachother.
-    pub fn get_surface_radii(seed: u64, points: usize, radius: f32) -> Vec<f32> {
+    /// 
+    /// Returns Vec<(angle, radius)>
+    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> Vec<(f32, f32)> {
         /* I think it's one radius many radii but idk */
-        let mut radii: Vec<f32> = Vec::new();
-        let mut rng = ChaCha8Rng::seed_from_u64(seed);
-        let perlin = Perlin::new(rng.gen_range(0..10000));
-        // let radius: f32 = 100.0;
-        let noise_amplitude: f32 = 5.0;
+        let mut radii: Vec<(f32, f32)> = Vec::with_capacity(resolution);
+        let perlin = Perlin::new(seed);
+        let noise_amplitude: f32 = 30.0;
         let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         
         /* Generate radii */
-        for i in 0..points {
-            let noise = perlin.get([noise_freq + (i as f64) * noise_freq]);
-            radii.push(radius + noise as f32 * (noise_amplitude + rng.gen_range(-0.05..0.05)));
+        for i in 0..resolution {
+            let noise = perlin.get([noise_freq + (i as f64) * noise_freq]) as f32;
+            let mut height = radius + noise * noise_amplitude;
+            let angle = (PI * 2.0 / resolution as f32) * i as f32;
+
+            // These stupid if else statements are needed because
+            // we generate a noise vector that it NOT connected from
+            // the last to the first noise. Say we have vector of values
+            // symbolizing a wave. vec![4, 5, 4, 1, -1, -2]. If we
+            // repeat that noise value (our planet is circular) we have a
+            // big jump from -2 to 4. These if else statements just tries
+            // to smooth it out a bit. Not perfect though.
+            if i == resolution - 1 {
+                height = (radii[0].1 + height) / 2.0;
+            }
+
+            radii.push((angle, height));
         }
 
         radii
@@ -221,11 +228,31 @@ impl Planet {
 
     /// Returns a transform from a radians on the planet, somwhere on the
     /// circumference of the planet.
-    pub fn degree_to_transform(&self, degree: f32, origin_offset: f32, z: f32) -> Transform {
-        let x = degree.cos() * (self.radius + origin_offset);
-        let y = degree.sin() * (self.radius + origin_offset);
-        let rotation = Quat::from_rotation_z(degree - std::f32::consts::PI / 2.0);
-        Transform { translation: Vec3::new(x, y, z), rotation, ..default() }
+    /// 
+    /// ## WARNING
+    /// `radians` needs to be between 0..2π
+    pub fn radians_to_transform(&self, radians: f32, origin_offset: f32, z: f32) -> Transform {
+        /* Where we are around the world */
+        let radians_normalized = (radians / self.angular_step()).round() / self.tile_places() as f32;
+        let radii_index = SURFACE_RESOLUTION as f32 * radians_normalized;
+        let radii_index_int = (SURFACE_RESOLUTION as f32 * radians_normalized)
+            .min(SURFACE_RESOLUTION as f32 - 1.0) as usize;
+        let radii_index_decimals = radii_index - radii_index_int as f32; // 0.0-1.0
+
+        let (curr_angle, curr_height) = self.radii[radii_index_int];
+        let (next_angle, next_height) = self.radii[(radii_index_int + 1) % self.radii.len()];
+        let point_a = Vec2::new(curr_angle.cos() * curr_height, curr_angle.sin() * curr_height);
+        let point_b = Vec2::new(next_angle.cos() * next_height, next_angle.sin() * next_height);
+        let delta = point_b - point_a;
+        let new = point_a + delta * radii_index_decimals;
+
+        /* Surface rotation */
+        let dy = point_b.y - point_a.y;
+        let dx = point_b.x - point_a.x;
+        let surface_radians = dy.atan2(dx);
+
+        let rotation = Quat::from_rotation_z(surface_radians + PI);
+        Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
     }
 
     /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3
