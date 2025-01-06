@@ -16,7 +16,7 @@ use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
 use systems::game::{self, GameState};
 use utils::color::hex;
-use components::{cable::{cable, slot}, foliage, planet, tile};
+use components::{cable::{cable, slot}, foliage, planet::{self, mesh::{generate_planet_mesh, update_star}}, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -49,26 +49,32 @@ fn main() {
                 ..default()
             })
         )
-        .add_plugins(game::GameTickPlugin)
+
+        /* Important plugins */
+        .add_plugins((
+            // game::GameTickPlugin
+        ))
         .add_plugins((
             /* Preferrable called first as many
                 plugins depend on the planet existing */
-            planet::PlanetPlugin,
-            foliage::FoliagePlugin,
+            // planet::PlanetPlugin,
+            // foliage::FoliagePlugin,
 
-            slot::CableSlotPlugin,
-            cable::CablePlugin,
-            game::GamePlugin,
-            damageable::DamageablePlugin,
-            tile::spawn::TilePlugin,
+            // slot::CableSlotPlugin,
+            // cable::CablePlugin,
+            // game::GamePlugin,
+            // damageable::DamageablePlugin,
+            // tile::spawn::TilePlugin,
 
             camera::CameraPlugin,
             camera::CameraDebugPlugin,
 
-            ui::hud::HudPlugin,
+            // ui::hud::HudPlugin,
             
-            // planet::mesh::ColoredMesh2dPlugin,
             // ui::inventory::InventoryPlugin,
         ))
+        // ahhahahahahahah
+        .add_systems(Startup, generate_planet_mesh)
+        .add_systems(Update, update_star)
         .run();
 }
