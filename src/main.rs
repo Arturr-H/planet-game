@@ -19,9 +19,9 @@ use utils::color::hex;
 use components::{cable::{cable, slot}, foliage, planet::{self, mesh::{generate_planet_mesh, update_star}}, tile};
 
 /// In-game resolution width.
-pub const RES_WIDTH: f32 = 240.0 * 3.0;
+pub const RES_WIDTH: f32 = 240.0 * 2.0;
 /// In-game resolution height.
-pub const RES_HEIGHT: f32 = 120.0 * 3.0;
+pub const RES_HEIGHT: f32 = 120.0 * 2.0;
 
 fn main() {
     dotenv::dotenv().ok();

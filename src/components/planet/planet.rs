@@ -1,6 +1,6 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{prelude::*, sprite::MaterialMesh2dBundle, utils::HashMap};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -61,24 +61,20 @@ impl Planet {
         asset_server: Res<AssetServer>
     ) -> () {
         let radius: f32 = RES_WIDTH * 0.625;
-        // let mut planet_bundle = commands.spawn((
-        //     Sprite {
-        //         image: asset_server.load("../assets/planet/planet.png"),
-        //         custom_size: Some(Vec2::new(radius * 2.0, radius * 2.0)),
-        //         ..default()
-        //     },
-        //     Transform::from_xyz(0.0, -radius * 1.1, 1.0)
-        //     .with_rotation(Quat::from_rotation_z(PI / 2.0)),
-        //     PIXEL_PERFECT_LAYERS,
-        //     PickingBehavior::IGNORE,
-        // ));
-        let mesh = generate_planet_mesh(&mut meshes, radius, SEED);
+        let mut rng = rand::thread_rng();
+        let seed: u64 = rng.gen_range(0..u32::MAX) as u64;
+        
+        let mesh = generate_planet_mesh(&mut meshes, radius, seed);
+
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
-            MeshMaterial2d(materials.add(hex!("#213823"))),
+            MeshMaterial2d(materials.add(hex!("#2c6327"))),
             VeryStupidMesh,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0)
         ));
+        planet_bundle.with_children(|parent| {
+            Self::generate_water(radius, parent, &mut meshes, &mut materials);
+        });
 
         /* Insert planet component */
         let planet = Planet {
@@ -88,9 +84,10 @@ impl Planet {
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
             radius,
-            seed: SEED,
+            seed,
         };
         planet_bundle.insert(planet.clone());
+
 
         // TODO: Only insert if it's the players own
         planet_bundle.insert(PlayerPlanet);
@@ -186,6 +183,22 @@ impl Planet {
         let slot_id = self.tile_id;
         self.tile_id += 1;
         slot_id
+    }
+
+    fn generate_water(
+        radius: f32,
+        commands: &mut ChildBuilder,
+        meshes: &mut ResMut<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+    ) -> () {
+        let circle = Mesh::from(Circle::new(radius));
+
+        commands.spawn((
+            Mesh2d(meshes.add(circle)),
+            MeshMaterial2d(materials.add(hex!("#003080"))),
+            Transform::from_xyz(0.0, 0.0, -1.),
+        ));
+
     }
 
     /// If two tiles are connected via cables
