@@ -1,10 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
 use rand::Rng;
-use crate::{functional::damageable::Damageable, systems::game::PlanetResource};
-use super::animation::WindSway;
-
-/* Constants */
 
 #[derive(Component)]
 pub struct Stone;

@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{components::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::PowergridStatus}};
+use crate::{components::planet::Planet, systems::game::PlanetResource};
 
 #[enum_delegate::register]
 #[allow(unused_variables)]

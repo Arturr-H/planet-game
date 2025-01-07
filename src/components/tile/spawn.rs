@@ -1,7 +1,7 @@
 /* Imports */
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::PI;
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::planet::{Planet, PlayerPlanet}, systems::{game::GameState, traits::GenericTile}, utils::logger};
+use crate::{camera::OuterCamera, components::planet::{Planet, PlayerPlanet}, systems::traits::GenericTile, utils::logger};
 use super::{types::{debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
 #[derive(Resource)]

@@ -1,4 +1,4 @@
-#![allow(unused_imports, dead_code)]
+#![allow(dead_code, unused_imports)]
 
 /* Modules */
 mod utils;
@@ -10,14 +10,11 @@ mod ui;
 
 /* Imports */
 use bevy::{
-    prelude::*, utils::HashSet, window::{ PresentMode, WindowTheme }
+    prelude::*, window::{ PresentMode, WindowTheme }
 };
-use camera::PIXEL_PERFECT_LAYERS;
 use functional::damageable;
-use noise::{NoiseFn, Perlin};
-use systems::game::{self, GameState};
-use utils::color::hex;
-use components::{cable::{cable, slot}, foliage, planet::{self, mesh::{generate_planet_mesh, update_star}}, tile};
+use systems::game;
+use components::{cable::{cable, slot}, foliage, planet, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;

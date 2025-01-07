@@ -1,14 +1,8 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}, text::cosmic_text::ttf_parser::vorg::VerticalOriginMetrics};
-use noise::{NoiseFn, Perlin};
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha8Rng;
-use std::f32::consts::PI;
-use super::{planet, Planet};
+use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
 
 pub fn generate_planet_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
     radii: &Vec<(f32, f32)>,
-    arc_length: f32,
 ) -> Handle<Mesh> {
     let mut mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
