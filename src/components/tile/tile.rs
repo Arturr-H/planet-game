@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{planet::{Planet, PlanetPointOfInterest}, tile::types::drill}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
+use crate::{components::planet::Planet, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
 use super::types::{debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */
@@ -96,10 +96,6 @@ impl Tile {
 
     /// Adds energy to all tiles implementing `EnergyStorage`
     pub fn add_energy(planet: &mut Planet, tile_id: usize, energy: f32) -> () {
-        use TileType::*;
-
-        // logger::log::yellow("energy", format!("{:?} (id: {}) recieved energy: {}", self.tile_type, self.tile_id, energy));
-        
         // Add energy to the tile
         match planet.tiles.get_mut(&tile_id) {
             Some(e) => e.powergrid_status.energy_stored += energy,

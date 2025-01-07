@@ -1,16 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use bevy::render::view::window;
-use bevy::sprite::Sprite;
-
-use crate::camera::OuterCamera;
-use crate::components::planet::{Planet, PlayerPlanet};
-use crate::systems::game::{GameState, PlanetResource};
-use crate::utils::audio::{game_sounds, play_audio};
-use crate::utils::color::hex;
-use crate::utils::{audio, logger};
-use crate::utils::sprite_bounds::point_in_sprite_bounds;
-use crate::{RES_HEIGHT, RES_WIDTH};
+use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, utils::{audio::{game_sounds, play_audio}, logger}};
 
 /// Some component that can be damaged
 #[derive(Component)]

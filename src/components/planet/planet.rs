@@ -2,9 +2,8 @@
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
 use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}, utils::HashMap};
 use noise::{NoiseFn, Perlin};
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha8Rng;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::cable::Cable, debug::debug::DebugComponent, foliage::{animation::WindSwayPlugin, stone::Stone, tree::Tree, Foliage}, tile::{types::landed_rocket::LandedRocket, Tile, TILE_SIZE}}, functional::damageable::Damageable, systems::{game::{GameState, PlanetResources}, traits::GenericTile}, utils::color::hex, RES_HEIGHT, RES_WIDTH};
+use rand::Rng;
+use crate::{components::{foliage::{animation::WindSwayPlugin, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
 use super::mesh::{generate_planet_mesh, VeryStupidMesh};
 
 /* Constants */
@@ -70,8 +69,6 @@ pub struct Planet {
     /// The planets radii
     /// Vec<(angle, radius or height)>
     pub radii: Vec<(f32, f32)>,
-
-    pub arc_length: f32,
 }
 
 /// Something that can be interacted with other machines
@@ -102,8 +99,8 @@ impl Planet {
         let radius: f32 = RES_WIDTH * 0.625;
 
         /* Spawn mesh & other things */
-        let (radii, arc_length) = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
-        let mesh = generate_planet_mesh(&mut meshes, &radii, arc_length);
+        let radii = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
+        let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
             // Mesh2d(meshes.add(Circle::new(radius))),
             Mesh2d(mesh),
@@ -130,7 +127,6 @@ impl Planet {
             planet_entity: Some(planet_bundle.id()),
             radius,
             radii,
-            arc_length,
             seed,
         };
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
@@ -199,15 +195,12 @@ impl Planet {
     /// heights, all being placed next to eachother.
     /// 
     /// Returns Vec<(angle, radius)>
-    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> (Vec<(f32, f32)>, f32) {
+    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> Vec<(f32, f32)> {
         /* I think it's one radius many radii but idk */
         let mut radii: Vec<(f32, f32)> = Vec::with_capacity(resolution);
         let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         let perlin = Perlin::new(seed);
         let noise_amplitude: f32 = 10.0;
-        
-        let mut total_arc_length = 0.0;
-        let angle_step = TAU / resolution as f32;
 
         /* Generate radii */
         for i in 0..resolution {
@@ -226,21 +219,10 @@ impl Planet {
                 height = (radii[0].1 + height) / 2.0;
             }
 
-            if i > 0 {
-                let prev_height = radii[i - 1].1;
-                let chord_length = ((height - prev_height).powi(2) + (angle_step * radius).powi(2)).sqrt();
-                total_arc_length += chord_length;
-            }
-
             radii.push((angle, height));
         }
 
-        let first_height = radii[0].1;
-        let last_height = radii[resolution - 1].1;
-        let last_chord_length = ((first_height - last_height).powi(2) + (angle_step * radius).powi(2)).sqrt();
-        total_arc_length += last_chord_length;
-
-        (radii, total_arc_length)
+        radii
     }
 
     /// Ticks every planet

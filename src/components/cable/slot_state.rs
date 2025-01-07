@@ -1,6 +1,5 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::systems::game::GameState;
 
 /// Keeps track of slots that are clicked
 #[derive(Resource, Default, Debug)]

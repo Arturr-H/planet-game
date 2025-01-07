@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::Planet}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::color::hex};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}, utils::color::hex};
 
 #[derive(Component, Clone, Debug)]
 pub struct EmptyTile;

@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::{Planet, PlanetPointOfInterest}}, systems::{game::{GameState, PlanetResource}, traits::{GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::{Planet, PlanetPointOfInterest}}, systems::{game::PlanetResource, traits::GenericTile}, utils::logger};
 
 /* Constants */
 /// How many tiles to the left and the right

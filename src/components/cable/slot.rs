@@ -1,9 +1,15 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::{InGameCamera, OuterCamera, HIGH_RES_LAYERS, PIXEL_PERFECT_LAYERS}, components::{cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH}, planet::{Planet, PlayerPlanet}, tile::{Tile, TileType, TILE_SIZE}}, utils::{color::hex, logger, sprite_bounds::point_in_sprite_bounds}, GameState
+    camera::HIGH_RES_LAYERS,
+    components::{
+        cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH},
+        planet::{Planet, PlayerPlanet},
+        tile::TILE_SIZE
+    },
+    utils::{color::hex, logger}
 };
-use bevy::{prelude::*, sprite::Anchor, text::FontSmoothing};
+use bevy::prelude::*;
 
 /* Constants */
 const OUTLINE_SIZE: f32 = 6.0;
