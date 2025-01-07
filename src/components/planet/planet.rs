@@ -37,8 +37,14 @@ impl Material2d for PlanetMaterial {
 pub struct Planet {
     id: usize,
 
-    /// All tiles on the planet (id, tile)
+    /// All tiles on the planet. Tiles are most often
+    /// things that the player places. E.g solar panels,
+    /// power poles, drills etc.
     pub tiles: HashMap<usize, Tile>,
+
+    /// Planet POI:s are often things that are generated
+    /// on the planet. E.g stones that can be mined.
+    pub points_of_interest: HashMap<usize, PlanetPointOfInterest>,
 
     /// The current tile id we're at. Not public because
     /// the `new_tile_id` method handles incrementing and
@@ -65,14 +71,11 @@ pub struct Planet {
     /// Vec<(angle, radius or height)>
     pub radii: Vec<(f32, f32)>,
 
-    /// Planet POI:s
-    pub points_of_interest: HashMap<usize, PlanetPointOfInterest>,
-
     pub arc_length: f32,
 }
 
 /// Something that can be interacted with other machines
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub enum PlanetPointOfInterest {
     Stone
 }
@@ -92,7 +95,6 @@ impl Planet {
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
-        mut materials: ResMut<Assets<ColorMaterial>>,
         asset_server: Res<AssetServer>
     ) -> () {
         let mut rng = rand::thread_rng();
@@ -130,7 +132,6 @@ impl Planet {
             arc_length,
             seed,
         };
-        planet_bundle.insert(planet.clone());
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
         // planet_bundle.with_children(|parent| {
         //     DebugComponent::setup(parent, "0*pi rad (right)", planet.radians_to_transform(0.0, 0.0, 5.0));
@@ -166,6 +167,8 @@ impl Planet {
                 transform
             );
         });
+
+        planet_bundle.insert(planet.clone());
     }
 
     // Update
@@ -201,7 +204,6 @@ impl Planet {
         let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         let perlin = Perlin::new(seed);
         let noise_amplitude: f32 = 10.0;
-        let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         
         let mut total_arc_length = 0.0;
         let angle_step = TAU / resolution as f32;
