@@ -45,6 +45,6 @@ for i in 0..self.resolution {
 
 ---
 
-![Alt text](image-5.png) Bendy lines
+![Alt text](image-5.png) Bendy lines (bevy method)
 ![Alt text](image-6.png) Planar projection
 ![Alt text](image-7.png) Cylindrical Projection
