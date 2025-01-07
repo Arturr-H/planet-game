@@ -32,13 +32,25 @@ impl Tree {
                 },
                 Tree { age: initial_age },
                 WindSway::new(),
-                Damageable::new(50.0, Some((PlanetResource::Wood, rng.gen_range(8..15)))),
+                Damageable::new(
+                    50.0,
+                    Some((PlanetResource::Wood, rng.gen_range(8..15))),
+                    |w: &mut World| {
+                        w.run_system_cached(Self::callback).unwrap();
+                    }
+                ),
             ))
             .observe(Damageable::on_clicked);
         });
     }
     fn texture(age: u8) -> String {
         format!("foliage/birch/0{}.png", age)
+    }
+    fn callback(query: Query<&Transform>) -> () {
+        println!("CALLBACK WORKED");
+        for transform in query.iter() {
+            println!("CALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKED {:?}", transform.translation);
+        }
     }
 
     /// Increase age

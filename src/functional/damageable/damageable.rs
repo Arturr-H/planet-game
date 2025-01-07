@@ -8,6 +8,8 @@ pub struct Damageable {
     pub health: f32,
     pub max_health: f32,
     pub flash_timer: Timer,
+    pub callback: fn(&mut World) -> (),
+
     drop: Option<(PlanetResource, usize)>
 }
 
@@ -24,10 +26,11 @@ pub struct DamageEvent {
 
 impl Damageable {
     /// drop: (resource, amount)
-    pub fn new(max_health: f32, drop: Option<(PlanetResource, usize)>) -> Self {
+    pub fn new(max_health: f32, drop: Option<(PlanetResource, usize)>, callback: fn(&mut World) -> ()) -> Self {
         Self {
             health: max_health, max_health, drop,
             flash_timer: Timer::from_seconds(0.1, TimerMode::Once),
+            callback
         }
     }
 
@@ -40,30 +43,41 @@ impl Damageable {
         damage_events.send(DamageEvent { entity: click.entity(), damage: 10.0 });
         commands.entity(click.entity()).insert(Flashing);
 
-        // Play damage sound
-        // let damage_sound = asset_server.load("../assets/audio/damage.wav");
-        // commands.spawn((AudioPlayer::new(damage_sound), PlaybackSettings::DESPAWN));
         play_audio(&mut commands, &asset_server, game_sounds::tree::DAMAGE, false);
     }
     
     // Apply damage from events
-    fn apply_damage(
-        mut commands: Commands,
-        mut query: Query<(Entity, &mut Damageable)>,
-        mut damage_events: EventReader<DamageEvent>,
-        mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
-    ) {
-        let mut planet = planet_q.single_mut();
-        for event in damage_events.read() {
-            if let Ok((entity, mut damageable)) = query.get_mut(event.entity) {
-                damageable.health -= event.damage;
-                if damageable.health <= 0.0 {
-                    commands.entity(entity).despawn();
-                    if let Some((resource, amount)) = damageable.drop {
-                        logger::log::bright_green("resource", format!("Dropped {:?} x{}", resource, amount));
-                        planet.resources.add(resource, amount);
-                    }
-                }
+    fn apply_damage(world: &mut World) {
+        // Read damage events
+        let damage_events = world.resource::<Events<DamageEvent>>();
+        let mut reader = damage_events.get_cursor();
+    
+        // Collect entities to process
+        let mut entities_to_process = Vec::new();
+        for event in reader.read(&damage_events) {
+            entities_to_process.push((event.entity, event.damage));
+        }
+    
+        // Process entities
+        for (entity, damage) in entities_to_process {
+            let mut callback = None;
+            let Ok(mut entity_mut) = world.get_entity_mut(entity) else { continue; };
+            let Some(mut damageable) = entity_mut.get_mut::<Damageable>() else { continue; };
+
+            damageable.health -= damage;
+            if damageable.health <= 0.0 {
+                let drop = damageable.drop.clone();
+                callback = Some(damageable.callback);
+                entity_mut.despawn();
+            
+                let Some((resource, amount)) = drop else { continue; };
+                let Ok(mut planet) = world.query_filtered::<&mut Planet, With<PlayerPlanet>>().get_single_mut(world) else { continue; };
+                planet.resources.add(resource, amount);
+                logger::log::bright_green("resource", format!("Dropped {:?} x{}", resource, amount));
+            }
+
+            if let Some(callback) = callback {
+                (callback)(world);
             }
         }
     }
