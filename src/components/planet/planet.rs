@@ -293,18 +293,19 @@ impl Planet {
     pub const fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
     pub const fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
 
-    /// If number lies within range of in_ also wraps around
-    /// the function `tile_places`
-    pub const fn in_range(&self, number: usize, in_: usize, range: usize) -> bool {
-        let start = in_ - range;
-        let end = in_ + range;
-        if start < 0 {
-            number >= start + self.tile_places() || number <= end
-        } else if end >= self.tile_places() {
-            number >= start || number <= end - self.tile_places()
-        } else {
-            number >= start && number <= end
-        }
+    /// If number lies within the radius of other_number, also wraps around
+    /// the function `tile_places`.
+    /// 
+    /// E.g if the number = 99, and the amount of tile_places on the planet
+    /// is 100, and the other_number = 1, and the radius = 2, then the function
+    /// will return true because the distance between 99 and 1 is 2.
+    /// 
+    /// This function is used to calculate if e.g a drill can drill a stone POI
+    /// (if the stone is close enough to the drill).
+    pub const fn number_in_radius(&self, number: usize, other_number: usize, radius: usize) -> bool {
+        let clockwise_distance = (number + self.tile_places() - other_number) % self.tile_places();
+        let counterclockwise_distance = (other_number + self.tile_places() - number) % self.tile_places();
+        clockwise_distance <= radius || counterclockwise_distance <= radius
     }
 
     /// Get planet entity or panic

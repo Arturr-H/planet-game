@@ -74,7 +74,7 @@ impl GenericTile for Drill {
         for (poi_pos_index, poi_type) in planet.points_of_interest.iter() {
             // Must be at least DRILL_RANGE tile indexes
             // away from the POI to drill it.
-            if !planet.in_range(position_index, *poi_pos_index, DRILL_RANGE) { break; }
+            if !planet.number_in_radius(position_index, *poi_pos_index, DRILL_RANGE) { break; }
             match poi_type {
                 &PlanetPointOfInterest::Stone => planet.tiles.get_mut(&tile_id).map(|e| {
                     // If we have enough energy, mine one stone.
