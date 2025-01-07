@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 
 /* Constants */
-pub const GAME_TICK_HZ: f64 = 20.0;
+pub const GAME_TICK_HZ: f64 = 2.0;
 
 pub struct GameTickPlugin;
 impl Plugin for GameTickPlugin {
