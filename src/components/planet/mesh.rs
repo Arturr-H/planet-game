@@ -1,4 +1,4 @@
-use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
+use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}, text::cosmic_text::ttf_parser::vorg::VerticalOriginMetrics};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -20,45 +20,50 @@ pub fn generate_planet_mesh(
     let mut vertices = Vec::new();
     let mut uvs = Vec::new();
 
-let total_circumference: f32 = radii.windows(2).map(|w| {
-        let (angle1, r1) = w[0];
-        let (angle2, r2) = w[1];
-        let arc_length = ((angle2 - angle1) * (r1 + r2) / 2.0).abs();
-        arc_length
-    }).sum::<f32>() + ((radii[0].0 - radii.last().unwrap().0 + 2.0 * PI) * (radii[0].1 + radii.last().unwrap().1) / 2.0).abs();
-    let mut current_length = 0.0;
+    vertices.push([0.0, 0.0, 0.0]);
+    uvs.push([0.5, 0.5]);
+
+    // Planar projection
+    let max_radius = radii.iter().map(|(_, r)| *r).fold(0.0, f32::max);
 
     for i in 0..resolution {
-
-        let curr_radius = radii[i].1;
-        let next_radius = radii[(i + 1) % resolution].1;
-
-        let u = current_length / total_circumference;
-        let next_u = (current_length + arc_length) / total_circumference;
-        uvs.push([u, 1.0]);
-        uvs.push([next_u, 1.0]);
-        uvs.push([u, 0.0]);
-
-        current_length += arc_length;
-
-
-        let (x, y) = (radii[i].0.cos() * curr_radius, radii[i].0.sin() * curr_radius);
-        let (nx, ny) = (radii[(i + 1) % resolution].0.cos() * next_radius, radii[(i + 1) % resolution].0.sin() * next_radius);
+        let (curr_angle, curr_radius) = radii[i];
+        let x = curr_angle.cos() * curr_radius;
+        let y = curr_angle.sin() * curr_radius;
         vertices.push([x, y, 0.0]);
-        vertices.push([nx, ny, 0.0]);
-        vertices.push([0.0, 0.0, 0.0]);
 
-        //uv
-        
+        //& Bevy method
+        // let uv = Vec2::from_angle(-curr_angle).mul_add(Vec2::splat(0.5), Vec2::splat(0.5));
+        // uvs.push([uv.x, uv.y]);
 
-        let i = i as u32;
-        indices.push(i * 3);
-        indices.push(i * 3 + 1);
-        indices.push(i * 3 + 2);
+        //& Planar projection
+        /*
+        Vi tar den normaliserade positionen
+        för att få kordinaterna i intervallet [-1, 1]
+        genom att multiplicera med 0.5 [-0.5, 0.5] och 
+        addera 0.5 så får vi intervallet [0, 1] (UV space)
+        */
+        let normalized_pos = Vec2::new(x, y) / max_radius; 
+        uvs.push([normalized_pos.x * 0.5 + 0.5, normalized_pos.y * 0.5 + 0.5]);
+
+        /*
+        & Cylindrical Projection 
+        knas
+            let theta = y.atan2(x);
+            let r = (x * x + y * y).sqrt() / curr_radius; // Normalized radius
+            uvs.push([
+                (theta / (2.0 * PI)) + 0.5, // -PI to PI -> 0 to 1
+                r
+            ]);
+         */ 
+    }
+
+    for i in 0..resolution {
+        let next = (i + 1) % resolution;
+        indices.extend_from_slice(&[0, i as u32 + 1, next as u32 + 1]);
     }
     
     mesh.insert_indices(Indices::U32(indices));
-    // mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, vec![[0., 1., 0.]; vertices.len()]);
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
     
     let normals: Vec<[f32; 3]> = vec![[0., 0., 1.]; vertices.len()];

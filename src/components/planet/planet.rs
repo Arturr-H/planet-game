@@ -12,7 +12,7 @@ const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const SURFACE_RESOLUTION: usize = 100; // How many different vertices for the suface
 
-const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
+const PLANET_SHADER_PATH: &str = "shaders/test.wgsl";
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct PlanetMaterial {
@@ -105,10 +105,11 @@ impl Planet {
         let (radii, arc_length) = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
         let mesh = generate_planet_mesh(&mut meshes, &radii, arc_length);
         let mut planet_bundle = commands.spawn((
+            // Mesh2d(meshes.add(Circle::new(radius))),
             Mesh2d(mesh),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
-                color1: LinearRgba::rgb(0.5, 0.27, 0.16),
-                color2: LinearRgba::rgb(0.34, 0.19, 0.11),
+                color1: LinearRgba::rgb(1.0, 0.41, 0.71),
+                color2: LinearRgba::rgb(0.8, 1.0, 0.0),
             })),
             VeryStupidMesh,
             PickingBehavior::IGNORE,
