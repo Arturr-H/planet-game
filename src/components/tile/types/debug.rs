@@ -11,6 +11,7 @@ impl GenericTile for DebugTile {
         preview: bool,
         transform: Transform,
         asset_server: &Res<AssetServer>,
+        _: &mut ResMut<Assets<TextureAtlasLayout>>,
         tile_id: usize,
     ) -> Entity {
         if !preview {

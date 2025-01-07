@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::planet::Planet, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
+use crate::{camera::PIXEL_PERFECT_LAYERS, components::{planet::{Planet, PlanetPointOfInterest}, tile::types::drill}, systems::{game::{GameState, PlanetResource}, traits::{EnergyStorage, GenericTile, PowergridStatus}}, utils::{color::hex, logger}};
 use super::types::{debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */
@@ -61,10 +61,7 @@ impl Tile {
         let energy_per_reciever = energy_output / recievers.max(1) as f32;
         for (tile_id, will_recieve_energy) in visited {
             if will_recieve_energy {
-                match planet.tiles.get_mut(&tile_id) {
-                    Some(e) => e.add_energy(energy_per_reciever),
-                    None => ()
-                };
+                Self::add_energy(planet, tile_id, energy_per_reciever);
             }
         }
     }
@@ -98,16 +95,19 @@ impl Tile {
     }
 
     /// Adds energy to all tiles implementing `EnergyStorage`
-    pub fn add_energy(&mut self, energy: f32) -> () {
+    pub fn add_energy(planet: &mut Planet, tile_id: usize, energy: f32) -> () {
         use TileType::*;
 
-        logger::log::yellow("energy", format!("{:?} (id: {}) recieved energy: {}", self.tile_type, self.tile_id, energy));
-        match &mut self.tile_type {
-            DebugTile(_) => self.powergrid_status.energy_stored += energy,
-            SolarPanel(_) | Empty(_) |
-            PowerPole(_) => (),
-            Drill(_) => { println!("I am drilling" ); },
-        }
+        // logger::log::yellow("energy", format!("{:?} (id: {}) recieved energy: {}", self.tile_type, self.tile_id, energy));
+        
+        // Add energy to the tile
+        match planet.tiles.get_mut(&tile_id) {
+            Some(e) => e.powergrid_status.energy_stored += energy,
+            None => (),
+        };
+        
+        let tile_type = planet.tiles[&tile_id].tile_type.clone();
+        tile_type.on_energy_recieved(tile_id, planet);
     }
     pub fn can_recieve_energy(&self) -> bool {
         use TileType::*;

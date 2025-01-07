@@ -2,7 +2,7 @@
 use std::f32::consts::{PI, TAU};
 use bevy::prelude::*;
 use crate::{camera::OuterCamera, components::planet::{Planet, PlayerPlanet}, systems::{game::GameState, traits::GenericTile}, utils::logger};
-use super::{types::{debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
+use super::{types::{debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
 #[derive(Resource)]
 pub struct TilePluginResource {
@@ -15,6 +15,9 @@ pub struct TilePlugin;
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         app
+            /* Tile plugins */
+            .add_plugins(DrillPlugin)
+
             .add_systems(Update, (Self::update, Self::update_preview))
             .insert_resource(TilePluginResource { selected: None, transform: Transform::default(), degree: 0.0 });
     }
@@ -25,6 +28,7 @@ impl TilePlugin {
         mut commands: Commands,
         mut tile_plugin_resource: ResMut<TilePluginResource>,
         mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
+        mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
         preview_q: Query<Entity, With<TilePreview>>,
         asset_server: Res<AssetServer>,
         kb: Res<ButtonInput<KeyCode>>,
@@ -73,6 +77,7 @@ impl TilePlugin {
                         false,
                         tile_plugin_resource.transform,
                         &asset_server,
+                        &mut texture_atlas_layouts,
                         tile_id
                     );
                 });
@@ -102,6 +107,7 @@ impl TilePlugin {
                     true,
                     Transform::default(),
                     &asset_server,
+                    &mut texture_atlas_layouts,
                     usize::MAX
                 ));
             });
