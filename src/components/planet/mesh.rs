@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::{asset::RenderAssetUsages, prelude::*, render::mesh::{Indices, PrimitiveTopology}};
 
 pub fn generate_planet_mesh(
@@ -19,7 +21,7 @@ pub fn generate_planet_mesh(
 
     // Planar projection
     let max_radius = radii.iter().map(|(_, r)| *r).fold(0.0, f32::max);
-
+    let base_radius = radii[0].1;
     for i in 0..resolution {
         let (curr_angle, curr_radius) = radii[i];
         let x = curr_angle.cos() * curr_radius;
@@ -30,26 +32,26 @@ pub fn generate_planet_mesh(
         // let uv = Vec2::from_angle(-curr_angle).mul_add(Vec2::splat(0.5), Vec2::splat(0.5));
         // uvs.push([uv.x, uv.y]);
 
-        //& Planar projection
-        /*
-        Vi tar den normaliserade positionen
-        för att få kordinaterna i intervallet [-1, 1]
-        genom att multiplicera med 0.5 [-0.5, 0.5] och 
-        addera 0.5 så får vi intervallet [0, 1] (UV space)
-        */
-        let normalized_pos = Vec2::new(x, y) / max_radius; 
-        uvs.push([normalized_pos.x * 0.5 + 0.5, normalized_pos.y * 0.5 + 0.5]);
+        //& My method
+        let u = 0.5 + 0.5 * curr_angle.cos();
+        let v = 0.5 + 0.5 * curr_angle.sin();
+        uvs.push([u, v]);
 
-        /*
-        & Cylindrical Projection 
-        knas
-            let theta = y.atan2(x);
-            let r = (x * x + y * y).sqrt() / curr_radius; // Normalized radius
-            uvs.push([
-                (theta / (2.0 * PI)) + 0.5, // -PI to PI -> 0 to 1
-                r
-            ]);
-         */ 
+        //& Normalized method
+        // let uv_angle = (curr_angle + PI) / (2.0 * PI);
+        // let uv_radius = curr_radius / max_radius;
+        
+        // // Convert back to Cartesian for UV space
+        // let uv_x = uv_radius * curr_angle.cos() * 0.5 + 0.5;
+        // let uv_y = uv_radius * curr_angle.sin() * 0.5 + 0.5;
+        // uvs.push([uv_x, uv_y]);
+        // let normalized_pos = Vec2::new(x, y) / max_radius;
+        // uvs.push([normalized_pos.x * 0.5 + 0.5, normalized_pos.y * 0.5 + 0.5]);
+        // let normalized_angle = (curr_angle + PI * 0.5) / (2.0 * PI);
+        // let height_ratio = curr_radius / base_radius;
+        // uvs.push([normalized_angle, height_ratio]);
+        // let normalized_pos = Vec2::new(x, y) / max_radius; 
+        // uvs.push([normalized_pos.x * 0.5 + 0.5, normalized_pos.y * 0.5 + 0.5]);
     }
 
     for i in 0..resolution {

@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 /* Imports */
 use bevy::prelude::*;
+use rand::Rng;
 use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, utils::{audio::{game_sounds, play_audio}, color::hex, logger}};
 
 /// Some component that can be damaged
@@ -40,13 +41,14 @@ impl Damageable {
         click: Trigger<Pointer<Down>>,
         mut commands: Commands,
         mut damage_events: ResMut<Events<DamageEvent>>,
+        mut query: Query<(Entity, &mut AnimatedDamageText, &mut Sprite, &mut Transform)>,
         asset_server: Res<AssetServer>,
     ) {
         let entity = click.entity();
         let damage = (rand::random::<f32>() * 5.0 + 3.0).floor();
         damage_events.send(DamageEvent { entity, damage });
         commands.entity(click.entity()).insert(Flashing);
-        AnimatedDamageText::spawn_animated_text(&mut commands, &asset_server, entity, damage as usize);
+        AnimatedDamageText::spawn_damage_text(&mut commands, &asset_server, entity, damage);
 
         play_audio(&mut commands, &asset_server, game_sounds::tree::DAMAGE, false);
     }
@@ -71,6 +73,7 @@ impl Damageable {
             let Some(mut damageable) = entity_mut.get_mut::<Damageable>() else { continue; };
 
             damageable.health -= damage;
+            println!("{} healt -{}", damageable.health, damage);
             if damageable.health <= 0.0 {
                 let drop = damageable.drop.clone();
                 callback = Some(damageable.callback);
@@ -107,57 +110,59 @@ impl Damageable {
 }
 
 #[derive(Component)]
-struct AnimatedDamageText {
+pub struct AnimatedDamageText {
     timer: Timer,
     rotation: f32,
+    speed: f32,
+    damage: f32,
 }
 
 impl AnimatedDamageText {
-    fn spawn_animated_text(
+    fn spawn_damage_text(
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
-        entity: Entity,
-        damage: usize,
+        target_entity: Entity,
+        damage: f32
     ) {
-        commands.entity(entity).with_children(|parent| {
+        let mut rng = rand::thread_rng();
+    
+        let texture = asset_server.load(format!("numbers/{damage}.png"));
+        let animated_text = AnimatedDamageText {
+            timer: Timer::from_seconds(1.0, TimerMode::Once),
+            rotation: PI / 2.0 + rng.gen_range(-0.4..0.4),
+            speed: rng.gen_range(0.8..1.2),
+            damage,
+        };
+        commands.entity(target_entity).with_children(|parent| {
             parent.spawn((
                 Sprite {
-                    image: asset_server.load(format!("numbers/{}.png", damage)),
-                    ..default()
+                    image: texture,
+                    ..Default::default()
                 },
-                Transform::from_translation(Vec3::new(0.0, 32.0, 100.0)),
-                AnimatedDamageText {
-                    timer: Timer::from_seconds(1.5, TimerMode::Once),
-                    rotation: PI / 2.0 + rand::random::<f32>() * 0.5 - 0.25,
-                },
+                Transform::from_translation(Vec3::new(0.0, 32.0, 10.0)),
+                animated_text,
             ));
         });
     }
-    
+
     fn update_text_animation(
         mut commands: Commands,
         time: Res<Time>,
         mut query: Query<(Entity, &mut AnimatedDamageText, &mut Transform, &mut Sprite)>,
     ) {
         for (entity, mut animated_text, mut transform, mut sprite) in query.iter_mut() {
-            // Update the timer
             animated_text.timer.tick(time.delta());
     
-            // Calculate progress as a percentage (0.0 to 1.0)
             let progress = animated_text.timer.elapsed_secs() / animated_text.timer.duration().as_secs_f32();
     
-            // Move the text upward
-            let ext = 50.0 * (1.0 - progress) * time.delta_secs();
+            let ext = 50.0 * (1.0 - progress) * time.delta_secs() * animated_text.speed;
             transform.translation.y += ext * animated_text.rotation.sin();
             transform.translation.x += ext * animated_text.rotation.cos();
-    
-            // Fade out the text
-            let alpha = (1.0 - progress).powi(2);
+            transform.translation.z -= ext / 1000.0;
+            let alpha = ((2.0 - progress * 2.0).min(1.0)).powi(2);
             sprite.color.set_alpha(alpha);
-    
-            // Remove the entity when the animation is complete
             if animated_text.timer.finished() {
-                commands.entity(entity).despawn();
+                // commands.entity(entity).despawn();
             }
         }
     }
@@ -172,7 +177,7 @@ impl Plugin for DamageablePlugin {
             .add_systems(Update, (
                 Damageable::apply_damage,
                 Damageable::handle_flashing,
-                AnimatedDamageText::update_text_animation
+                AnimatedDamageText::update_text_animation,
             ));
     }
 }

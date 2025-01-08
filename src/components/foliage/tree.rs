@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
 use rand::Rng;
-use crate::{functional::damageable::Damageable, systems::game::PlanetResource};
+use crate::{functional::damageable::Damageable, systems::game::PlanetResource, utils::color::hex};
 use super::animation::WindSway;
 
 /* Constants */
@@ -46,11 +46,20 @@ impl Tree {
     fn texture(age: u8) -> String {
         format!("foliage/birch/0{}.png", age)
     }
-    fn callback(query: Query<&Transform>) -> () {
-        println!("CALLBACK WORKED");
-        for transform in query.iter() {
-            println!("CALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKED {:?}", transform.translation);
-        }
+    fn callback(mut commands: Commands, query: Query<&Transform>) -> () {
+        // commands.spawn((
+        //     Sprite {
+        //         custom_size: Some(Vec2::new(100.0, 100.0)),
+        //         color: hex!("#ff0000"),
+                
+        //         ..default()
+        //     },
+        //     Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+        // ));
+        // println!("CALLBACK WORKED");
+        // for transform in query.iter() {
+        //     println!("CALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKED {:?}", transform.translation);
+        // }
     }
 
     /// Increase age
