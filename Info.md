@@ -31,20 +31,20 @@ for i in 0..self.resolution {
 
     uvs.push([uv.x, uv.y]);
 }
-![Alt text](image.png)
-![Alt text](image-1.png)
+![Alt text](./.github/images/uv/image.png)
+![Alt text](./.github/images/uv/image-1.png)
 
 
 
 ---
 
-![Alt text](image-2.png)
-![Alt text](image-3.png)
+![Alt text](./.github/images/uv/image-2.png)
+![Alt text](./.github/images/uv/image-3.png)
 
-![Alt text](image-4.png)
+![Alt text](./.github/images/uv/image-4.png)
 
 ---
 
-![Alt text](image-5.png) Bendy lines (bevy method)
-![Alt text](image-6.png) Planar projection
-![Alt text](image-7.png) Cylindrical Projection
+![Alt text](./.github/images/uv/image-5.png) Bendy lines (bevy method)
+![Alt text](./.github/images/uv/image-6.png) Planar projection
+![Alt text](./.github/images/uv/image-7.png) Cylindrical Projection
