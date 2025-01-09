@@ -67,27 +67,6 @@ pub fn generate_planet_mesh(
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
     
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
-    meshes.add(mesh)
-}
-
-#[derive(Component)]
-pub struct VeryStupidMesh;
-
-pub fn update_star(
-    kb: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
-    mut query: Query<(Entity, &VeryStupidMesh, &Mesh2d)>,
-    // meshes: ResMut<Assets<Mesh>>,
-    // materials: ResMut<Assets<ColorMaterial>>,
-    // time: Res<Time>,
-) -> () {
-    if kb.pressed(KeyCode::Space) {
-        println!("Space pressed");
-        /* Delete star and spawn new one */
-        for (entity, _, _) in query.iter_mut() {
-            commands.entity(entity).despawn();
-        }
-
-        // generate_planet_mesh(commands, meshes, materials, time);
-    }
+    let handle = meshes.add(mesh);
+    handle
 }

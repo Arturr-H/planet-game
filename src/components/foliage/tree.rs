@@ -1,6 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use crate::{functional::damageable::Damageable, systems::game::PlanetResource, utils::color::hex};
 use super::animation::WindSway;
 
@@ -16,8 +17,8 @@ pub struct Tree {
 }
 
 impl Tree {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, transform: Transform) {
-        let mut rng = rand::thread_rng();
+    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
+        let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
         let initial_age = rng.gen_range(0..1);
 
         commands.spawn((
@@ -47,7 +48,7 @@ impl Tree {
     fn texture(age: u8) -> String {
         format!("foliage/birch/0{}.png", age)
     }
-    fn callback(mut commands: Commands, query: Query<&Transform>) -> () {
+    fn callback(mut _commands: Commands, _query: Query<&Transform>) -> () {
         // commands.spawn((
         //     Sprite {
         //         custom_size: Some(Vec2::new(100.0, 100.0)),
