@@ -142,7 +142,7 @@ impl Planet {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let z = -0.5 - rng.gen_range(-0.1..0.1);
             let transform = planet.radians_to_transform(degree, origin_offset, z);
-            let scale = rng.gen_range(0.8..1.3);
+            let scale = rng.gen_range(0.9..1.1);
             planet_bundle.with_children(|parent| {
                 Tree::spawn(
                     parent,
