@@ -11,7 +11,7 @@ const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const SURFACE_RESOLUTION: usize = 100; // How many different vertices for the suface
 
-const PLANET_SHADER_PATH: &str = "shaders/test.wgsl";
+const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct PlanetMaterial {
