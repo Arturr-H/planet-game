@@ -1,7 +1,7 @@
 ## TODO
 
 #### Bättre noise system
-Träd och stenar m.m. ska helst placeras i grupper, eftersom jag tror det kan se bättre ut. Alltså måste man göra något noise system för att göra så att träd spawnas mer i vissa områden och mindre i andra.
+✅ Träd och stenar m.m. ska helst placeras i grupper, eftersom jag tror det kan se bättre ut. Alltså måste man göra något noise system för att göra så att träd spawnas mer i vissa områden och mindre i andra.
 
 ## Inventory
 Jag tycker att varje spelare ska ha en raket. Varje raket fungerar som spelarens inventory som man kan ta med till andra planeter.
@@ -12,13 +12,15 @@ Det ska finnas stenar som exempelvis koppar på planeter som har oändligt med l
 
 Kablar ska finnas i olika varianter. Ovanliga stenar ger bättre kablar (inte lika mycket energi försvinner per meter) men tar längre tid att utvinna. 
 
-Dessa stenar ska dyka upp på satelliter 
+Dessa stenar ska dyka upp på satelliternas kameror
 
 Orbital lasers som den där Minecraft data packet. 
 
+Implement bevy_rand to avoid recalling rand::thread_rng()
+
 Proceduerlla träd ?
 
-Skuggor under träd => inga fungerande solpaneler där. 
+Skuggor under träd => inga fungerande solpaneler där. MHA POI:s och spegelbild av träd?
 
 Implementera vertex baserad planet yta
 Implementera metod för Planet att göra raycast ner från en degree. 
