@@ -4,78 +4,113 @@ const V_BORDER_WIDTH: f32 = 0.1;
 const V_SCALE: f32 = 125.0;
 // How much the stones spread from 
 // layer to layer.
-const V_STONE_SPREAD: f32 = 0.02;
+const V_STONE_SPREAD: f32 = 0.04;
+
+const V_OFFSET: vec2<f32> = vec2<f32>(-0.002, -0.002); // Offset for the copied cells
 
 // IMPORTANT: Don't forget to run the to_linear.py
-// Stone colors, V = Voronoi, S = Stone
-const V_S_DEPTH_GRASS = vec4<f32>(0.107, 0.420, 0.095, 1.0);
-const V_S_DEPTH_SHALLOW = vec4<f32>(0.314, 0.223, 0.207, 1.0);
-const V_S_DEPTH_MEDIUM = vec4<f32>(0.212, 0.121, 0.141, 1.0);
-const V_S_DEPTH_DEEP = vec4<f32>(0.117, 0.071, 0.09, 1.0);
-const V_S_DEPTH_DEEPEST = vec4<f32>(0.041, 0.039, 0.039, 1.0);
+//TOP LAYER | GRASS
+const V_LAYER_0_SHADOW = vec3<f32>(0.107, 0.420, 0.095); //SHOULD GENERALLY BE LIGHTER THAN FILL
+const V_LAYER_0 = vec3<f32>(0.107, 0.420, 0.095); 
+const V_LAYER_0_BORDER = vec3<f32>(0.09, 0.400, 0.085); 
 
-// Border colors V = Voronoi, B = Border
-const V_B_DEPTH_SHALLOW = vec3<f32>(0.212, 0.121, 0.141);
-const V_B_DEPTH_MEDIUM = vec3<f32>(0.117, 0.071, 0.09);
-const V_B_DEPTH_DEEP = vec3<f32>(0.041, 0.039, 0.039);
-const V_B_DEPTH_GRASS = vec3<f32>(0.107, 0.390, 0.095);
+const V_LAYER_1_SHADOW = vec3<f32>(0.184, 0.093, 0.070);
+const V_LAYER_1 = vec3<f32>(0.080, 0.041, 0.037);
+const V_LAYER_1_BORDER = vec3<f32>(0.032, 0.016, 0.017);
 
-fn normalize_point(p: vec2<f32>) -> vec2<f32> {
-    let len = length(p);
-    if (len == 0.0) {
-        return vec2<f32>(0.0);
-    }
-    return p / len;
-}
+const V_LAYER_2_SHADOW = vec3<f32>(0.080, 0.041, 0.037); 
+const V_LAYER_2 = vec3<f32>(0.032, 0.016, 0.017); 
+const V_LAYER_2_BORDER = vec3<f32>(0.012, 0.007, 0.007); 
+
+const V_LAYER_3_SHADOW = vec3<f32>(0.032, 0.016, 0.017); 
+const V_LAYER_3 = vec3<f32>(0.012, 0.007, 0.007); 
+const V_LAYER_3_BORDER = vec3<f32>(0.003, 0.003, 0.003); 
+
+const V_LAYER_4_SHADOW = vec3<f32>(0.012, 0.007, 0.007); 
+const V_LAYER_4 = vec3<f32>(0.003, 0.003, 0.003); 
+const V_LAYER_4_BORDER = vec3<f32>(0.002, 0.002, 0.002); 
+
+
+const V_LAYER_0_HEIGHT: f32 = 0.03; //GRASS
+const V_LAYER_1_HEIGHT: f32 = 0.05;
+const V_LAYER_2_HEIGHT: f32 = 0.05;
+const V_LAYER_3_HEIGHT: f32 = 0.07;
+const V_LAYER_4_HEIGHT: f32 = 0.05;
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let uv = in.uv;
 
-    let center = vec2<f32>(0.5);
-    let radius = length(in.uv - center);
-    let dist = abs(radius - 0.5);
+    let dist = abs(length(in.uv - vec2<f32>(0.5)) - 0.5);
+    let normal = get_normal(uv);
 
-    let voronoi = get_border(uv, dist);
+    let voronoi = get_border(uv);
+    let offset_voronoi = get_border(uv - (normal * V_OFFSET));
+
     let border = voronoi.x;
     let cell_id = voronoi.y;
+    let offset_cell_id = offset_voronoi.y;
 
-    let stone_color = get_stone_color(cell_id);
+    let stone_color = vec4<f32>(get_stone_color(cell_id), 1.0);
     let border_color = vec4<f32>(get_border_color(uv, dist), 1.0);
-
-    let gradient = smoothstep(0.0, 1.0, dist);
-    let final_color = mix(stone_color, border_color, border);
+    let offset_color = vec4<f32>(get_stone_shadow_color(offset_cell_id), 1.0);
+    
+    let base_color = mix(stone_color, border_color, border);
+    
+    let is_same_cell = abs(cell_id - offset_cell_id) < 0.0001;
+    let offset_blend = step(offset_voronoi.x, voronoi.x) * (1.0 - border) * f32(is_same_cell);
+    let final_color = mix(base_color, offset_color, offset_blend);
     return final_color;
 }
 
 
+
 fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec3<f32> {
-    if (center_dist < 0.025) {
-        return V_B_DEPTH_GRASS;
-    } else if (center_dist < 0.05) {
-        return V_B_DEPTH_SHALLOW;
-    } else if (center_dist < 0.075) {
-        return V_B_DEPTH_MEDIUM;
+    if (center_dist < (V_LAYER_0_HEIGHT / 2.0)) {
+        return V_LAYER_0_BORDER;
+    } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0)) {
+        return V_LAYER_1_BORDER;
+    } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0 + V_LAYER_2_HEIGHT / 2.0)) {
+        return V_LAYER_2_BORDER;
+    } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0 + V_LAYER_2_HEIGHT / 2.0 + V_LAYER_3_HEIGHT / 2.0)) {
+        return V_LAYER_3_BORDER;
     } else {
-        return V_B_DEPTH_DEEP;
+        return V_LAYER_4_BORDER;
     }
 }
 
-fn get_stone_color(cell_distance: f32) -> vec4<f32> {
-    if (cell_distance >= 0.95) {
-        return V_S_DEPTH_GRASS;
-    } else if (cell_distance >= 0.9) {
-        return V_S_DEPTH_SHALLOW;
-    }else if (cell_distance >= 0.85) {
-        return V_S_DEPTH_MEDIUM;
-    } else if (cell_distance >= 0.8) {
-        return V_S_DEPTH_DEEP;
+fn get_stone_color(cell_distance: f32) -> vec3<f32> {
+    if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT)) {
+        return V_LAYER_0_SHADOW;
+    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT)) {
+        return V_LAYER_1_SHADOW;
+    }else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT)) {
+        return V_LAYER_2_SHADOW;
+    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT)) {
+        return V_LAYER_3_SHADOW;
+    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT - V_LAYER_4_HEIGHT)) {
+        return V_LAYER_4_SHADOW;
     } else {
-        return V_S_DEPTH_DEEPEST;
+        return V_LAYER_4_BORDER;
+    }
+}
+fn get_stone_shadow_color(cell_distance: f32) -> vec3<f32> {
+    if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT)) {
+        return V_LAYER_0;
+    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT)) {
+        return V_LAYER_1;
+    }else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT)) {
+        return V_LAYER_2;
+    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT)) {
+        return V_LAYER_3;
+    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT - V_LAYER_4_HEIGHT)) {
+        return V_LAYER_4;
+    } else {
+        return V_LAYER_4_BORDER;
     }
 }
 
-fn voronoi_distance(x: vec2<f32>) -> vec2<f32> {
+fn voronoi(x: vec2<f32>) -> vec2<f32> {
     let p = floor(x);
     let f = fract(x);
     
@@ -119,9 +154,15 @@ fn voronoi_distance(x: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(res, varied_dist);
 }
 
-fn get_border(p: vec2<f32>, surface_y: f32) -> vec2<f32> {
-    let data = voronoi_distance(p * V_SCALE); // Scale factor
+fn get_border(p: vec2<f32>) -> vec2<f32> {
+    let data = voronoi(p * V_SCALE); // Scale factor
     return vec2<f32>(1.0 - smoothstep(V_BORDER_WIDTH, V_BORDER_WIDTH, data.x), data.y);
+}
+
+fn get_normal(uv: vec2<f32>) -> vec2<f32> {
+    let centered_uv = uv - 0.5;
+    let angle = atan2(centered_uv.y, centered_uv.x);
+    return vec2<f32>(cos(angle), sin(angle));
 }
 
 // -- Hashing functions --
@@ -133,6 +174,7 @@ fn pcg2d(p: vec2u) -> vec2u {
     v ^= v >> vec2u(16u);
     return v;
 }
+
 fn random2f(p: vec2<f32>) -> vec2<f32> {
     let rnd = pcg2d(vec2u(u32(p.x), u32(p.y)));
     return vec2<f32>(
