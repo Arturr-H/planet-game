@@ -18,9 +18,7 @@ const CAMERA_ELEVATION: f32 = 50.0;
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct PlanetMaterial {
     #[uniform(0)]
-    color1: LinearRgba,
-    #[uniform(1)]
-    color2: LinearRgba,
+    seed: f32,
 }
 
 impl Material2d for PlanetMaterial {
@@ -115,8 +113,7 @@ impl Planet {
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
-                color1: LinearRgba::rgb(1.0, 0.41, 0.71),
-                color2: LinearRgba::rgb(0.8, 1.0, 0.0),
+                seed: config.seed as f32,
             })),
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, 0.0, 1.0),
@@ -445,7 +442,7 @@ struct PlanetConfiguration {
 impl Default for PlanetConfiguration {
     fn default() -> Self {
         Self {
-            seed: rand::thread_rng().gen_range(0..100_000_000),
+            seed: 11,
             radius: RES_WIDTH * 0.625,
             resolution: 100,
             amplitude: 4.0,
