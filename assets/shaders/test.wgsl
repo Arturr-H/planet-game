@@ -3,6 +3,9 @@
 const V_BORDER_WIDTH: f32 = 0.1;
 const V_SCALE: f32 = 125.0;
 
+// How much the stones spread from 
+// layer to layer.
+const V_STONE_SPREAD: f32 = 0.01;
 
 // fn distance_from_surface(pos: vec3<f32>) -> f32 {
 //     let radius = length(pos.xy);
@@ -106,7 +109,7 @@ fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec3<f32> {
     let depth_shallow = vec3<f32>(0.212, 0.121, 0.141);
     let depth_medium = vec3<f32>(0.117, 0.071, 0.09);
     let depth_deep = vec3<f32>(0.041, 0.039, 0.039);
-    let depth_grass = vec3<f32>(0.00, 1.00, 0.0);
+    let depth_grass = vec3<f32>(0.36, 0.61, 0.34);
 
     if (center_dist < 0.025) {
         return depth_grass;
@@ -120,7 +123,7 @@ fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec3<f32> {
 }
 
 fn get_stone_color(cell_distance: f32) -> vec4<f32> {
-    let depth_grass = vec4<f32>(0.00, 1.00, 0.0, 1.0);
+    let depth_grass = vec4<f32>(0.36, 0.68, 0.34, 1.0);
     let depth_shallow = vec4<f32>(0.314, 0.223, 0.207, 1.0);
     let depth_medium = vec4<f32>(0.212, 0.121, 0.141, 1.0);
     let depth_deep = vec4<f32>(0.117, 0.071, 0.09, 1.0);
@@ -199,7 +202,7 @@ fn voronoi_distance(x: vec2<f32>) -> vec2<f32> {
     }
     let to_center = cell_center / V_SCALE - vec2<f32>(0.5);
     let radial_dist = length(to_center) * 2.0;
-    let variation = (random2f(cell_center).x - 0.5) * 0.02;
+    let variation = (random2f(cell_center).x - 0.5) * V_STONE_SPREAD;
     let varied_dist = radial_dist + variation;
 
     return vec2<f32>(res, varied_dist);
