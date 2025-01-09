@@ -12,7 +12,7 @@ impl Grass {
         let y_offset = rng.gen_range(-1.5..1.5);
 
         commands.spawn((
-            transform.with_translation(transform.translation + Vec3::new(x_offset, y_offset, 0.0)),
+            transform.with_translation(transform.translation + Vec3::new(x_offset, y_offset, 0.1)),
             InheritedVisibility::VISIBLE,
         )).with_children(|parent| {
             parent.spawn((

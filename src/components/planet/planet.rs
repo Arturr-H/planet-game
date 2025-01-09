@@ -153,8 +153,7 @@ impl Planet {
         }
         for degree in Foliage::generate_foliage_positions(0.8, seed) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
-            let z = -0.5 - rng.gen_range(-0.1..0.1);
-            let transform = planet.radians_to_transform(degree, origin_offset, z);
+            let transform = planet.radians_to_transform(degree, origin_offset, 0.0);
             let scale = rng.gen_range(0.8..1.3);
             planet_bundle.with_children(|parent| {
                 Grass::spawn(
