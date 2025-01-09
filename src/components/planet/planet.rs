@@ -19,6 +19,8 @@ const CAMERA_ELEVATION: f32 = 50.0;
 struct PlanetMaterial {
     #[uniform(0)]
     seed: f32,
+    #[uniform(1)]
+    radius: f32,
 }
 
 impl Material2d for PlanetMaterial {
@@ -114,6 +116,7 @@ impl Planet {
             Mesh2d(mesh),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
                 seed: config.seed as f32,
+                radius: config.radius,
             })),
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, 0.0, 1.0),

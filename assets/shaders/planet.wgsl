@@ -1,17 +1,23 @@
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 
-const V_BORDER_WIDTH: f32 = 0.1;
-const V_SCALE: f32 = 125.0;
-// How much the stones spread from 
-// layer to layer.
-const V_STONE_SPREAD: f32 = 0.04;
-
 struct UniformData {
     seed: f32,
 }
 
 @group(2) @binding(0)
 var<uniform> u_data: UniformData;
+@group(2) @binding(1)
+var<uniform> radius: f32;
+
+const V_BORDER_WIDTH: f32 = 0.1;
+fn get_scale_from_radius(radius: f32) -> f32 {
+    return 0.3408 * radius + 18.8698;
+    // return 200.0;
+}
+// How much the stones spread from 
+// layer to layer.
+const V_STONE_SPREAD: f32 = 0.04;
+
 
 const V_OFFSET: vec2<f32> = vec2<f32>(-0.002, -0.002); // Offset for the copied cells
 
@@ -134,7 +140,7 @@ fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
     
     var mb = vec2<i32>(0);
     var mr = vec2<f32>(0.0);
-    var res = V_SCALE;
+    var res = get_scale_from_radius(radius);
     var cell_center = vec2<f32>(0.0);
     
     // First pass
@@ -155,7 +161,7 @@ fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
     }
     
     // Second pass
-    res = V_SCALE;
+    res = get_scale_from_radius(radius);
     for(var j = -2; j <= 2; j++) {
         for(var i = -2; i <= 2; i++) {
             let b = vec2<f32>(f32(mb.x + i), f32(mb.y + j));
@@ -165,7 +171,7 @@ fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
         }
     }
     let depth_spread = V_STONE_SPREAD * (1.0 + depth * 10); // Increase spread with depth
-    let to_center = cell_center / V_SCALE - vec2<f32>(0.5);
+    let to_center = cell_center / get_scale_from_radius(radius) - vec2<f32>(0.5);
     let radial_dist = length(to_center) * 2.0;
     let variation = (random2f(cell_center, u_data.seed).x - 0.5) * depth_spread;
 
@@ -175,7 +181,7 @@ fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
 }
 
 fn get_border(p: vec2<f32>, dist: f32) -> vec2<f32> {
-    let data = voronoi(p * V_SCALE, dist); // Scale factor
+    let data = voronoi(p * get_scale_from_radius(radius), dist); // Scale factor
     return vec2<f32>(1.0 - smoothstep(V_BORDER_WIDTH, V_BORDER_WIDTH, data.x), data.y);
 }
 
