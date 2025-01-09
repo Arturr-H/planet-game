@@ -1,13 +1,14 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 
 #[derive(Component)]
 pub struct Grass;
 
 impl Grass {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, transform: Transform) {
-        let mut rng = rand::thread_rng();
+    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
+        let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
         let x_offset = rng.gen_range(-1.5..1.5);
         let y_offset = rng.gen_range(-1.5..1.5);
 

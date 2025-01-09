@@ -1,13 +1,14 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 
 #[derive(Component)]
 pub struct Stone;
 
 impl Stone {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, transform: Transform) {
-        let mut rng = rand::thread_rng();
+    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
+        let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
         let texture = rng.gen_range(0..6);
 
         commands.spawn((

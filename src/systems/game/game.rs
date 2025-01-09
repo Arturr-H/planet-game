@@ -5,12 +5,16 @@ use bevy::prelude::*;
 #[derive(Resource)]
 pub struct GameState {
     /// What planet ID we're at.
-    planet_id: usize,
+    pub planet_id: usize,
+
+    /// Seed of the game we're in
+    pub game_seed: u64,
 }
 impl Default for GameState {
     fn default() -> Self {
         Self {
             planet_id: 0,
+            game_seed: 0,
         }
     }
 }
@@ -33,6 +37,11 @@ impl GameState {
         let id = self.planet_id;
         self.planet_id += 1;
         id
+    }
+
+    /// Sets the game seed
+    pub fn set_game_seed(&mut self, game_seed: u64) -> () {
+        self.game_seed = game_seed;
     }
 }
 

@@ -1,16 +1,17 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
 use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}, utils::HashMap};
+use bevy_inspector_egui::prelude::*;
+use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use crate::{components::{foliage::{animation::WindSwayPlugin, grass::Grass, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
-use super::mesh::{generate_planet_mesh, VeryStupidMesh};
+use super::mesh::generate_planet_mesh;
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
-const SURFACE_RESOLUTION: usize = 100; // How many different vertices for the suface
-
 const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -30,7 +31,6 @@ impl Material2d for PlanetMaterial {
         AlphaMode2d::Blend
     }
 }
-
 
 #[derive(Component, Clone)]
 pub struct Planet {
@@ -65,6 +65,9 @@ pub struct Planet {
     /// The seed of the planet, used to generate the
     /// surface of the planet.
     pub seed: u32,
+    pub altitude: f32,
+    pub frequency: f64,
+    pub resolution: usize,
 
     /// The planets radii
     /// Vec<(angle, radius or height)>
@@ -92,25 +95,24 @@ impl Planet {
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
+        config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
-        let mut rng = rand::thread_rng();
-        let seed: u32 = rng.gen_range(0..100_000_000);
+        let seed = config.seed;
+        game_state.set_game_seed(seed as u64);
+        let mut rng = ChaCha8Rng::seed_from_u64(seed as u64);
         let radius: f32 = RES_WIDTH * 0.625;
 
         /* Spawn mesh & other things */
-        let radii = Planet::get_surface_radii(seed, SURFACE_RESOLUTION, radius);
+        let radii = Planet::get_surface_radii(config.seed, config.resolution, config.radius, config.amplitude * 4.0, config.frequency / 100.0);
         let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(radius))),
             Mesh2d(mesh),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
                 color1: LinearRgba::rgb(1.0, 0.41, 0.71),
                 color2: LinearRgba::rgb(0.8, 1.0, 0.0),
             })),
-            VeryStupidMesh,
             PickingBehavior::IGNORE,
-            // AlphaMode2d::Blend,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0),
         ));
         // planet_bundle.with_children(|parent| {
@@ -125,19 +127,16 @@ impl Planet {
             tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
+            altitude: 0.0,
+            frequency: 0.0,
+            resolution: 100,
             radius,
             radii,
             seed,
         };
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
-        // planet_bundle.with_children(|parent| {
-        //     DebugComponent::setup(parent, "0*pi rad (right)", planet.radians_to_transform(0.0, 0.0, 5.0));
-        //     DebugComponent::setup(parent, "pi/4 rad", planet.radians_to_transform(PI / 4.0, 0.0, 5.0));
-        //     DebugComponent::setup(parent, "pi/2 rad", planet.radians_to_transform(PI / 2.0, 0.0, 5.0));
-        // });
 
         /* Initialize foliage */
-        let mut rng = rand::thread_rng();
         for degree in Foliage::generate_foliage_positions(0.8, seed) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let z = -0.5 - rng.gen_range(-0.1..0.1);
@@ -147,18 +146,27 @@ impl Planet {
                 Tree::spawn(
                     parent,
                     &asset_server,
+                    game_state.game_seed,
+                    transform//.with_scale(Vec3::splat(scale))
+                );
+                Grass::spawn(
+                    parent,
+                    &asset_server,
+                    game_state.game_seed,
                     transform.with_scale(Vec3::splat(scale))
+                    .with_translation(transform.translation.with_z(-0.1))
                 );
             });
         }
-        for degree in Foliage::generate_foliage_positions(0.8, seed) {
+        for degree in Foliage::generate_foliage_positions(0.8, seed + 1) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
-            let transform = planet.radians_to_transform(degree, origin_offset, 0.0);
-            let scale = rng.gen_range(0.8..1.3);
+            let transform = planet.radians_to_transform(degree, origin_offset, -0.1);
+            let scale = rng.gen_range(0.9..1.1);
             planet_bundle.with_children(|parent| {
                 Grass::spawn(
                     parent,
                     &asset_server,
+                    game_state.game_seed,
                     transform.with_scale(Vec3::splat(scale))
                 );
             });
@@ -173,6 +181,7 @@ impl Planet {
             Stone::spawn(
                 parent,
                 &asset_server,
+                game_state.game_seed,
                 transform
             );
         });
@@ -207,17 +216,15 @@ impl Planet {
     /// heights, all being placed next to eachother.
     /// 
     /// Returns Vec<(angle, radius)>
-    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32) -> Vec<(f32, f32)> {
+    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32, amplitude: f32, frequency: f64) -> Vec<(f32, f32)> {
         /* I think it's one radius many radii but idk */
         let mut radii: Vec<(f32, f32)> = Vec::with_capacity(resolution);
-        let noise_freq: f64 = 0.1251125561; // Needs to be kinda irrational
         let perlin = Perlin::new(seed);
-        let noise_amplitude: f32 = 10.0;
 
         /* Generate radii */
         for i in 0..resolution {
-            let noise = perlin.get([noise_freq + (i as f64) * noise_freq]) as f32;
-            let mut height = radius + noise * noise_amplitude;
+            let noise = perlin.get([frequency + (i as f64) * frequency]) as f32;
+            let mut height = radius + noise * amplitude;
             let angle = (PI * 2.0 / resolution as f32) * i as f32;
 
             // These stupid if else statements are needed because
@@ -274,7 +281,6 @@ impl Planet {
             MeshMaterial2d(materials.add(hex!("#003080"))),
             Transform::from_xyz(0.0, 0.0, -1.),
         ));
-
     }
 
     /// If two tiles are connected via cables
@@ -297,6 +303,7 @@ impl Planet {
     pub const fn diameter(&self) -> f32 { self.radius * 2.0 }
     pub const fn circumference(&self) -> f32 { self.diameter() * PI }
     pub const fn rotation_speed(&self) -> f32 { PLANET_ROTATION_SPEED / self.radius }
+    pub const fn resolution(&self) -> usize { self.resolution }
 
     /// The angular step between two tiles on the planet. Each tile
     /// is placed somewhere on the circumference of the planet, and
@@ -330,10 +337,11 @@ impl Planet {
     /// `radians` needs to be between 0..2π
     pub fn radians_to_transform(&self, radians: f32, origin_offset: f32, z: f32) -> Transform {
         /* Where we are around the world */
+        let radians = radians % TAU;
         let radians_normalized = (radians / self.angular_step()).round() / self.tile_places() as f32;
-        let radii_index = SURFACE_RESOLUTION as f32 * radians_normalized;
-        let radii_index_int = (SURFACE_RESOLUTION as f32 * radians_normalized)
-            .min(SURFACE_RESOLUTION as f32 - 1.0) as usize;
+        let radii_index = self.resolution() as f32 * radians_normalized;
+        let radii_index_int = (self.resolution() as f32 * radians_normalized)
+            .min(self.resolution() as f32 - 1.0) as usize;
         let radii_index_decimals = radii_index - radii_index_int as f32; // 0.0-1.0
 
         let (curr_angle, curr_height) = self.radii[radii_index_int];
@@ -380,8 +388,59 @@ impl Plugin for PlanetPlugin {
                 WindSwayPlugin,
                 Material2dPlugin::<PlanetMaterial>::default(),
             ))
+            .init_resource::<PlanetConfiguration>()
+            .register_type::<PlanetConfiguration>()
+            .add_plugins(ResourceInspectorPlugin::<PlanetConfiguration>::default())
             .add_systems(Startup, Planet::setup)
-            .add_systems(Update, Planet::update)
+            .add_systems(Update, (Planet::update, on_update))
             .add_systems(FixedUpdate, Planet::tick);
+    }
+}
+
+#[derive(Reflect, Resource, InspectorOptions)]
+#[reflect(Resource, InspectorOptions)]
+struct PlanetConfiguration {
+    pub seed: u32,
+    pub radius: f32,
+    pub resolution: usize,
+    pub amplitude: f32,
+
+    #[inspector(min = 0.0)]
+    pub frequency: f64,
+}
+impl Default for PlanetConfiguration {
+    fn default() -> Self {
+        Self {
+            seed: rand::thread_rng().gen_range(0..100_000_000),
+            radius: RES_WIDTH * 0.625,
+            resolution: 100,
+            amplitude: 4.0,
+            frequency: 15.0,
+        }
+    }
+}
+
+/// On update configuration (system)
+fn on_update(
+    mut config: ResMut<PlanetConfiguration>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut game_state: ResMut<GameState>,
+    mut planet_materials: ResMut<Assets<PlanetMaterial>>,
+    mut planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
+    asset_server: Res<AssetServer>,
+) -> () {
+    if config.is_changed() {
+        if let Ok((planet, entity)) = planet_q.get_single() {
+            commands.entity(entity).despawn_recursive();
+            Planet::setup(
+                commands,
+                meshes,
+                game_state,
+                planet_materials,
+                config,
+                asset_server
+            );
+        }
     }
 }
