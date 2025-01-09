@@ -13,6 +13,7 @@ impl Grass {
 
         commands.spawn((
             transform.with_translation(transform.translation + Vec3::new(x_offset, y_offset, 0.0)),
+            InheritedVisibility::VISIBLE,
         )).with_children(|parent| {
             parent.spawn((
                 Sprite {

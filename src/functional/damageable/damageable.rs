@@ -178,6 +178,7 @@ impl AnimatedDamageText {
                 commands.entity(target_entity).with_children(|parent| {
                     shell_entity = Some(parent.spawn((
                         animated_text,
+                        InheritedVisibility::VISIBLE,
                         Transform::from_translation(Vec3::new(0.0, 32.0, 10.0)),
                     )).id());
                 });

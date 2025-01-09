@@ -12,6 +12,7 @@ impl Stone {
 
         commands.spawn((
             transform,
+            InheritedVisibility::VISIBLE,
         )).with_children(|parent| {
             parent.spawn((
                 Sprite {
