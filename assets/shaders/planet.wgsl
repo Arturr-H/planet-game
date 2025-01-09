@@ -6,29 +6,35 @@ const V_SCALE: f32 = 125.0;
 // layer to layer.
 const V_STONE_SPREAD: f32 = 0.04;
 
+@group(0) @binding(0)
+var<uniform> seed: f32;
+
 const V_OFFSET: vec2<f32> = vec2<f32>(-0.002, -0.002); // Offset for the copied cells
 
 // IMPORTANT: Don't forget to run the to_linear.py
 //TOP LAYER | GRASS
-const V_LAYER_0_SHADOW = vec3<f32>(0.107, 0.420, 0.095); //SHOULD GENERALLY BE LIGHTER THAN FILL
-const V_LAYER_0 = vec3<f32>(0.107, 0.420, 0.095); 
-const V_LAYER_0_BORDER = vec3<f32>(0.09, 0.400, 0.085); 
+// const V_LAYER_0_SHADOW = vec3<f32>(0.127, 0.450, 0.105); //SHOULD GENERALLY BE LIGHTER THAN FILL
+// const V_LAYER_0 = vec3<f32>(0.107, 0.420, 0.095); 
+// const V_LAYER_0_BORDER = vec3<f32>(0.09, 0.400, 0.085); 
+const V_LAYER_0_SHADOW = vec4<f32>(0.00, 0.00, 0.0, 0.0); //SHOULD GENERALLY BE LIGHTER THAN FILL
+const V_LAYER_0 = vec4<f32>(0.0, 0.0, 0.0, 0.0); 
+const V_LAYER_0_BORDER = vec4<f32>(0.0, 0.0, 0.0, 0.0); 
 
-const V_LAYER_1_SHADOW = vec3<f32>(0.184, 0.093, 0.070);
-const V_LAYER_1 = vec3<f32>(0.080, 0.041, 0.037);
-const V_LAYER_1_BORDER = vec3<f32>(0.032, 0.016, 0.017);
+const V_LAYER_1_SHADOW = vec4<f32>(0.184, 0.093, 0.070, 1.0);
+const V_LAYER_1 = vec4<f32>(0.080, 0.041, 0.037, 1.0);
+const V_LAYER_1_BORDER = vec4<f32>(0.032, 0.016, 0.017, 1.0);
 
-const V_LAYER_2_SHADOW = vec3<f32>(0.080, 0.041, 0.037); 
-const V_LAYER_2 = vec3<f32>(0.032, 0.016, 0.017); 
-const V_LAYER_2_BORDER = vec3<f32>(0.012, 0.007, 0.007); 
+const V_LAYER_2_SHADOW = vec4<f32>(0.080, 0.041, 0.037, 1.0); 
+const V_LAYER_2 = vec4<f32>(0.032, 0.016, 0.017, 1.0); 
+const V_LAYER_2_BORDER = vec4<f32>(0.012, 0.007, 0.007, 1.0); 
 
-const V_LAYER_3_SHADOW = vec3<f32>(0.032, 0.016, 0.017); 
-const V_LAYER_3 = vec3<f32>(0.012, 0.007, 0.007); 
-const V_LAYER_3_BORDER = vec3<f32>(0.003, 0.003, 0.003); 
+const V_LAYER_3_SHADOW = vec4<f32>(0.032, 0.016, 0.017, 1.0); 
+const V_LAYER_3 = vec4<f32>(0.012, 0.007, 0.007, 1.0); 
+const V_LAYER_3_BORDER = vec4<f32>(0.003, 0.003, 0.003, 1.0); 
 
-const V_LAYER_4_SHADOW = vec3<f32>(0.012, 0.007, 0.007); 
-const V_LAYER_4 = vec3<f32>(0.003, 0.003, 0.003); 
-const V_LAYER_4_BORDER = vec3<f32>(0.002, 0.002, 0.002); 
+const V_LAYER_4_SHADOW = vec4<f32>(0.012, 0.007, 0.007, 1.0); 
+const V_LAYER_4 = vec4<f32>(0.003, 0.003, 0.003, 1.0); 
+const V_LAYER_4_BORDER = vec4<f32>(0.002, 0.002, 0.002, 1.0); 
 
 
 const V_LAYER_0_HEIGHT: f32 = 0.03; //GRASS
@@ -51,21 +57,20 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let cell_id = voronoi.y;
     let offset_cell_id = offset_voronoi.y;
 
-    let stone_color = vec4<f32>(get_stone_color(cell_id), 1.0);
-    let border_color = vec4<f32>(get_border_color(uv, dist), 1.0);
-    let offset_color = vec4<f32>(get_stone_shadow_color(offset_cell_id), 1.0);
+    let stone_color = get_stone_color(cell_id);
+    let border_color = get_border_color(uv, dist);
+    let offset_color = get_stone_shadow_color(offset_cell_id);
     
     let base_color = mix(stone_color, border_color, border);
     
     let is_same_cell = abs(cell_id - offset_cell_id) < 0.0001;
     let offset_blend = step(offset_voronoi.x, voronoi.x) * (1.0 - border) * f32(is_same_cell);
     let final_color = mix(base_color, offset_color, offset_blend);
-    return final_color;
+    let grass = mix(vec4<f32>(0.0, 0.5, 0.0, 1.0), final_color, final_color.a);
+    return grass;
 }
 
-
-
-fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec3<f32> {
+fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec4<f32> {
     if (center_dist < (V_LAYER_0_HEIGHT / 2.0)) {
         return V_LAYER_0_BORDER;
     } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0)) {
@@ -79,7 +84,7 @@ fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec3<f32> {
     }
 }
 
-fn get_stone_color(cell_distance: f32) -> vec3<f32> {
+fn get_stone_color(cell_distance: f32) -> vec4<f32> {
     if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT)) {
         return V_LAYER_0_SHADOW;
     } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT)) {
@@ -94,7 +99,7 @@ fn get_stone_color(cell_distance: f32) -> vec3<f32> {
         return V_LAYER_4_BORDER;
     }
 }
-fn get_stone_shadow_color(cell_distance: f32) -> vec3<f32> {
+fn get_stone_shadow_color(cell_distance: f32) -> vec4<f32> {
     if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT)) {
         return V_LAYER_0;
     } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT)) {
@@ -123,7 +128,7 @@ fn voronoi(x: vec2<f32>) -> vec2<f32> {
     for(var j = -1; j <= 1; j++) {
         for(var i = -1; i <= 1; i++) {
             let b = vec2<f32>(f32(i), f32(j));
-            let random_offset = random2f(p + b);
+            let random_offset = random2f(seed);
             let r = b + random_offset - f;
             let d = dot(r, r);
             
@@ -141,7 +146,7 @@ fn voronoi(x: vec2<f32>) -> vec2<f32> {
     for(var j = -2; j <= 2; j++) {
         for(var i = -2; i <= 2; i++) {
             let b = vec2<f32>(f32(mb.x + i), f32(mb.y + j));
-            let r = b + random2f(p + b) - f;
+            let r = b + random2f(seed) - f;
             let d = dot(0.5 * (mr + r), normalize(r - mr));
             res = min(res, d);
         }

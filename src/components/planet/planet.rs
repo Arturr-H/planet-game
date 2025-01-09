@@ -16,9 +16,7 @@ const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct PlanetMaterial {
     #[uniform(0)]
-    color1: LinearRgba,
-    #[uniform(1)]
-    color2: LinearRgba,
+    seed: f32,
 }
 
 impl Material2d for PlanetMaterial {
@@ -105,8 +103,7 @@ impl Planet {
             // Mesh2d(meshes.add(Circle::new(radius))),
             Mesh2d(mesh),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
-                color1: LinearRgba::rgb(1.0, 0.41, 0.71),
-                color2: LinearRgba::rgb(0.8, 1.0, 0.0),
+                seed: seed as f32,
             })),
             VeryStupidMesh,
             PickingBehavior::IGNORE,
