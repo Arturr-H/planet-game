@@ -49,8 +49,11 @@ fn main() {
         )
 
         /* Important plugins */
-        .add_plugins(game::GameTickPlugin)
         .add_plugins((
+            game::GameTickPlugin,
+        ))
+        .add_plugins((
+            camera::CameraPlugin,
             /* Preferrable called first as many
                 plugins depend on the planet existing */
             planet::PlanetPlugin,
@@ -62,7 +65,6 @@ fn main() {
             damageable::DamageablePlugin,
             tile::spawn::TilePlugin,
 
-            camera::CameraPlugin,
             camera::CameraDebugPlugin,
 
             ui::hud::HudPlugin,

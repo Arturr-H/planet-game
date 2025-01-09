@@ -1,18 +1,19 @@
 /* Imports */
 use std::{f32::consts::{PI, TAU}, fmt::Debug};
-use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}, utils::HashMap};
+use bevy::{prelude::*, render::{camera, render_resource::{AsBindGroup, ShaderRef}}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}, utils::HashMap};
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{components::{foliage::{animation::WindSwayPlugin, grass::Grass, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{InGameCamera, OuterCamera}, components::{foliage::{animation::WindSwayPlugin, grass::Grass, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
 use super::mesh::generate_planet_mesh;
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
+const CAMERA_ELEVATION: f32 = 50.0;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct PlanetMaterial {
@@ -95,16 +96,21 @@ impl Planet {
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
+        mut camera_q: Query<&mut Transform, With<InGameCamera>>,
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
         let seed = config.seed;
         game_state.set_game_seed(seed as u64);
         let mut rng = ChaCha8Rng::seed_from_u64(seed as u64);
-        let radius: f32 = RES_WIDTH * 0.625;
+        let radius = config.radius.max(15.0);
+        match camera_q.get_single_mut() {
+            Ok(mut e) => e.translation.y = radius + CAMERA_ELEVATION,
+            Err(_) => (),
+        };
 
         /* Spawn mesh & other things */
-        let radii = Planet::get_surface_radii(config.seed, config.resolution, config.radius, config.amplitude * 4.0, config.frequency / 100.0);
+        let radii = Planet::get_surface_radii(config.seed, config.resolution, radius, config.amplitude * 4.0, config.frequency / 100.0);
         let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
@@ -113,7 +119,7 @@ impl Planet {
                 color2: LinearRgba::rgb(0.8, 1.0, 0.0),
             })),
             PickingBehavior::IGNORE,
-            Transform::from_xyz(0.0, -radius * 1.1, 1.0),
+            Transform::from_xyz(0.0, 0.0, 1.0),
         ));
         // planet_bundle.with_children(|parent| {
         //     Self::generate_water(radius, parent, &mut meshes, &mut materials);
@@ -192,18 +198,35 @@ impl Planet {
     // Update
     fn update(
         time: Res<Time>,
-        mut query: Query<&mut Transform, With<Planet>>,
+        mut camera_q: Query<&mut Transform, With<InGameCamera>>,
         keyboard_input: Res<ButtonInput<KeyCode>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
         let planet = planet_q.single();
-        if keyboard_input.pressed(KeyCode::ArrowRight)
-        || keyboard_input.pressed(KeyCode::KeyD) {
-            query.single_mut().rotate_z(time.delta_secs() * planet.rotation_speed());
-        }
-        else if keyboard_input.pressed(KeyCode::ArrowLeft)
-            || keyboard_input.pressed(KeyCode::KeyA) {
-            query.single_mut().rotate_z(-time.delta_secs() * planet.rotation_speed());
+        if let Ok(mut camera_transform) = camera_q.get_single_mut() {
+            let mut update = false;
+            if keyboard_input.pressed(KeyCode::ArrowRight)
+            || keyboard_input.pressed(KeyCode::KeyD) {
+                camera_transform.rotate_z(-time.delta_secs() * planet.rotation_speed());
+                update = true;
+            }
+            else if keyboard_input.pressed(KeyCode::ArrowLeft)
+                || keyboard_input.pressed(KeyCode::KeyA) {
+                camera_transform.rotate_z(time.delta_secs() * planet.rotation_speed());
+                update = true;
+            }
+
+            if update {
+                let camera_radians = Self::normalize_radians((camera_transform.rotation.to_euler(EulerRot::XYZ)).2 + PI / 2.0);
+                let (translation, surface_angle) = planet.radians_to_radii(camera_radians, CAMERA_ELEVATION);
+                // println!("Camera radians: {}", camera_radians);
+                println!("rad: {}", planet.radius);
+                camera_transform.translation = Vec3::new(
+                    (translation.x + (planet.radius + CAMERA_ELEVATION) * camera_radians.cos()) / 2.0,
+                    (translation.y + (planet.radius + CAMERA_ELEVATION) * camera_radians.sin()) / 2.0,
+                    camera_transform.translation.z
+                );
+            }
         }
     }
 
@@ -336,13 +359,23 @@ impl Planet {
     /// ## WARNING
     /// `radians` needs to be between 0..2π
     pub fn radians_to_transform(&self, radians: f32, origin_offset: f32, z: f32) -> Transform {
-        /* Where we are around the world */
+        /* What the elevation is at the current angle */
+        let (new, surface_radians) = self.radians_to_radii(radians, origin_offset);
+
+        let rotation = Quat::from_rotation_z(surface_radians + PI);
+        Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
+    }
+
+    /// Returns (radii (elevation position from center), angle (slope of current point))
+    fn radians_to_radii(&self, radians: f32, origin_offset: f32) -> (Vec2, f32) {
         let radians = radians % TAU;
-        let radians_normalized = (radians / self.angular_step()).round() / self.tile_places() as f32;
+        let radians_normalized = (Self::normalize_radians(radians) / self.angular_step()) / self.tile_places() as f32;
         let radii_index = self.resolution() as f32 * radians_normalized;
         let radii_index_int = (self.resolution() as f32 * radians_normalized)
             .min(self.resolution() as f32 - 1.0) as usize;
         let radii_index_decimals = radii_index - radii_index_int as f32; // 0.0-1.0
+
+        println!("{radii_index_decimals}");
 
         let (curr_angle, curr_height) = self.radii[radii_index_int];
         let (next_angle, next_height) = self.radii[(radii_index_int + 1) % self.radii.len()];
@@ -351,15 +384,16 @@ impl Planet {
         let point_a = Vec2::new(curr_angle.cos() * curr_amp, curr_angle.sin() * curr_amp);
         let point_b = Vec2::new(next_angle.cos() * next_amp, next_angle.sin() * next_amp);
         let delta = point_b - point_a;
+        
         let new = point_a + delta * radii_index_decimals;
-
-        /* Surface rotation */
         let dy = point_b.y - point_a.y;
         let dx = point_b.x - point_a.x;
         let surface_radians = dy.atan2(dx);
 
-        let rotation = Quat::from_rotation_z(surface_radians + PI);
-        Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
+        (new, surface_radians)
+    }
+    fn normalize_radians(angle: f32) -> f32 {
+        ((angle % TAU) + TAU) % TAU
     }
     pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32) -> Transform {
         assert!(index < self.tile_places(), "Index needs to be less than the amount of tile places on the planet");
@@ -428,6 +462,7 @@ fn on_update(
     mut game_state: ResMut<GameState>,
     mut planet_materials: ResMut<Assets<PlanetMaterial>>,
     mut planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
+    mut camera_q: Query<&mut Transform, With<InGameCamera>>,
     asset_server: Res<AssetServer>,
 ) -> () {
     if config.is_changed() {
@@ -438,6 +473,7 @@ fn on_update(
                 meshes,
                 game_state,
                 planet_materials,
+                camera_q,
                 config,
                 asset_server
             );
