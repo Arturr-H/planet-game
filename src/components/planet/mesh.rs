@@ -37,7 +37,8 @@ pub fn generate_planet_mesh(
         let v = 0.5 + 0.5 * curr_angle.sin();
         uvs.push([u, v]);
 
-        //& Normalized method
+        //& Normalized method 
+        // ! SKAPAR UVN AV EN CIRKEL
         // let uv_angle = (curr_angle + PI) / (2.0 * PI);
         // let uv_radius = curr_radius / max_radius;
         

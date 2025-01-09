@@ -20,12 +20,12 @@ impl GameState {
         mut commands: Commands,
         asset_server: Res<AssetServer>,
     ) {
-        let background_audio = asset_server.load("../assets/audio/forest.wav");
+        // let background_audio = asset_server.load("../assets/audio/forest.wav");
 
-        commands.spawn((
-            AudioPlayer::new(background_audio),
-            PlaybackSettings::LOOP,
-        ));
+        // commands.spawn((
+        //     AudioPlayer::new(background_audio),
+        //     PlaybackSettings::LOOP,
+        // ));
     }
 
     /// Returns a new planet ID
