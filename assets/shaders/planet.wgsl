@@ -6,8 +6,12 @@ const V_SCALE: f32 = 125.0;
 // layer to layer.
 const V_STONE_SPREAD: f32 = 0.04;
 
-@group(0) @binding(0)
-var<uniform> seed: f32;
+struct UniformData {
+    seed: f32,
+}
+
+@group(2) @binding(0)
+var<uniform> u_data: UniformData;
 
 const V_OFFSET: vec2<f32> = vec2<f32>(-0.002, -0.002); // Offset for the copied cells
 
@@ -66,8 +70,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let is_same_cell = abs(cell_id - offset_cell_id) < 0.0001;
     let offset_blend = step(offset_voronoi.x, voronoi.x) * (1.0 - border) * f32(is_same_cell);
     let final_color = mix(base_color, offset_color, offset_blend);
-    let grass = mix(vec4<f32>(0.0, 0.5, 0.0, 1.0), final_color, final_color.a);
+    let grass = mix(vec4<f32>( 0.107, 0.423, 0.093, 1.0), final_color, final_color.a);
     return grass;
+    // return vec4<f32>(vec3<f32>(u_data.seed / 1000000), 1.0);
 }
 
 fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec4<f32> {
@@ -128,7 +133,7 @@ fn voronoi(x: vec2<f32>) -> vec2<f32> {
     for(var j = -1; j <= 1; j++) {
         for(var i = -1; i <= 1; i++) {
             let b = vec2<f32>(f32(i), f32(j));
-            let random_offset = random2f(seed);
+            let random_offset = random2f((p + b), u_data.seed);
             let r = b + random_offset - f;
             let d = dot(r, r);
             
@@ -146,14 +151,14 @@ fn voronoi(x: vec2<f32>) -> vec2<f32> {
     for(var j = -2; j <= 2; j++) {
         for(var i = -2; i <= 2; i++) {
             let b = vec2<f32>(f32(mb.x + i), f32(mb.y + j));
-            let r = b + random2f(seed) - f;
+            let r = b + random2f((p + b), u_data.seed) - f;
             let d = dot(0.5 * (mr + r), normalize(r - mr));
             res = min(res, d);
         }
     }
     let to_center = cell_center / V_SCALE - vec2<f32>(0.5);
     let radial_dist = length(to_center) * 2.0;
-    let variation = (random2f(cell_center).x - 0.5) * V_STONE_SPREAD;
+    let variation = (random2f(cell_center, u_data.seed).x - 0.5) * V_STONE_SPREAD;
     let varied_dist = radial_dist + variation;
 
     return vec2<f32>(res, varied_dist);
@@ -180,8 +185,10 @@ fn pcg2d(p: vec2u) -> vec2u {
     return v;
 }
 
-fn random2f(p: vec2<f32>) -> vec2<f32> {
-    let rnd = pcg2d(vec2u(u32(p.x), u32(p.y)));
+fn random2f(p: vec2<f32>, seed: f32) -> vec2<f32> {
+    let p_seed = p + vec2<f32>(seed, seed);
+    // let p_comb = fract(p_seed * vec2<f32>(1.0, 1.0));
+    let rnd = pcg2d(vec2u(u32(p_seed.x), u32(p_seed.y)));
     return vec2<f32>(
         f32(rnd.x) / 4294967295.0,
         f32(rnd.y) / 4294967295.0

@@ -107,7 +107,7 @@ impl Planet {
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
-                seed: seed as f32,
+                seed: config.seed as f32,
             })),
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, -radius * 1.1, 1.0),
@@ -408,7 +408,7 @@ struct PlanetConfiguration {
 impl Default for PlanetConfiguration {
     fn default() -> Self {
         Self {
-            seed: rand::thread_rng().gen_range(0..100_000_000),
+            seed: 11,
             radius: RES_WIDTH * 0.625,
             resolution: 100,
             amplitude: 4.0,
