@@ -14,6 +14,7 @@ const PLANET_ROTATION_SPEED: f32 = 500.0;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
 const CAMERA_ELEVATION: f32 = 50.0;
+const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 struct PlanetMaterial {
@@ -216,11 +217,10 @@ impl Planet {
             if update {
                 let camera_radians = Self::normalize_radians((camera_transform.rotation.to_euler(EulerRot::XYZ)).2 + PI / 2.0);
                 let (translation, surface_angle) = planet.radians_to_radii(camera_radians, CAMERA_ELEVATION);
-                // println!("Camera radians: {}", camera_radians);
-                println!("rad: {}", planet.radius);
+                let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + CAMERA_ELEVATION);
                 camera_transform.translation = Vec3::new(
-                    (translation.x + (planet.radius + CAMERA_ELEVATION) * camera_radians.cos()) / 2.0,
-                    (translation.y + (planet.radius + CAMERA_ELEVATION) * camera_radians.sin()) / 2.0,
+                    (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
+                    (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING,
                     camera_transform.translation.z
                 );
             }
