@@ -365,12 +365,14 @@ impl Planet {
             .with_origin_offset(-15.0)
             .with_z_index(-1.5)
             .with_probability(0.3)
+            .with_local_seed(1)
             .spawn_all(commands, asset_server, self);
         
         PointOfInterest::spawn_multiple(PointOfInterestType::Tree(Tree::new()))
             .with_origin_offset(-1.0)
             .with_z_index(-2.0)
             .with_probability(0.7)
+            .with_local_seed(0)
             .spawn_all(commands, asset_server, self);
     }
 

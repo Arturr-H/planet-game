@@ -1,7 +1,7 @@
 use std::f32::consts::{PI, TAU};
 
 /* Imports */
-use bevy::prelude::*;
+use bevy::{prelude::*, text::cosmic_text::ttf_parser::loca};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -39,9 +39,9 @@ impl PointOfInterest {
 
     /// Returns a vec of the position indices that a POI will occupy.
     /// `probability` needs to be between 0.0 and 1.0. 
-    fn generate_position_indices(planet: &Planet, probability: f32) -> Vec<usize> {
-        let noise = Perlin::new(planet.seed);
-        let mut rng = ChaCha8Rng::seed_from_u64(planet.seed as u64);
+    fn generate_position_indices(planet: &Planet, local_seed: u32, probability: f32) -> Vec<usize> {
+        let noise = Perlin::new(planet.seed + local_seed);
+        let mut rng = ChaCha8Rng::seed_from_u64((planet.seed + local_seed) as u64);
         let mut indices = Vec::new();
 
         for i in 0..planet.tile_places() {
@@ -63,6 +63,7 @@ pub struct PointOfInterestBuilder {
     z_index: f32,
     origin_offset: f32,
     probability: f32,
+    local_seed: u32,
 }
 impl PointOfInterestBuilder {
     pub fn new(poi_type: PointOfInterestType) -> Self {
@@ -71,9 +72,11 @@ impl PointOfInterestBuilder {
             z_index: 0.0,
             origin_offset: 0.0,
             probability: 0.0,
+            local_seed: 0,
         }
     }
 
+    pub fn with_local_seed(mut self, local_seed: u32) -> Self { self.local_seed = local_seed; self }
     pub fn with_z_index(mut self, z_index: f32) -> Self { self.z_index = z_index; self }
     pub fn with_origin_offset(mut self, origin_offset: f32) -> Self { self.origin_offset = origin_offset; self }
     pub fn with_probability(mut self, probability: f32) -> Self { self.probability = probability; self }
@@ -86,7 +89,7 @@ impl PointOfInterestBuilder {
         planet: &mut Planet,
     ) {
         assert!(self.probability >= 0.0 && self.probability <= 1.0, "Probability must be between 0.0 and 1.0");
-        for position_index in PointOfInterest::generate_position_indices(planet, self.probability) {
+        for position_index in PointOfInterest::generate_position_indices(planet, self.local_seed, self.probability) {
             let z = self.z_index + rand::random::<f32>() * 0.025 - 0.0125;
             let transform = planet.index_to_transform(position_index, self.origin_offset, z);
             let new_poi = PointOfInterest { position_index, poi_type: self.poi_type };
