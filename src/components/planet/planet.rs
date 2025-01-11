@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{InGameCamera, OuterCamera}, components::{foliage::{animation::WindSwayPlugin, grass::Grass, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
+use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
 use super::mesh::generate_planet_mesh;
 
 /* Constants */
@@ -58,6 +58,7 @@ pub struct Planet {
 
     /// The entity of the planet, used for e.g getting
     /// the center of the planets (transforms) and such.
+    /// TODO: NO OPTION _  TEMP ENTITY INSTEAD
     pub planet_entity: Option<Entity>,
 
     /// The radius of the planet, used to calculate
@@ -97,7 +98,7 @@ impl Planet {
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
-        mut camera_q: Query<&mut Transform, With<InGameCamera>>,
+        mut camera_q: Query<&mut Transform, With<OuterCamera>>,
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
@@ -107,7 +108,7 @@ impl Planet {
         let radius = config.radius.max(15.0);
 
         /* Spawn mesh & other things */
-        let radii = Planet::get_surface_radii(config.seed, config.resolution, radius, config.amplitude * 4.0, config.frequency / 100.0);
+        let radii = Planet::get_surface_radii(&config);
         let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
             Mesh2d(mesh),
@@ -118,9 +119,6 @@ impl Planet {
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, 0.0, 1.0),
         ));
-        // planet_bundle.with_children(|parent| {
-        //     Self::generate_water(radius, parent, &mut meshes, &mut materials);
-        // });
 
         /* Insert the Planet component */
         let mut planet = Self {
@@ -147,40 +145,23 @@ impl Planet {
 
         /* Initialize foliage */
         let points = (planet.radius / 3.0) as usize;
-        for degree in Foliage::generate_foliage_positions(0.8, points, seed) {
-            let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
-            let z = -0.5 - rng.gen_range(-0.1..0.1);
-            let transform = planet.radians_to_transform(degree, origin_offset, z);
-            let scale = rng.gen_range(0.9..1.1);
-            planet_bundle.with_children(|parent| {
-                Tree::spawn(
-                    parent,
-                    &asset_server,
-                    game_state.game_seed,
-                    transform//.with_scale(Vec3::splat(scale))
+        planet_bundle.with_children(|parent| {
+            // First loop: grass under trees (same seed)
+            for i in 0..2 {
+                Foliage::generate_foliage_positions(
+                    0.8, points, seed + i,
+                    Grass::spawn, &asset_server, parent,
+                    &planet, -1.0
                 );
-                Grass::spawn(
-                    parent,
-                    &asset_server,
-                    game_state.game_seed,
-                    transform.with_scale(Vec3::splat(scale))
-                    .with_translation(transform.translation.with_z(-0.1))
-                );
-            });
-        }
-        for degree in Foliage::generate_foliage_positions(0.8, points, seed + 1) {
-            let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
-            let transform = planet.radians_to_transform(degree, origin_offset, -0.1);
-            let scale = rng.gen_range(0.9..1.1);
-            planet_bundle.with_children(|parent| {
-                Grass::spawn(
-                    parent,
-                    &asset_server,
-                    game_state.game_seed,
-                    transform.with_scale(Vec3::splat(scale))
-                );
-            });
-        }
+            }
+            
+            // Trees
+            Foliage::generate_foliage_positions(
+                0.8, points, seed,
+                Tree::spawn, &asset_server, parent,
+                &planet, -1.5
+            );
+        });
 
         let origin_offset = -10.0 - rng.gen_range(0.0..5.0);
         let z = -0.5 - rng.gen_range(-0.1..0.1);
@@ -202,7 +183,7 @@ impl Planet {
     // Update
     fn update(
         time: Res<Time>,
-        mut camera_q: Query<&mut Transform, With<InGameCamera>>,
+        mut camera_q: Query<&mut Transform, With<OuterCamera>>,
         mut camera_rotation: ResMut<CameraPlanetRotation>,
         keyboard_input: Res<ButtonInput<KeyCode>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
@@ -247,25 +228,36 @@ impl Planet {
     /// heights, all being placed next to eachother.
     /// 
     /// Returns Vec<(angle, radius)>
-    pub fn get_surface_radii(seed: u32, resolution: usize, radius: f32, amplitude: f32, frequency: f64) -> Vec<(f32, f32)> {
-        /* I think it's one radius many radii but idk */
-        let mut radii: Vec<(f32, f32)> = Vec::with_capacity(resolution);
-        let perlin = Perlin::new(seed);
-
-        /* Generate radii */
-        for i in 0..resolution {
-            let angle = (PI * 2.0 / resolution as f32) * i as f32;
-        
-            // Map the angle to x and y coordinates on a cylinder
-            let x = angle.cos() as f64 * frequency;
-            let y = angle.sin() as f64 * frequency;
-            
-            let noise = perlin.get([x, y]) as f32;
-            let height = radius + noise * amplitude;
+    pub fn get_surface_radii(config: &PlanetConfiguration) -> Vec<(f32, f32)> {
+        let mut radii: Vec<(f32, f32)> = Vec::with_capacity(config.resolution);
+        let perlin = Perlin::new(config.seed);
     
+        for i in 0..config.resolution {
+            let angle = (std::f32::consts::PI * 2.0 / config.resolution as f32) * i as f32;
+            
+            let mut total_noise = 0.0;
+            let mut frequency = config.frequency / 100.0;
+            let mut amplitude = config.amplitude / 10.0;
+    
+            for _ in 0..config.octaves {
+                let x = angle.cos() as f64 * frequency;
+                let y = angle.sin() as f64 * frequency;
+                
+                // Add some warping to the coordinates
+                let warp_x = perlin.get([x * 0.5, y * 0.5]) * config.warp_factor as f64 / 10.0;
+                let warp_y = perlin.get([x * 0.5 + 100.0, y * 0.5 + 100.0]) * config.warp_factor as f64 / 10.0;
+                
+                let noise = perlin.get([x + warp_x, y + warp_y]) as f32;
+                total_noise += noise * amplitude;
+    
+                frequency *= config.lacunarity as f64 / 100.0;
+                amplitude *= config.persistence / 10.0;
+            }
+    
+            let height = config.radius + total_noise;
             radii.push((angle, height));
         }
-
+    
         radii
     }
 
@@ -274,21 +266,6 @@ impl Planet {
         let slot_id = self.tile_id;
         self.tile_id += 1;
         slot_id
-    }
-
-    fn generate_water(
-        radius: f32,
-        commands: &mut ChildBuilder,
-        meshes: &mut ResMut<Assets<Mesh>>,
-        materials: &mut ResMut<Assets<ColorMaterial>>,
-    ) -> () {
-        let circle = Mesh::from(Circle::new(radius));
-
-        commands.spawn((
-            Mesh2d(meshes.add(circle)),
-            MeshMaterial2d(materials.add(hex!("#003080"))),
-            Transform::from_xyz(0.0, 0.0, -1.),
-        ));
     }
 
     /// If two tiles are connected via cables
@@ -464,23 +441,30 @@ impl PlanetPlugin {
 
 #[derive(Reflect, Resource, InspectorOptions)]
 #[reflect(Resource, InspectorOptions)]
-struct PlanetConfiguration {
+pub struct PlanetConfiguration {
     pub seed: u32,
     pub radius: f32,
     pub resolution: usize,
     pub amplitude: f32,
-
-    #[inspector(min = 0.0)]
     pub frequency: f64,
+    pub octaves: u32,
+    pub persistence: f32,
+    pub lacunarity: f32,
+    pub warp_factor: f32,
 }
+
 impl Default for PlanetConfiguration {
     fn default() -> Self {
         Self {
             seed: 11,
             radius: RES_WIDTH * 0.625,
             resolution: 100,
-            amplitude: 4.0,
-            frequency: 15.0,
+            amplitude: 300.0,
+            frequency: 100.0,
+            octaves: 1,
+            persistence: 14.9,
+            lacunarity: 9.5,
+            warp_factor: 5.0,
         }
     }
 }
@@ -493,7 +477,7 @@ fn on_update(
     mut game_state: ResMut<GameState>,
     mut planet_materials: ResMut<Assets<PlanetMaterial>>,
     mut planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
-    mut camera_q: Query<&mut Transform, With<InGameCamera>>,
+    mut camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
 ) -> () {
     if config.is_changed() {

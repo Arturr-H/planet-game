@@ -7,8 +7,8 @@ use rand_chacha::ChaCha8Rng;
 pub struct Grass;
 
 impl Grass {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
-        let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
+    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, transform: Transform) {
+        let mut rng = rand::thread_rng();//ChaCha8Rng::seed_from_u64(game_seed);
         let x_offset = rng.gen_range(-1.5..1.5);
         let y_offset = rng.gen_range(-1.5..1.5);
 
