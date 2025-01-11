@@ -18,6 +18,9 @@
 * Vissa tiles ska highlighta andra POI:s innan man sätter ut den, exempelvis borren ska highlighta stenar om det är i närheten av borren
 * ✅ Bättre placerings animationer (sätts ner i marken)
 
+## Buggar
+* ✅ Fixa resolution buggen (exempelvis om man går under 100 kraschar det)
+
 ## Elnät
 * Kablar ska finnas i olika varianter. Ovanliga stenar ger bättre kablar (inte lika mycket energi försvinner per meter) men tar längre tid att utvinna. 
 

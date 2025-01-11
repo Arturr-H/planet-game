@@ -68,7 +68,7 @@ pub struct Planet {
     /// The seed of the planet, used to generate the
     /// surface of the planet.
     pub seed: u32,
-    pub altitude: f32,
+    pub amplitude: f32,
     pub frequency: f64,
     pub resolution: usize,
 
@@ -121,9 +121,9 @@ impl Planet {
             tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
-            altitude: 0.0,
-            frequency: 0.0,
-            resolution: 100,
+            amplitude: config.amplitude,
+            frequency: config.frequency,
+            resolution: config.resolution,
             radius,
             radii,
             seed,
@@ -140,7 +140,7 @@ impl Planet {
         let points = (planet.radius / 3.0) as usize;
         planet_bundle.with_children(|parent| {
             Foliage::generate_foliage_positions(
-                0.8, points, seed,
+                1.0, points, seed,
                 Grass::spawn, &asset_server, parent,
                 &planet, -1.0
             );
@@ -371,7 +371,7 @@ impl Planet {
         PointOfInterest::spawn_multiple(PointOfInterestType::Tree(Tree::new()))
             .with_origin_offset(-1.0)
             .with_z_index(-2.0)
-            .with_probability(0.7)
+            .with_probability(0.6)
             .with_local_seed(0)
             .spawn_all(commands, asset_server, self);
     }
@@ -435,6 +435,8 @@ impl PlanetPlugin {
 pub struct PlanetConfiguration {
     pub seed: u32,
     pub radius: f32,
+
+    #[inspector(min = 1)]
     pub resolution: usize,
     pub amplitude: f32,
     pub frequency: f64,
