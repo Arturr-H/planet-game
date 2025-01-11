@@ -21,8 +21,8 @@ impl Default for GameState {
 
 impl GameState {
     fn background_audio(
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
+        mut _commands: Commands,
+        _asset_server: Res<AssetServer>,
     ) {
         // let background_audio = asset_server.load("../assets/audio/forest.wav");
 

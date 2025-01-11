@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::Planet}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet}, systems::{game::PlanetResource, traits::GenericTile}};
 
 /* Constants */
 const POWER_SLOT_OFFSET: f32 = 50.0;
@@ -29,7 +29,6 @@ impl GenericTile for PowerPole {
             },
             transform,
             PowerPole,
-            PIXEL_PERFECT_LAYERS,
         )).id();
 
         if !preview {

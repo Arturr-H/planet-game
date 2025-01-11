@@ -17,9 +17,11 @@ pub struct Tree {
 }
 
 impl Tree {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
-        let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
+    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, transform: Transform) {
+        // let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
+        let mut rng = rand::thread_rng(); // Game seed makes every tree the same
         let initial_age = rng.gen_range(0..4);
+        println!("Tree age: {}", initial_age);
 
         commands.spawn((
             transform,

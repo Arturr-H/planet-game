@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}, utils::color::hex};
+use crate::{components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}, utils::color::hex};
 
 #[derive(Component, Clone, Debug)]
 pub struct EmptyTile;
@@ -29,7 +29,6 @@ impl GenericTile for EmptyTile {
                 ..default()
             },
             self.clone(),
-            PIXEL_PERFECT_LAYERS,
         )).id()
     }
 

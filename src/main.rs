@@ -10,7 +10,7 @@ mod ui;
 
 /* Imports */
 use bevy::{
-    prelude::*, window::{ PresentMode, WindowTheme }
+    picking, prelude::*, window::{ PresentMode, WindowTheme }
 };
 use functional::damageable;
 use systems::game;

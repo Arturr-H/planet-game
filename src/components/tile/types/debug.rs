@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}};
 
 #[derive(Component, Clone, Debug)]
 pub struct DebugTile;
@@ -28,7 +28,6 @@ impl GenericTile for DebugTile {
                 ..default()
             },
             self.clone(),
-            PIXEL_PERFECT_LAYERS,
         )).id()
     }
 
