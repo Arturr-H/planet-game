@@ -19,7 +19,7 @@ pub struct Tree {
 impl Tree {
     pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
         let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
-        let initial_age = rng.gen_range(0..1);
+        let initial_age = rng.gen_range(0..4);
 
         commands.spawn((
             transform,
@@ -75,7 +75,7 @@ impl Tree {
         asset_server: Res<AssetServer>,
     ) {
         for (mut tree, mut sprite) in query.iter_mut() {
-            if rand::random::<f32>() < 0.01 {
+            if rand::random::<f32>() < 0.001 {
                 tree.increase_age();
                 sprite.image = asset_server.load(Self::texture(tree.age))
             }

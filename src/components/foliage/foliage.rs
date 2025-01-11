@@ -25,20 +25,19 @@ impl Foliage {
     /// (otherwise it looks so uniform and non-natural)
     /// I don't care about efficiency because it's
     /// called once in a startup function.
-    pub fn generate_foliage_positions(probability_multiplier: f64, seed: u32) -> Vec<f32> {
+    pub fn generate_foliage_positions(probability_multiplier: f64, points: usize, seed: u32) -> Vec<f32> {
         let mut rng = ChaCha8Rng::seed_from_u64(seed as u64);
         let mut positions = Vec::new();
         let perlin = Perlin::new(seed);
-        let trees = 100;
 
-        for i in 0..trees {
+        for i in 0..points {
             let value = (perlin.get([
-                (i as f64 / (trees as f64 * 0.8)) * 5.123512,
-                (i as f64 / (trees as f64 * 1.25)) * 3.123512,
+                (i as f64 / (points as f64 * 0.8)) * 5.123512,
+                (i as f64 / (points as f64 * 1.25)) * 3.123512,
             ]) + 1.0) / 2.0;
 
             if rng.gen_bool(value.powi(2) * probability_multiplier) {
-                positions.push(i as f32 / trees as f32 * TAU);
+                positions.push(i as f32 / points as f32 * TAU);
             }
         }
     
