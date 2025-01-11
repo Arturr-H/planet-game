@@ -1,31 +1,35 @@
-## TODO
+# TODO
 
-#### Bättre noise system
-✅ Träd och stenar m.m. ska helst placeras i grupper, eftersom jag tror det kan se bättre ut. Alltså måste man göra något noise system för att göra så att träd spawnas mer i vissa områden och mindre i andra.
+## Omskrivningar
+* Skriv om hur POI:s och tiles placeras runt planeten. Det mesta av `Planet` metoder måste skrivas om.
+* Implementera bevy_rand för att undvika att återkalla rand::thread_rng()
+* Ny mapp i components for POI:s, som stenar etc
 
-## Inventory
-Jag tycker att varje spelare ska ha en raket. Varje raket fungerar som spelarens inventory som man kan ta med till andra planeter.
+## Planetgeneration
+* ✅ Implementera vertex baserad planet yta
+* ✅ Träd och stenar m.m. ska helst placeras i grupper, eftersom jag tror det kan se bättre ut. Alltså måste man göra något noise system för att göra så att träd spawnas mer i vissa områden och mindre i andra.
+* ✅ Implementera metod för Planet att göra raycast ner från en degree. 
+* Det ska finnas stenar som exempelvis koppar på planeter som har oändligt med liv. Tar mycket tid att utvinna koppar. Koppar kan användas för kablar. Man ska kunna placera automatiserade borrar på dem. (Dessa stenar ska dyka upp på satelliternas kameror)
+* Proceduerlla träd ?
+* Skuggor under träd => inga fungerande solpaneler där. MHA POI:s och spegelbild av träd?
+  
+## Tiles och placering
+* Vissa tiles ska highlighta andra POI:s innan man sätter ut den, exempelvis borren ska highlighta stenar om det är i närheten av borren
+* ✅ Bättre placerings animationer (sätts ner i marken)
 
-Items som droppar
+## Elnät
+* Kablar ska finnas i olika varianter. Ovanliga stenar ger bättre kablar (inte lika mycket energi försvinner per meter) men tar längre tid att utvinna. 
 
-Det ska finnas stenar som exempelvis koppar på planeter som har oändligt med liv. Tar mycket tid att utvinna koppar. Koppar kan användas för kablar. Man ska kunna placera automatiserade borrar på dem. 
+## Allmänt
+* Jag tycker att varje spelare ska ha en raket. Varje raket fungerar som spelarens inventory som man kan ta med till andra planeter.
+* Implementera items och drops från träd. 
 
-Kablar ska finnas i olika varianter. Ovanliga stenar ger bättre kablar (inte lika mycket energi försvinner per meter) men tar längre tid att utvinna. 
+## Dumma Idéer
+* Orbital lasers som den där Minecraft data packet. 
 
-Dessa stenar ska dyka upp på satelliternas kameror
+## Multiplayer
+* Döpa planeter
 
-Orbital lasers som den där Minecraft data packet. 
-
-Implement bevy_rand to avoid recalling rand::thread_rng()
-
-Proceduerlla träd ?
-
-Skuggor under träd => inga fungerande solpaneler där. MHA POI:s och spegelbild av träd?
-
-Implementera vertex baserad planet yta
-Implementera metod för Planet att göra raycast ner från en degree. 
-Implantera items och drops från träd. 
-Döpa planeter
-
-Rymdskrot 
-Kometnedfall(ovanliga material men förstör mycket)
+## Rymden / solsystemet
+* Rymdskrot
+* Kometnedfall(ovanliga material men förstör mycket)
