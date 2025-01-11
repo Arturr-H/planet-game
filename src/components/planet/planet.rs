@@ -10,7 +10,7 @@ use crate::{camera::{InGameCamera, OuterCamera}, components::{foliage::{animatio
 use super::mesh::generate_planet_mesh;
 
 /* Constants */
-const PLANET_ROTATION_SPEED: f32 = 500.0;
+const PLANET_ROTATION_SPEED: f32 = 1.5;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
 const CAMERA_ELEVATION: f32 = 50.0;
@@ -105,10 +105,6 @@ impl Planet {
         game_state.set_game_seed(seed as u64);
         let mut rng = ChaCha8Rng::seed_from_u64(seed as u64);
         let radius = config.radius.max(15.0);
-        match camera_q.get_single_mut() {
-            Ok(mut e) => e.translation.y = radius + CAMERA_ELEVATION,
-            Err(_) => (),
-        };
 
         /* Spawn mesh & other things */
         let radii = Planet::get_surface_radii(config.seed, config.resolution, radius, config.amplitude * 4.0, config.frequency / 100.0);
@@ -142,9 +138,16 @@ impl Planet {
             seed,
         };
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
+        match camera_q.get_single_mut() {
+            Ok(mut e) => {
+                Self::update_camera_transform(&planet, 0.0, &mut e);
+            },
+            Err(_) => (),
+        };
 
         /* Initialize foliage */
-        for degree in Foliage::generate_foliage_positions(0.8, seed) {
+        let points = (planet.radius / 3.0) as usize;
+        for degree in Foliage::generate_foliage_positions(0.8, points, seed) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let z = -0.5 - rng.gen_range(-0.1..0.1);
             let transform = planet.radians_to_transform(degree, origin_offset, z);
@@ -165,7 +168,7 @@ impl Planet {
                 );
             });
         }
-        for degree in Foliage::generate_foliage_positions(0.8, seed + 1) {
+        for degree in Foliage::generate_foliage_positions(0.8, points, seed + 1) {
             let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
             let transform = planet.radians_to_transform(degree, origin_offset, -0.1);
             let scale = rng.gen_range(0.9..1.1);
@@ -200,6 +203,7 @@ impl Planet {
     fn update(
         time: Res<Time>,
         mut camera_q: Query<&mut Transform, With<InGameCamera>>,
+        mut camera_rotation: ResMut<CameraPlanetRotation>,
         keyboard_input: Res<ButtonInput<KeyCode>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
@@ -208,26 +212,30 @@ impl Planet {
             let mut update = false;
             if keyboard_input.pressed(KeyCode::ArrowRight)
             || keyboard_input.pressed(KeyCode::KeyD) {
-                camera_transform.rotate_z(-time.delta_secs() * planet.rotation_speed());
+                camera_rotation.radians -= time.delta_secs() * PLANET_ROTATION_SPEED;
                 update = true;
             }
             else if keyboard_input.pressed(KeyCode::ArrowLeft)
                 || keyboard_input.pressed(KeyCode::KeyA) {
-                camera_transform.rotate_z(time.delta_secs() * planet.rotation_speed());
+                    camera_rotation.radians += time.delta_secs() * PLANET_ROTATION_SPEED;
                 update = true;
             }
 
             if update {
-                let camera_radians = Self::normalize_radians((camera_transform.rotation.to_euler(EulerRot::XYZ)).2 + PI / 2.0);
-                let (translation, surface_angle) = planet.radians_to_radii(camera_radians, CAMERA_ELEVATION);
-                let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + CAMERA_ELEVATION);
-                camera_transform.translation = Vec3::new(
-                    (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
-                    (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING,
-                    camera_transform.translation.z
-                );
+                Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform);
             }
         }
+    }
+    fn update_camera_transform(planet: &Planet, radians: f32, camera_transform: &mut Transform) -> () {
+        let camera_radians = Self::normalize_radians(radians + PI / 2.0);
+        let (translation, surface_angle) = planet.radians_to_radii(camera_radians, CAMERA_ELEVATION);
+        let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + CAMERA_ELEVATION);
+        camera_transform.translation = Vec3::new(
+            (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
+            (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING,
+            camera_transform.translation.z
+        );
+        camera_transform.rotation = Quat::from_rotation_z(Self::normalize_radians(surface_angle + PI));
     }
 
     /// Returns a vector of all (radii) (multiple radiusses) of 
@@ -246,42 +254,19 @@ impl Planet {
 
         /* Generate radii */
         for i in 0..resolution {
-            let noise = perlin.get([frequency + (i as f64) * frequency]) as f32;
-            let mut height = radius + noise * amplitude;
             let angle = (PI * 2.0 / resolution as f32) * i as f32;
-
-            // These stupid if else statements are needed because
-            // we generate a noise vector that it NOT connected from
-            // the last to the first noise. Say we have vector of values
-            // symbolizing a wave. vec![4, 5, 4, 1, -1, -2]. If we
-            // repeat that noise value (our planet is circular) we have a
-            // big jump from -2 to 4. These if else statements just tries
-            // to smooth it out a bit. Not perfect though.
-            if i == resolution - 1 {
-                height = (radii[0].1 + height) / 2.0;
-            }
-
+        
+            // Map the angle to x and y coordinates on a cylinder
+            let x = angle.cos() as f64 * frequency;
+            let y = angle.sin() as f64 * frequency;
+            
+            let noise = perlin.get([x, y]) as f32;
+            let height = radius + noise * amplitude;
+    
             radii.push((angle, height));
         }
 
         radii
-    }
-
-    /// Ticks every planet
-    fn tick(mut planets: Query<&mut Planet>) -> () {
-        for mut planet in planets.iter_mut() {
-            let keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
-            for key in keys {
-                let tile = planet.tiles.get(&key).unwrap();
-                if tile.can_distribute_energy() {
-                    Tile::distribute_energy(
-                        tile.energy_output(),
-                        tile.tile_id,
-                        &mut planet
-                    );
-                }
-            }
-        }
     }
 
     /// Increments the tile_id and then returns it
@@ -375,22 +360,44 @@ impl Planet {
             .min(self.resolution() as f32 - 1.0) as usize;
         let radii_index_decimals = radii_index - radii_index_int as f32; // 0.0-1.0
 
-        println!("{radii_index_decimals}");
-
+        let (prev_angle, prev_height) = self.radii[radii_index_int.checked_sub(1).unwrap_or(self.radii.len() - 1)];
         let (curr_angle, curr_height) = self.radii[radii_index_int];
         let (next_angle, next_height) = self.radii[(radii_index_int + 1) % self.radii.len()];
+        
+        let prev_amp = prev_height + origin_offset;
         let curr_amp = curr_height + origin_offset;
         let next_amp = next_height + origin_offset;
+
+        let point_prev = Vec2::new(prev_angle.cos() * prev_amp, prev_angle.sin() * prev_amp);
         let point_a = Vec2::new(curr_angle.cos() * curr_amp, curr_angle.sin() * curr_amp);
         let point_b = Vec2::new(next_angle.cos() * next_amp, next_angle.sin() * next_amp);
+        // let delta_prev = point_a - point_prev;
         let delta = point_b - point_a;
         
         let new = point_a + delta * radii_index_decimals;
+        let dy_prev = point_a.y - point_prev.y;
+        let dx_prev = point_a.x - point_prev.x;
+
         let dy = point_b.y - point_a.y;
         let dx = point_b.x - point_a.x;
-        let surface_radians = dy.atan2(dx);
 
-        (new, surface_radians)
+        let prev_surface_radians = Self::normalize_radians(dy_prev.atan2(dx_prev));
+        let surface_radians = Self::normalize_radians(dy.atan2(dx));
+
+        let mut delta_radians = surface_radians - prev_surface_radians;
+        if delta_radians > TAU / 2.0 {
+            delta_radians -= TAU;
+        } else if delta_radians < -TAU / 2.0 {
+            delta_radians += TAU;
+        }
+
+        let mut new_surface_radians = prev_surface_radians + delta_radians * radii_index_decimals;
+        new_surface_radians %= TAU;
+        if new_surface_radians < 0.0 {
+            new_surface_radians += TAU;
+        }
+            
+        (new, new_surface_radians)
     }
     fn normalize_radians(angle: f32) -> f32 {
         ((angle % TAU) + TAU) % TAU
@@ -414,6 +421,10 @@ impl Planet {
     }
 }
 
+#[derive(Resource, Default)]
+pub struct CameraPlanetRotation {
+    pub radians: f32,
+}
 pub struct PlanetPlugin;
 impl Plugin for PlanetPlugin {
     fn build(&self, app: &mut App) {
@@ -422,12 +433,32 @@ impl Plugin for PlanetPlugin {
                 WindSwayPlugin,
                 Material2dPlugin::<PlanetMaterial>::default(),
             ))
+            .init_resource::<CameraPlanetRotation>()
             .init_resource::<PlanetConfiguration>()
             .register_type::<PlanetConfiguration>()
             .add_plugins(ResourceInspectorPlugin::<PlanetConfiguration>::default())
             .add_systems(Startup, Planet::setup)
             .add_systems(Update, (Planet::update, on_update))
-            .add_systems(FixedUpdate, Planet::tick);
+            .add_systems(FixedUpdate, Self::tick);
+    }
+}
+
+impl PlanetPlugin {
+    /// Ticks every planet
+    fn tick(mut planets: Query<&mut Planet>) -> () {
+        for mut planet in planets.iter_mut() {
+            let keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
+            for key in keys {
+                let tile = planet.tiles.get(&key).unwrap();
+                if tile.can_distribute_energy() {
+                    Tile::distribute_energy(
+                        tile.energy_output(),
+                        tile.tile_id,
+                        &mut planet
+                    );
+                }
+            }
+        }
     }
 }
 
