@@ -10,7 +10,7 @@ var<uniform> u_data: UniformData;
 var<uniform> radius: f32;
 
 const V_BORDER_WIDTH: f32 = 0.1;
-fn get_scale_from_radius(radius: f32) -> f32 {
+fn get_scale(radius: f32) -> f32 {
     return 0.3408 * radius + 18.8698;
     // return 200.0;
 }
@@ -46,33 +46,34 @@ const V_LAYER_4 = vec4<f32>(0.003, 0.003, 0.003, 1.0);
 const V_LAYER_4_BORDER = vec4<f32>(0.002, 0.002, 0.002, 1.0); 
 
 
-const V_LAYER_0_HEIGHT: f32 = 0.03; //GRASS
-const V_LAYER_1_HEIGHT: f32 = 0.05;
-const V_LAYER_2_HEIGHT: f32 = 0.05;
-const V_LAYER_3_HEIGHT: f32 = 0.07;
+const V_LAYER_0_HEIGHT: f32 = 10; //GRASS
+const V_LAYER_1_HEIGHT: f32 = 20;
+const V_LAYER_2_HEIGHT: f32 = 15;
+const V_LAYER_3_HEIGHT: f32 = 10;
 const V_LAYER_4_HEIGHT: f32 = 0.05;
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let uv = in.uv;
-
-    let dist = abs(length(in.uv - vec2<f32>(0.5)) - 0.5);
+    let center = vec2<f32>(0.5, 0.5);
+    let dist = abs(length(uv - center) - 0.5);
     let normal = get_normal(uv);
+    // smoothstep(0.0, 1.0 / radius, dist);
 
     let voronoi = get_border(uv, dist);
     let offset_voronoi = get_border(uv - (normal * V_OFFSET), dist);
 
     let border = voronoi.x;
-    let cell_id = voronoi.y;
-    let offset_cell_id = offset_voronoi.y;
+    let cell_id = voronoi.z;
+    let offset_cell_id = offset_voronoi.z;
 
-    let stone_color = get_stone_color(cell_id);
     let border_color = get_border_color(uv, dist);
+    let stone_color = get_stone_color(cell_id);
     let offset_color = get_stone_shadow_color(offset_cell_id);
     
     let base_color = mix(stone_color, border_color, border);
-    let is_same_cell = abs(cell_id - offset_cell_id) < 0.0001;
-    let offset_blend = step(offset_voronoi.x, voronoi.x) * (1.0 - border) * f32(is_same_cell);
+    let is_same_cell = abs(cell_id - offset_cell_id) < 0.001;
+    let offset_blend = step(offset_voronoi.z, voronoi.z) * (1.0 - border) * f32(is_same_cell);
     let final_ground_color = mix(base_color, offset_color, offset_blend);
     
     let coord = vec2u(u32(uv.x * 400.0), u32(uv.y * 400.0));
@@ -81,66 +82,88 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         COATING_COLOR * (0.8 - noise * 0.2),
         1.0
     );
-    // let grass_color = vec4<f32>(0.107, 0.423, 0.093, 1.0);
-    // let noise_grass = mix(vec4<f32>(0.107, 0.423, 0.093, 1.0), vec4<f32>(0.16, 0.41, 0.23, 1.0), noise);
-    // let grass = mix(vec4<f32>( 0.107, 0.423, 0.093, 1.0), vec4<f32>( 0.033, 0.120, 0.030, 1.0), perlin.x / 4294967296.0);
     let final_color = mix(coating, final_ground_color, final_ground_color.a);
+    // let final_color = mix(coating, base_color, base_color.a);
     return final_color;
-    // return vec4<f32>(vec3<f32>(u_data.seed / 1000000), 1.0);
 }
 
-fn get_border_color(uv: vec2<f32>, center_dist: f32) -> vec4<f32> {
-    if (center_dist < (V_LAYER_0_HEIGHT / 2.0)) {
+fn get_border_color(uv: vec2<f32>, dist: f32) -> vec4<f32> {
+    let layer_0_max = V_LAYER_0_HEIGHT;
+    let layer_1_max = layer_0_max + V_LAYER_1_HEIGHT;
+    let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
+    let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
+    // let layer_4_max = layer_4_max + V_LAYER_4_HEIGHT;
+
+    if (1.0 - smoothstep(0.0, layer_0_max / radius, dist) > 0.0) {
         return V_LAYER_0_BORDER;
-    } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0)) {
+    }
+    else if (1.0 - smoothstep(0.0, layer_1_max / radius, dist) > 0.0) {
         return V_LAYER_1_BORDER;
-    } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0 + V_LAYER_2_HEIGHT / 2.0)) {
+    }
+    else if (1.0 - smoothstep(0.0, layer_2_max / radius, dist) > 0.0) {
         return V_LAYER_2_BORDER;
-    } else if (center_dist < (V_LAYER_0_HEIGHT / 2.0 + V_LAYER_1_HEIGHT / 2.0 + V_LAYER_2_HEIGHT / 2.0 + V_LAYER_3_HEIGHT / 2.0)) {
+    } else if (1.0 - smoothstep(0.0, layer_3_max / radius, dist) > 0.0) {
         return V_LAYER_3_BORDER;
-    } else {
+    }
+    else {
         return V_LAYER_4_BORDER;
     }
 }
 
 fn get_stone_color(cell_distance: f32) -> vec4<f32> {
-    if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT)) {
+    let normalized_dist = smoothstep(0.0, 1.0 / radius, cell_distance);
+    let layer_0_max = V_LAYER_0_HEIGHT;
+    let layer_1_max = layer_0_max + V_LAYER_1_HEIGHT;
+    let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
+    let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
+    
+    if (cell_distance > 0.1) {
         return V_LAYER_0_SHADOW;
-    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT)) {
-        return V_LAYER_1_SHADOW;
-    }else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT)) {
-        return V_LAYER_2_SHADOW;
-    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT)) {
-        return V_LAYER_3_SHADOW;
-    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT - V_LAYER_4_HEIGHT)) {
-        return V_LAYER_4_SHADOW;
-    } else {
-        return V_LAYER_4_BORDER;
     }
+    return V_LAYER_4_BORDER;
+    // else if (1.0 - smoothstep(0.0, layer_1_max / radius, cell_distance) > 0.0) {
+    //     return V_LAYER_1_SHADOW;
+    // }
+    // else if (1.0 - smoothstep(0.0, layer_2_max / radius, cell_distance) > 0.0) {
+    //     return V_LAYER_2_SHADOW;
+    // }
+    // else if (1.0 - smoothstep(0.0, layer_3_max / radius, cell_distance) > 0.0) {
+    //     return V_LAYER_3_SHADOW;
+    // }
+    // else {
+    //     return V_LAYER_4_BORDER;
+    // }
 }
 fn get_stone_shadow_color(cell_distance: f32) -> vec4<f32> {
-    if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT)) {
-        return V_LAYER_0;
-    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT)) {
-        return V_LAYER_1;
-    }else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT)) {
-        return V_LAYER_2;
-    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT)) {
-        return V_LAYER_3;
-    } else if (cell_distance >= (1.0 - V_LAYER_0_HEIGHT - V_LAYER_1_HEIGHT - V_LAYER_2_HEIGHT - V_LAYER_3_HEIGHT - V_LAYER_4_HEIGHT)) {
-        return V_LAYER_4;
-    } else {
-        return V_LAYER_4_BORDER;
-    }
+    let layer_0_max = V_LAYER_0_HEIGHT;
+    let layer_1_max = layer_0_max + V_LAYER_1_HEIGHT;
+    let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
+    let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
+    return V_LAYER_4_BORDER;
+    // if (1.0 - smoothstep(0.0, layer_0_max / radius, cell_distance) < 0.0) {
+    //     return V_LAYER_0;
+    // }
+    // else if (1.0 - smoothstep(0.0, layer_1_max / radius, cell_distance) > 0.0) {
+    //     return V_LAYER_1;
+    // }
+    // else if (1.0 - smoothstep(0.0, layer_2_max / radius, cell_distance) > 0.0) {
+    //     return V_LAYER_2;
+    // }
+    // else if (1.0 - smoothstep(0.0, layer_3_max / radius, cell_distance) > 0.0) {
+    //     return V_LAYER_3;
+    // }
+    // else {
+    //     return V_LAYER_4_BORDER;
+    // }
 }
 
-fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
+fn voronoi(x: vec2<f32>, dist: f32) -> vec3<f32> {
     let p = floor(x);
     let f = fract(x);
     
     var mb = vec2<i32>(0);
     var mr = vec2<f32>(0.0);
-    var res = get_scale_from_radius(radius);
+    var res = get_scale(radius);
     var cell_center = vec2<f32>(0.0);
     
     // First pass
@@ -161,7 +184,7 @@ fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
     }
     
     // Second pass
-    res = get_scale_from_radius(radius);
+    res = get_scale(radius);
     for(var j = -2; j <= 2; j++) {
         for(var i = -2; i <= 2; i++) {
             let b = vec2<f32>(f32(mb.x + i), f32(mb.y + j));
@@ -170,19 +193,22 @@ fn voronoi(x: vec2<f32>, depth: f32) -> vec2<f32> {
             res = min(res, d);
         }
     }
-    let depth_spread = V_STONE_SPREAD * (1.0 + depth * 10); // Increase spread with depth
-    let to_center = cell_center / get_scale_from_radius(radius) - vec2<f32>(0.5);
-    let radial_dist = length(to_center) * 2.0;
-    let variation = (random2f(cell_center, u_data.seed).x - 0.5) * depth_spread;
+    let depth_spread = V_STONE_SPREAD * (1.0 + dist * 10); // Increase spread with depth
+    // let to_center = cell_center / get_scale(radius) - vec2<f32>(0.5);
+    // let radial_dist = length(to_center) * 2.0;
+    let center = vec2<f32>(0.5, 0.5);
+    let cell_dist = abs(length(cell_center / get_scale(radius) - center) - 0.5);
 
-    let varied_dist = (radial_dist + variation);
+    let variation = smoothstep(0., random2f(cell_center, u_data.seed).x - 0.5, dist) * 0.0;
 
-    return vec2<f32>(res, varied_dist);
+    let varied_dist = (dist + variation);
+
+    return vec3<f32>(res, varied_dist, cell_dist + variation);
 }
 
-fn get_border(p: vec2<f32>, dist: f32) -> vec2<f32> {
-    let data = voronoi(p * get_scale_from_radius(radius), dist); // Scale factor
-    return vec2<f32>(1.0 - smoothstep(V_BORDER_WIDTH, V_BORDER_WIDTH, data.x), data.y);
+fn get_border(p: vec2<f32>, dist: f32) -> vec3<f32> {
+    let data = voronoi(p * get_scale(radius), dist); // Scale factor
+    return vec3<f32>(1.0 - smoothstep(V_BORDER_WIDTH, V_BORDER_WIDTH, data.x), data.y, data.z);
 }
 
 fn get_normal(uv: vec2<f32>) -> vec2<f32> {
