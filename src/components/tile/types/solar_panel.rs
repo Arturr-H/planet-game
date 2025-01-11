@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}};
 
 /// A solar panel is a tile that generates energy
 /// if sun is shining on it.
@@ -31,7 +31,6 @@ impl GenericTile for SolarPanel {
                 ..default()
             },
             SolarPanel,
-            PIXEL_PERFECT_LAYERS,
         )).id()
     }
 

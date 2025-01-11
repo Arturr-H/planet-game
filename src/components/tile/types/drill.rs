@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{camera::PIXEL_PERFECT_LAYERS, components::{cable::slot::CableSlot, planet::{Planet, PlanetPointOfInterest}}, systems::{game::PlanetResource, traits::GenericTile}, utils::logger};
+use crate::{components::{cable::slot::CableSlot, planet::{Planet, PlanetPointOfInterest}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
@@ -58,7 +58,6 @@ impl GenericTile for Drill {
             AnimationTimer(Timer::from_seconds(0.1, TimerMode::Repeating)),
             animation_indices,
             Drill,
-            PIXEL_PERFECT_LAYERS,
         )).id()
     }
 
