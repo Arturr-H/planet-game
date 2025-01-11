@@ -4,6 +4,9 @@ use bevy::prelude::*;
 use crate::{camera::OuterCamera, components::planet::{Planet, PlayerPlanet}, systems::traits::GenericTile, utils::logger};
 use super::{types::{debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
+/* Constants */
+const TILE_PREVIEW_ELEVATION: f32 = 10.0;
+
 #[derive(Resource)]
 pub struct TilePluginResource {
     selected: Option<(TileType, Entity)>,
@@ -62,8 +65,6 @@ impl TilePlugin {
                 let place_sound = asset_server.load("../assets/audio/place.wav");
                 commands.spawn((AudioPlayer::new(place_sound), PlaybackSettings::DESPAWN));
 
-
-
                 // Add new tile to game state
                 let tile_id = planet.new_tile_id();
                 planet.tiles.insert(tile_id, Tile::new(
@@ -75,7 +76,10 @@ impl TilePlugin {
                     tile_type.spawn(
                         parent,
                         false,
-                        tile_plugin_resource.transform,
+                        tile_plugin_resource.transform.with_translation(
+                            tile_plugin_resource.transform.translation -
+                            Planet::forward(&tile_plugin_resource.transform) * TILE_PREVIEW_ELEVATION
+                        ),
                         &asset_server,
                         &mut texture_atlas_layouts,
                         tile_id
@@ -143,7 +147,7 @@ impl TilePlugin {
             let angle = (cursor_pos - planet_pos).angle_to(Vec2::Y);
             if let Ok(mut transform) = query.get_single_mut() {
                 let degree = Self::snap(- planet_rotation_z - angle, planet.angular_step());
-                let p = planet.radians_to_transform(degree, 0.0, 2.0);
+                let p = planet.radians_to_transform(degree, TILE_PREVIEW_ELEVATION, 2.0);
 
                 tile_plugin_resource.transform = *transform;
                 tile_plugin_resource.degree = degree;
