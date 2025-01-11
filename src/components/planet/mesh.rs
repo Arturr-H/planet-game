@@ -20,8 +20,8 @@ pub fn generate_planet_mesh(
     uvs.push([0.5, 0.5]);
 
     // Planar projection
-    let max_radius = radii.iter().map(|(_, r)| *r).fold(0.0, f32::max);
-    let base_radius = radii[0].1;
+    let _max_radius = radii.iter().map(|(_, r)| *r).fold(0.0, f32::max);
+    let _base_radius = radii[0].1;
     for i in 0..resolution {
         let (curr_angle, curr_radius) = radii[i];
         let x = curr_angle.cos() * curr_radius;

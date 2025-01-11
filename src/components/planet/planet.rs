@@ -471,17 +471,17 @@ impl Default for PlanetConfiguration {
 
 /// On update configuration (system)
 fn on_update(
-    mut config: ResMut<PlanetConfiguration>,
+    config: ResMut<PlanetConfiguration>,
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut game_state: ResMut<GameState>,
-    mut planet_materials: ResMut<Assets<PlanetMaterial>>,
-    mut planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
-    mut camera_q: Query<&mut Transform, With<OuterCamera>>,
+    meshes: ResMut<Assets<Mesh>>,
+    game_state: ResMut<GameState>,
+    planet_materials: ResMut<Assets<PlanetMaterial>>,
+    planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
+    camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
 ) -> () {
     if config.is_changed() {
-        if let Ok((planet, entity)) = planet_q.get_single() {
+        if let Ok((_planet, entity)) = planet_q.get_single() {
             commands.entity(entity).despawn_recursive();
             Planet::setup(
                 commands,

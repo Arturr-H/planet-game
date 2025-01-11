@@ -88,7 +88,7 @@ pub fn initialize(
 
     canvas.resize(canvas_size);
 
-    let image_handle = images.add(canvas);
+    let _image_handle = images.add(canvas);
 
     // commands.spawn((
     //     Camera2d,
