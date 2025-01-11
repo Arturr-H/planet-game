@@ -2,13 +2,18 @@
 use bevy::{prelude::*, sprite::Anchor};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use crate::systems::traits::GenericPointOfInterest;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct Stone;
 
-impl Stone {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, game_seed: u64, transform: Transform) {
-        let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
+impl GenericPointOfInterest for Stone {
+    fn spawn(&self,
+        commands: &mut ChildBuilder,
+        asset_server: &Res<AssetServer>,
+        transform: Transform,
+    ) -> () {
+        let mut rng = rand::thread_rng();
         let texture = rng.gen_range(0..6);
 
         commands.spawn((
@@ -26,7 +31,10 @@ impl Stone {
             ));
         });
     }
-    fn texture(age: u8) -> String {
-        format!("foliage/rock/big/0{}.png", age)
+}
+
+impl Stone {
+    fn texture(variation: u8) -> String {
+        format!("foliage/rock/big/0{}.png", variation)
     }
 }

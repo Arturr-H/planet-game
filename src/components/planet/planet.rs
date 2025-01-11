@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, stone::Stone, tree::Tree, Foliage}, tile::{Tile, TILE_SIZE}}, systems::game::{GameState, PlanetResources}, utils::color::hex, RES_WIDTH};
+use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
 use super::mesh::generate_planet_mesh;
 
 /* Constants */
@@ -45,7 +45,7 @@ pub struct Planet {
 
     /// Planet POI:s are often things that are generated
     /// on the planet. E.g stones that can be mined.
-    pub points_of_interest: HashMap<usize, PlanetPointOfInterest>,
+    pub points_of_interest: HashMap<usize, Vec<PointOfInterest>>,
 
     /// The current tile id we're at. Not public because
     /// the `new_tile_id` method handles incrementing and
@@ -77,12 +77,6 @@ pub struct Planet {
     pub radii: Vec<(f32, f32)>,
 }
 
-/// Something that can be interacted with other machines
-#[derive(Component, Clone, Debug)]
-pub enum PlanetPointOfInterest {
-    Stone
-}
-
 /// This struct is used to mark a planet as the
 /// current players (on this device) planet.
 /// 
@@ -102,10 +96,9 @@ impl Planet {
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
+        let radius = config.radius.max(15.0);
         let seed = config.seed;
         game_state.set_game_seed(seed as u64);
-        let mut rng = ChaCha8Rng::seed_from_u64(seed as u64);
-        let radius = config.radius.max(15.0);
 
         /* Spawn mesh & other things */
         let radii = Planet::get_surface_radii(&config);
@@ -146,35 +139,16 @@ impl Planet {
         /* Initialize foliage */
         let points = (planet.radius / 3.0) as usize;
         planet_bundle.with_children(|parent| {
-            // First loop: grass under trees (same seed)
-            for i in 0..2 {
-                Foliage::generate_foliage_positions(
-                    0.8, points, seed + i,
-                    Grass::spawn, &asset_server, parent,
-                    &planet, -1.0
-                );
-            }
-            
-            // Trees
             Foliage::generate_foliage_positions(
                 0.8, points, seed,
-                Tree::spawn, &asset_server, parent,
-                &planet, -1.5
+                Grass::spawn, &asset_server, parent,
+                &planet, -1.0
             );
         });
 
-        let origin_offset = -10.0 - rng.gen_range(0.0..5.0);
-        let z = -0.5 - rng.gen_range(-0.1..0.1);
-        let index = 4;
-        let transform = planet.index_to_transform(index, origin_offset, z);
-        planet.points_of_interest.insert(index, PlanetPointOfInterest::Stone);
+        /* Initialize POI:s */
         planet_bundle.with_children(|parent| {
-            Stone::spawn(
-                parent,
-                &asset_server,
-                game_state.game_seed,
-                transform
-            );
+            planet.generate_pois(parent, &asset_server);
         });
 
         planet_bundle.insert(planet.clone());
@@ -383,6 +357,21 @@ impl Planet {
         assert!(index < self.tile_places(), "Index needs to be less than the amount of tile places on the planet");
         let radians = index as f32 * self.angular_step();
         self.radians_to_transform(radians, origin_offset, z)
+    }
+
+    /// Generates planet POI:s
+    fn generate_pois(&mut self, commands: &mut ChildBuilder, asset_server: &Res<AssetServer>) -> () {
+        PointOfInterest::spawn_multiple(PointOfInterestType::Stone(Stone))
+            .with_origin_offset(-15.0)
+            .with_z_index(-1.5)
+            .with_probability(0.3)
+            .spawn_all(commands, asset_server, self);
+        
+        PointOfInterest::spawn_multiple(PointOfInterestType::Tree(Tree::new()))
+            .with_origin_offset(-1.0)
+            .with_z_index(-2.0)
+            .with_probability(0.7)
+            .spawn_all(commands, asset_server, self);
     }
 
     /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3

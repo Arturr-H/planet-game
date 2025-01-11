@@ -20,8 +20,8 @@ impl Default for PlanetResources {
     fn default() -> Self {
         Self {
             map: HashMap::from([
-                (PlanetResource::Wood, 0),
-                (PlanetResource::Stone, 0),
+                (PlanetResource::Wood, 150),
+                (PlanetResource::Stone, 150),
             ]),
         }
     }

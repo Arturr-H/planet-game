@@ -6,8 +6,6 @@ use rand_chacha::ChaCha8Rng;
 use std::f32::consts::TAU;
 use crate::components::planet::Planet;
 
-use super::tree::TreePlugin;
-
 /* Constants */
 
 /// This is just a wrapper for methods
@@ -57,13 +55,5 @@ impl Foliage {
                 );
             }
         }
-    }
-}
-
-pub struct FoliagePlugin;
-impl Plugin for FoliagePlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_plugins(TreePlugin);
     }
 }

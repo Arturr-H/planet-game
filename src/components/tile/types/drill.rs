@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, planet::{Planet, PlanetPointOfInterest}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
@@ -68,23 +68,30 @@ impl GenericTile for Drill {
     }
 
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
+        // The position index of the drill
         let position_index = planet.tiles[&tile_id].planet_position_index.clone();
 
-        for (poi_pos_index, poi_type) in planet.points_of_interest.iter() {
+        // Todo: Change to instead index ~DRILL_RANGE tiles aronud instead of searching for performance
+        for (poi_pos_index, local_pois) in planet.points_of_interest.iter() {
             // Must be at least DRILL_RANGE tile indexes
             // away from the POI to drill it.
-            if !planet.number_in_radius(position_index, *poi_pos_index, DRILL_RANGE) { break; }
-            match poi_type {
-                &PlanetPointOfInterest::Stone => planet.tiles.get_mut(&tile_id).map(|e| {
-                    // If we have enough energy, mine one stone.
-                    logger::log::bright_red("drill", format!("Stored: {}", e.powergrid_status.energy_stored));
-                    if e.powergrid_status.energy_stored >= 5.0 {
-                        e.powergrid_status.energy_stored = 0.0;
-                        logger::log::bright_red("drill", "Mined one stone");
-                        planet.resources.add(PlanetResource::Stone, 1);
-                    }
-                })
-            };
+            if !planet.number_in_radius(position_index, *poi_pos_index, DRILL_RANGE) { continue; }
+            for poi in local_pois {
+                match poi.poi_type {
+                    PointOfInterestType::Stone(_) => {
+                        planet.tiles.get_mut(&tile_id).map(|e| {
+                            // If we have enough energy, mine one stone.
+                            logger::log::bright_red("drill", format!("Stored: {}", e.powergrid_status.energy_stored));
+                            if e.powergrid_status.energy_stored >= 5.0 {
+                                e.powergrid_status.energy_stored = 0.0;
+                                logger::log::bright_red("drill", "Mined one stone");
+                                planet.resources.add(PlanetResource::Stone, 1);
+                            }
+                        });
+                    },
+                    _ => {}
+                };
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ use bevy::{
 };
 use functional::damageable;
 use systems::game;
-use components::{cable::{cable, slot}, foliage, planet, tile};
+use components::{cable::{cable, slot}, planet, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -51,13 +51,12 @@ fn main() {
         /* Important plugins */
         .add_plugins((
             game::GameTickPlugin,
+            camera::CameraPlugin,
         ))
         .add_plugins((
-            camera::CameraPlugin,
             /* Preferrable called first as many
                 plugins depend on the planet existing */
             planet::PlanetPlugin,
-            foliage::FoliagePlugin,
 
             slot::CableSlotPlugin,
             cable::CablePlugin,
@@ -68,7 +67,6 @@ fn main() {
             camera::CameraDebugPlugin,
 
             ui::hud::HudPlugin,
-            // ui::inventory::InventoryPlugin,
         ))
         .run();
 }

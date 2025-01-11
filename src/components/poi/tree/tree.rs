@@ -2,26 +2,27 @@
 use bevy::{prelude::*, sprite::Anchor};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{functional::damageable::Damageable, systems::game::PlanetResource, utils::color::hex};
-use super::animation::WindSway;
+use crate::{components::foliage::animation::WindSway, functional::damageable::Damageable, systems::{game::PlanetResource, traits::GenericPointOfInterest}, utils::color::hex};
 
 /* Constants */
 const MAX_TREE_AGE: u8 = 3;
 
 /// Gives wood when destroyed, will regrow after a while
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct Tree {
     /// Stage 0 = sapling, 1 = young tree, ...
     /// TODO: Harvesting trees in a later age yields more wood
     pub age: u8,
 }
 
-impl Tree {
-    pub fn spawn(commands: &mut ChildBuilder, asset_server: &Res<AssetServer>, transform: Transform) {
-        // let mut rng = ChaCha8Rng::seed_from_u64(game_seed);
-        let mut rng = rand::thread_rng(); // Game seed makes every tree the same
+impl GenericPointOfInterest for Tree {
+    fn spawn(&self,
+        commands: &mut ChildBuilder,
+        asset_server: &Res<AssetServer>,
+        transform: Transform,
+    ) -> () {
+        let mut rng = rand::thread_rng();
         let initial_age = rng.gen_range(0..4);
-        println!("Tree age: {}", initial_age);
 
         commands.spawn((
             transform,
@@ -47,23 +48,16 @@ impl Tree {
             .observe(Damageable::on_clicked);
         });
     }
+}
+
+impl Tree {
+    pub fn new() -> Self {
+        Self { age: 0 }
+    }
     fn texture(age: u8) -> String {
         format!("foliage/birch/0{}.png", age)
     }
     fn callback(mut _commands: Commands, _query: Query<&Transform>) -> () {
-        // commands.spawn((
-        //     Sprite {
-        //         custom_size: Some(Vec2::new(100.0, 100.0)),
-        //         color: hex!("#ff0000"),
-                
-        //         ..default()
-        //     },
-        //     Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
-        // ));
-        // println!("CALLBACK WORKED");
-        // for transform in query.iter() {
-        //     println!("CALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKEDCALLBACK WORKED {:?}", transform.translation);
-        // }
     }
 
     /// Increase age
