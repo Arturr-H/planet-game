@@ -117,8 +117,8 @@ fn get_stone_color(cell_distance: f32) -> vec4<f32> {
     let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
     let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
     
-    if (cell_distance > 0.1) {
-        return V_LAYER_0_SHADOW;
+    if (1.0 - smoothstep(0.0, layer_0_max / radius, cell_distance) < 0.0001) {
+        return vec4<f32>(1.0);
     }
     return V_LAYER_4_BORDER;
     // else if (1.0 - smoothstep(0.0, layer_1_max / radius, cell_distance) > 0.0) {
@@ -139,9 +139,9 @@ fn get_stone_shadow_color(cell_distance: f32) -> vec4<f32> {
     let layer_1_max = layer_0_max + V_LAYER_1_HEIGHT;
     let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
     let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
-    return V_LAYER_4_BORDER;
-    // if (1.0 - smoothstep(0.0, layer_0_max / radius, cell_distance) < 0.0) {
-    //     return V_LAYER_0;
+    
+    // if (1.0 - smoothstep(0.0, 0.3, cell_distance) > 0.0001) {
+    //     return vec4<f32>(0.87);
     // }
     // else if (1.0 - smoothstep(0.0, layer_1_max / radius, cell_distance) > 0.0) {
     //     return V_LAYER_1;
@@ -153,7 +153,7 @@ fn get_stone_shadow_color(cell_distance: f32) -> vec4<f32> {
     //     return V_LAYER_3;
     // }
     // else {
-    //     return V_LAYER_4_BORDER;
+        return V_LAYER_4_BORDER;
     // }
 }
 
@@ -193,17 +193,18 @@ fn voronoi(x: vec2<f32>, dist: f32) -> vec3<f32> {
             res = min(res, d);
         }
     }
-    let depth_spread = V_STONE_SPREAD * (1.0 + dist * 10); // Increase spread with depth
-    // let to_center = cell_center / get_scale(radius) - vec2<f32>(0.5);
-    // let radial_dist = length(to_center) * 2.0;
-    let center = vec2<f32>(0.5, 0.5);
-    let cell_dist = abs(length(cell_center / get_scale(radius) - center) - 0.5);
+    
+    // let depth_spread = V_STONE_SPREAD * (1.0 + dist * 10); // Increase spread with depth
+    // // let to_center = cell_center / get_scale(radius) - vec2<f32>(0.5);
+    // // let radial_dist = length(to_center) * 2.0;
+    // let center = vec2<f32>(0.5);
+    // let cell_dist = abs(length(cell_center / get_scale(radius) - center));
 
-    let variation = smoothstep(0., random2f(cell_center, u_data.seed).x - 0.5, dist) * 0.0;
+    // let variation = smoothstep(0., random2f(cell_center, u_data.seed).x - 0.5, dist) * 0.0;
 
-    let varied_dist = (dist + variation);
-
-    return vec3<f32>(res, varied_dist, cell_dist + variation);
+    // let varied_dist = (dist + variation);
+    let cell_dist = length(cell_center / get_scale(radius) - vec2<f32>(0.5));
+    return vec3<f32>(res, cell_dist, cell_dist);
 }
 
 fn get_border(p: vec2<f32>, dist: f32) -> vec3<f32> {
