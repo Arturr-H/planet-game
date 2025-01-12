@@ -7,7 +7,7 @@ use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
-use super::{debug::{self, DebugRadiusFluct, PlanetConfiguration}, mesh::generate_planet_mesh};
+use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 1.5;
@@ -453,7 +453,6 @@ impl Plugin for PlanetPlugin {
             ))
             .init_resource::<CameraPlanetRotation>()
             .init_resource::<PlanetConfiguration>()
-            .insert_resource(DebugRadiusFluct { active: false })
             .register_type::<PlanetConfiguration>()
             .add_plugins(ResourceInspectorPlugin::<PlanetConfiguration>::default())
             .add_systems(Startup, Planet::setup)

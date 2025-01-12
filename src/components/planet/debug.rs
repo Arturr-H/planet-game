@@ -38,7 +38,7 @@ impl Default for PlanetConfiguration {
 
 /// On update configuration (system)
 pub fn on_update(
-    mut config: ResMut<PlanetConfiguration>,
+    config: ResMut<PlanetConfiguration>,
     mut commands: Commands,
     meshes: ResMut<Assets<Mesh>>,
     game_state: ResMut<GameState>,
@@ -46,18 +46,7 @@ pub fn on_update(
     planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
     camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
-    kb: Res<ButtonInput<KeyCode>>,
-    mut res_test: ResMut<DebugRadiusFluct>,
-    time: Res<Time>,
 ) -> () {
-    if kb.just_pressed(KeyCode::KeyL) {
-        res_test.active = !res_test.active;
-    }
-
-    if res_test.active {
-        config.radius = RES_WIDTH * 0.625 + (time.elapsed_secs() * 4.0).sin() * RES_WIDTH * 0.4;
-    }
-
     if config.is_changed() {
         if let Ok((_planet, entity)) = planet_q.get_single() {
             commands.entity(entity).despawn_recursive();
@@ -72,9 +61,4 @@ pub fn on_update(
             );
         }
     }
-}
-
-#[derive(Resource)]
-pub struct DebugRadiusFluct {
-    pub active: bool,
 }
