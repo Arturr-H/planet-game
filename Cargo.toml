@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.15.1", features = ["wav", "dynamic_linking"] }
+bevy = { version = "0.15.1", features = ["wav", "dynamic_linking", "bevy_dev_tools"] }
 bevy-inspector-egui = "0.28.1"
 dotenv = "0.15.0"
 enum_delegate = "0.2.0"

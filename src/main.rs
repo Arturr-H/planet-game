@@ -10,11 +10,13 @@ mod ui;
 
 /* Imports */
 use bevy::{
-    picking, prelude::*, window::{ PresentMode, WindowTheme }
+    picking, prelude::*, window::{ PresentMode, WindowTheme },
+    dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin},
 };
 use functional::damageable;
 use systems::game;
 use components::{cable::{cable, slot}, planet, poi::PointOfInterestPlugin, tile};
+use utils::color::hex;
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -64,10 +66,24 @@ fn main() {
             damageable::DamageablePlugin,
             tile::spawn::TilePlugin,
 
+            ui::hud::HudPlugin,
+            PointOfInterestPlugin,
+        ))
+
+        /* Debug */
+        .add_plugins((
             camera::CameraDebugPlugin,
 
-            ui::hud::HudPlugin,
-            PointOfInterestPlugin
+            FpsOverlayPlugin {
+                config: FpsOverlayConfig {
+                    text_config: TextFont {
+                        font_size: 16.0,
+                        ..Default::default()
+                    },
+                    text_color: hex!("#ffffff"),
+                    enabled: true,
+                },
+            },
         ))
         .run();
 }

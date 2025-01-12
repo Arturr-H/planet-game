@@ -37,8 +37,9 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
                 Node {
                     width: Val::Percent(100.),
                     flex_direction: FlexDirection::Row,
-                    padding: UiRect::all(Val::Px(5.)),
+                    padding: UiRect::all(Val::Px(5.)).with_left(Val::Px(120.0)),
                     row_gap: Val::Px(5.),
+
                     ..default()
                 },
                 BackgroundColor(Color::srgb(0.15, 0.15, 0.15)),

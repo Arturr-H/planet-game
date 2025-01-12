@@ -453,7 +453,7 @@ impl Plugin for PlanetPlugin {
             ))
             .init_resource::<CameraPlanetRotation>()
             .init_resource::<PlanetConfiguration>()
-            .insert_resource(DebugRadiusFluct { active: true })
+            .insert_resource(DebugRadiusFluct { active: false })
             .register_type::<PlanetConfiguration>()
             .add_plugins(ResourceInspectorPlugin::<PlanetConfiguration>::default())
             .add_systems(Startup, Planet::setup)
