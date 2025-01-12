@@ -6,8 +6,8 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
-use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
+use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
+use super::{debug::{self, DebugRadiusFluct, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 1.5;
@@ -161,6 +161,11 @@ impl Planet {
             Foliage::generate_foliage_positions(
                 0.8, 0.5, points, seed,
                 Grass::spawn, &asset_server, parent,
+                &planet, -1.0
+            );
+            Foliage::generate_foliage_positions(
+                0.6, 0.2, points, seed + 1,
+                Rock::spawn, &asset_server, parent,
                 &planet, -1.0
             );
         });
@@ -410,7 +415,7 @@ impl Planet {
         PointOfInterest::spawn_multiple(PointOfInterestType::Tree(Tree::new()))
             .with_origin_offset(-1.0)
             .with_z_index(-2.0)
-            .with_probability(0.6)
+            .with_probability(0.4)
             .with_local_seed(0)
             .spawn_all(commands, asset_server, self);
     }
@@ -448,6 +453,7 @@ impl Plugin for PlanetPlugin {
             ))
             .init_resource::<CameraPlanetRotation>()
             .init_resource::<PlanetConfiguration>()
+            .insert_resource(DebugRadiusFluct { active: true })
             .register_type::<PlanetConfiguration>()
             .add_plugins(ResourceInspectorPlugin::<PlanetConfiguration>::default())
             .add_systems(Startup, Planet::setup)
