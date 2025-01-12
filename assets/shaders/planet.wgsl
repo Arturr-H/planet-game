@@ -11,7 +11,7 @@ var<uniform> radius: f32;
 
 const V_BORDER_WIDTH: f32 = 0.1;
 fn get_scale(radius: f32) -> f32 {
-    return 0.3408 * radius + 18.8698;
+    return 0.3508 * radius + 19.8698;
     // return 200.0;
 }
 // How much the stones spread from 
@@ -46,11 +46,11 @@ const V_LAYER_4 = vec4<f32>(0.003, 0.003, 0.003, 1.0);
 const V_LAYER_4_BORDER = vec4<f32>(0.002, 0.002, 0.002, 1.0); 
 
 
-const V_LAYER_0_HEIGHT: f32 = 10; //GRASS
-const V_LAYER_1_HEIGHT: f32 = 20;
-const V_LAYER_2_HEIGHT: f32 = 15;
-const V_LAYER_3_HEIGHT: f32 = 25;
-const V_LAYER_4_HEIGHT: f32 = 0.05;
+const V_LAYER_0_HEIGHT: f32 = 5; //GRASS
+const V_LAYER_1_HEIGHT: f32 = 6;
+const V_LAYER_2_HEIGHT: f32 = 6;
+const V_LAYER_3_HEIGHT: f32 = 6;
+const V_LAYER_4_HEIGHT: f32 = 7;
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -99,16 +99,14 @@ fn calculate_voronoi_color(uv: vec2<f32>, dist: f32) -> vec4<f32> {
 
     if (1.0 - smoothstep(0.0, layer_0_max / radius, dist) > 0.0) {
         return V_LAYER_0_BORDER;
-    }
-    else if (1.0 - smoothstep(0.0, layer_1_max / radius, dist) > 0.0) {
+    } else if (1.0 - smoothstep(0.0, layer_1_max / radius, dist) > 0.0) {
         return V_LAYER_1_BORDER;
     }
     else if (1.0 - smoothstep(0.0, layer_2_max / radius, dist) > 0.0) {
         return V_LAYER_2_BORDER;
     } else if (1.0 - smoothstep(0.0, layer_3_max / radius, dist) > 0.0) {
         return V_LAYER_3_BORDER;
-    }
-    else {
+    } else {
         return V_LAYER_4_BORDER;
     }
 }
@@ -118,17 +116,19 @@ fn get_stone_color(cell_edge_dist: f32) -> vec4<f32> {
     let layer_1_max = layer_0_max + V_LAYER_1_HEIGHT;
     let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
     let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
+    let layer_4_max = layer_3_max + V_LAYER_4_HEIGHT;
     
     if (1.0 - smoothstep(0.0, layer_0_max / radius, cell_edge_dist) > 0.0) {
-        return V_LAYER_0_BORDER;
+        return V_LAYER_0_SHADOW;
     } else if (1.0 - smoothstep(0.0, layer_1_max / radius, cell_edge_dist) > 0.0) {
         return V_LAYER_1_SHADOW;
     } else if (1.0 - smoothstep(0.0, layer_2_max / radius, cell_edge_dist) > 0.0) {
         return V_LAYER_2_SHADOW;
     } else if (1.0 - smoothstep(0.0, layer_3_max / radius, cell_edge_dist) > 0.0) {
         return V_LAYER_3_SHADOW;
-    }
-    else {
+    } else if (1.0 - smoothstep(0.0, layer_4_max / radius, cell_edge_dist) > 0.0) {
+        return V_LAYER_4_SHADOW;
+    } else {
         return V_LAYER_4_BORDER;
     }
 }
@@ -137,15 +137,18 @@ fn get_stone_shadow_color(offset_cell_edge_dist: f32) -> vec4<f32> {
     let layer_1_max = layer_0_max + V_LAYER_1_HEIGHT;
     let layer_2_max = layer_1_max + V_LAYER_2_HEIGHT;
     let layer_3_max = layer_2_max + V_LAYER_3_HEIGHT;
+    let layer_4_max = layer_3_max + V_LAYER_4_HEIGHT;
     
     if (1.0 - smoothstep(0.0, layer_0_max / radius, offset_cell_edge_dist) > 0.0) {
-        return V_LAYER_0_BORDER;
+        return V_LAYER_0;
     } else if (1.0 - smoothstep(0.0, layer_1_max / radius, offset_cell_edge_dist) > 0.0) {
         return V_LAYER_1;
     } else if (1.0 - smoothstep(0.0, layer_2_max / radius, offset_cell_edge_dist) > 0.0) {
         return V_LAYER_2;
     } else if (1.0 - smoothstep(0.0, layer_3_max / radius, offset_cell_edge_dist) > 0.0) {
         return V_LAYER_3;
+    } else if (1.0 - smoothstep(0.0, layer_4_max / radius, offset_cell_edge_dist) > 0.0) {
+        return V_LAYER_4;
     } else {
         return V_LAYER_4_BORDER;
     }
