@@ -20,12 +20,12 @@ impl GenericPointOfInterest for Tree {
         commands: &mut ChildBuilder,
         asset_server: &Res<AssetServer>,
         transform: Transform,
-    ) -> () {
+    ) -> Entity {
         let mut rng = rand::thread_rng();
         let initial_age = rng.gen_range(0..4);
 
         commands.spawn((
-            transform,
+            transform.with_scale(Vec3::splat(rng.gen_range(0.8..1.2))),
             InheritedVisibility::VISIBLE,
         )).with_children(|parent| {
             parent.spawn((
@@ -46,7 +46,7 @@ impl GenericPointOfInterest for Tree {
                 ),
             ))
             .observe(Damageable::on_clicked);
-        });
+        }).id()
     }
 }
 

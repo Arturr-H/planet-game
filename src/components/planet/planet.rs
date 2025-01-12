@@ -212,6 +212,9 @@ impl Planet {
         camera_transform.rotation = Quat::from_rotation_z(Self::normalize_radians(surface_angle + PI));
     }
 
+    // | vv ------- PLANET SURFACE MESH ------- vv | \\
+    // | vv ------- PLANET SURFACE MESH ------- vv | \\
+
     /// Returns a vector of all (radii) (multiple radiusses) of 
     /// the planet. 
     /// 
@@ -253,81 +256,11 @@ impl Planet {
     
         radii
     }
-
-    /// Increments the tile_id and then returns it
-    pub fn new_tile_id(&mut self) -> usize {
-        let slot_id = self.tile_id;
-        self.tile_id += 1;
-        slot_id
-    }
-
-    /// If two tiles are connected via cables
-    pub fn powergrid_tiles_are_connected(&self, a: usize, b: usize) -> bool {
-        match self.tiles.get(&a) {
-            Some(e) => e.powergrid_status().connected_tiles.contains(&b),
-            None => false,
-        }
-    }
-    pub fn powergrid_register_connection(&mut self, a: usize, b: usize) -> () {
-        if let Some(e) = self.tiles.get_mut(&a) {
-            e.powergrid_status_mut().connected_tiles.push(b);
-        }
-        if let Some(e) = self.tiles.get_mut(&b) {
-            e.powergrid_status_mut().connected_tiles.push(a);
-        }
-    }
-
-    pub const fn radius(&self) -> f32 { self.radius }
-    pub const fn diameter(&self) -> f32 { self.radius * 2.0 }
-    pub const fn circumference(&self) -> f32 { self.diameter() * PI }
-    pub const fn rotation_speed(&self) -> f32 { PLANET_ROTATION_SPEED / self.radius }
-    pub const fn resolution(&self) -> usize { self.resolution }
-
-    /// The angular step between two tiles on the planet. Each tile
-    /// is placed somewhere on the circumference of the planet, and
-    /// the position of the tile is just stored as an angle. This constant
-    /// is the angular distance between two tiles.
-    pub const fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
-    pub const fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
-
-    /// Returns a vector of position indices that are within a certain
-    /// radius of a position index. E.g if we have radius = 2, and the
-    /// position index is 5, we will get [3, 4, 5, 6, 7]. It also wraps
-    /// around the `planet.tile_places()` amount of tiles. So if we have
-    /// radius = 2, and the position index is 0, we will get [98, 99, 0, 1, 2].
-    pub fn numbers_in_radius(&self, position_index: usize, radius: usize) -> Vec<usize> {
-        let mut indices = Vec::with_capacity(radius * 2 + 1);
-        
-        for i in (position_index as isize - radius as isize)..=(position_index as isize + radius as isize) {
-            let mut index = i;
-            if index < 0 {
-                index += self.tile_places() as isize;
-            } else if index >= self.tile_places() as isize {
-                index -= self.tile_places() as isize;
-            }
-            indices.push(index as usize);
-        }
-
-        indices
-    }
-
-    /// Get planet entity or panic
-    pub fn planet_entity(&self) -> Entity { self.planet_entity.unwrap() }
-
-    /// Returns a transform from a radians on the planet, somwhere on the
-    /// circumference of the planet.
+    /// This function is used to get the position of a certain
+    /// point on the planet surface from just one radians value.
     /// 
-    /// ## WARNING
-    /// `radians` needs to be between 0..2π
-    pub fn radians_to_transform(&self, radians: f32, origin_offset: f32, z: f32) -> Transform {
-        /* What the elevation is at the current angle */
-        let (new, surface_radians) = self.radians_to_radii(radians, origin_offset);
-
-        let rotation = Quat::from_rotation_z(surface_radians + PI);
-        Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
-    }
-
-    /// Returns (radii (elevation position from center), angle (slope of current point))
+    /// Returns (radii (elevation position from center), angle (slope
+    /// of current point))
     fn radians_to_radii(&self, radians: f32, origin_offset: f32) -> (Vec2, f32) {
         let radians = radians % TAU;
         let radians_normalized = (Self::normalize_radians(radians) / self.angular_step()) / self.tile_places() as f32;
@@ -375,14 +308,95 @@ impl Planet {
             
         (new, new_surface_radians)
     }
-    fn normalize_radians(angle: f32) -> f32 {
-        ((angle % TAU) + TAU) % TAU
+
+    // | ^^ ------- PLANET SURFACE MESH ------- ^^ | \\
+    // | ^^ ------- PLANET SURFACE MESH ------- ^^ | \\
+
+    // --------------------------------------------------
+
+    // | vv ------- CONSTANT GETTERS ------- vv | \\
+    // | vv ------- CONSTANT GETTERS ------- vv | \\
+
+    pub const fn radius(&self) -> f32 { self.radius }
+    pub const fn diameter(&self) -> f32 { self.radius * 2.0 }
+    pub const fn circumference(&self) -> f32 { self.diameter() * PI }
+    pub const fn rotation_speed(&self) -> f32 { PLANET_ROTATION_SPEED / self.radius }
+    pub const fn resolution(&self) -> usize { self.resolution }
+    pub const fn planet_entity(&self) -> Entity { self.planet_entity.unwrap() }
+
+    /// The angular step between two tiles on the planet. Each tile
+    /// is placed somewhere on the circumference of the planet, and
+    /// the position of the tile is just stored as an angle. This constant
+    /// is the angular distance between two tiles.
+    pub const fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
+    pub const fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
+
+    // | ^^ ------- CONSTANT GETTERS ------- ^^ | \\
+    // | ^^ ------- CONSTANT GETTERS ------- ^^ | \\
+
+    // --------------------------------------------------
+
+    // | vv ------- RADIANS & RADIUS RELATED ------- vv | \\
+    // | vv ------- RADIANS & RADIUS RELATED ------- vv | \\
+
+    /// Returns a transform from a radians on the planet, somwhere on the
+    /// circumference of the planet.
+    /// 
+    /// ## WARNING
+    /// `radians` needs to be between 0..2π
+    pub fn radians_to_transform(&self, radians: f32, origin_offset: f32, z: f32) -> Transform {
+        /* What the elevation is at the current angle */
+        let (new, surface_radians) = self.radians_to_radii(radians, origin_offset);
+
+        let rotation = Quat::from_rotation_z(surface_radians + PI);
+        Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
     }
     pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32) -> Transform {
         assert!(index < self.tile_places(), "Index needs to be less than the amount of tile places on the planet");
         let radians = index as f32 * self.angular_step();
         self.radians_to_transform(radians, origin_offset, z)
     }
+    pub fn normalize_radians(angle: f32) -> f32 {
+        ((angle % TAU) + TAU) % TAU
+    }
+    pub fn radians_to_index(&self, radians: f32) -> usize {
+        let radians = Self::normalize_radians(radians);
+        ((radians / self.angular_step()) as usize).min(self.tile_places() - 1)
+    }
+    /// Returns a vector of position indices that are within a certain
+    /// radius of a position index. E.g if we have radius = 2, and the
+    /// position index is 5, we will get [3, 4, 5, 6, 7]. It also wraps
+    /// around the `planet.tile_places()` amount of tiles. So if we have
+    /// radius = 2, and the position index is 0, we will get [98, 99, 0, 1, 2].
+    pub fn numbers_in_radius(&self, position_index: usize, radius: usize) -> Vec<usize> {
+        let mut indices = Vec::with_capacity(radius * 2 + 1);
+        
+        for i in (position_index as isize - radius as isize)..=(position_index as isize + radius as isize) {
+            let mut index = i;
+            if index < 0 {
+                index += self.tile_places() as isize;
+            } else if index >= self.tile_places() as isize {
+                index -= self.tile_places() as isize;
+            }
+            indices.push(index as usize);
+        }
+
+        indices
+    }
+    /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3
+    /// som man kan multiplicera med ett värde, exempelvis 5.0, vilket ger tillbaka
+    /// en Vec3 som är 5.0 units längre ifrån origo av planeten.
+    /// 
+    /// Eftersom om man skulle addera 5.0 på y koordinaten blir det inte rätt för
+    /// de flesta vinklarna. 
+    pub fn forward(transform: &Transform) -> Vec3 {
+        let forward = transform.rotation * Vec3::Y;
+        let forward_2d = Vec2::new(forward.x, forward.y).normalize().extend(0.0);
+        forward_2d
+    }
+
+    // | ^^ ------- RADIANS & RADIUS RELATED ------- ^^ | \\
+    // | ^^ ------- RADIANS & RADIUS RELATED ------- ^^ | \\
 
     /// Generates planet POI:s
     fn generate_pois(&mut self, commands: &mut ChildBuilder, asset_server: &Res<AssetServer>) -> () {
@@ -400,17 +414,23 @@ impl Planet {
             .with_local_seed(0)
             .spawn_all(commands, asset_server, self);
     }
+    /// Increments the tile_id and then returns it
+    pub fn new_tile_id(&mut self) -> usize {
+        let slot_id = self.tile_id;
+        self.tile_id += 1;
+        slot_id
+    }
 
-    /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3
-    /// som man kan multiplicera med ett värde, exempelvis 5.0, vilket ger tillbaka
-    /// en Vec3 som är 5.0 units längre ifrån origo av planeten.
-    /// 
-    /// Eftersom om man skulle addera 5.0 på y koordinaten blir det inte rätt för
-    /// de flesta vinklarna. 
-    pub fn forward(transform: &Transform) -> Vec3 {
-        let forward = transform.rotation * Vec3::Y;
-        let forward_2d = Vec2::new(forward.x, forward.y).normalize().extend(0.0);
-        forward_2d
+    /// If two tiles are connected via cables
+    pub fn powergrid_tiles_are_connected(&self, a: usize, b: usize) -> bool {
+        match self.tiles.get(&a) {
+            Some(e) => e.powergrid_status().connected_tiles.contains(&b),
+            None => false,
+        }
+    }
+    pub fn powergrid_register_connection(&mut self, a: usize, b: usize) -> () {
+        if let Some(e) = self.tiles.get_mut(&a) { e.powergrid_status_mut().connected_tiles.push(b); }
+        if let Some(e) = self.tiles.get_mut(&b) { e.powergrid_status_mut().connected_tiles.push(a); }
     }
 }
 
@@ -477,7 +497,7 @@ mod tests {
             ..default()
         };
         let radii = Planet::get_surface_radii(&config);
-        for (angle, radius) in radii {
+        for (_, radius) in radii {
             assert!(radius >= config.radius - config.amplitude);
             assert!(radius <= config.radius + config.amplitude);
         }

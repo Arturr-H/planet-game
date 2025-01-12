@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{components::planet::Planet, systems::game::PlanetResource};
+use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::game::PlanetResource};
 
 #[enum_delegate::register]
 #[allow(unused_variables)]
@@ -24,4 +24,7 @@ pub trait GenericTile {
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // Default is to do nothing
     }
+
+    /// What POI:s this tile interacts with
+    fn interacts_with(&self) -> Vec<PointOfInterestType> { Vec::new() }
 }

@@ -10,5 +10,5 @@ pub trait GenericPointOfInterest {
         commands: &mut ChildBuilder,
         asset_server: &Res<AssetServer>,
         transform: Transform,
-    ) -> ();
+    ) -> Entity;
 }

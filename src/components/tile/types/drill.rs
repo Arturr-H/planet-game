@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{stone::Stone, PointOfInterestType}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
@@ -92,6 +92,10 @@ impl GenericTile for Drill {
                 };
             }
         }
+    }
+
+    fn interacts_with(&self) -> Vec<PointOfInterestType> {
+        vec![PointOfInterestType::Stone(Stone)]
     }
 }
 

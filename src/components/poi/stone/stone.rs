@@ -12,7 +12,7 @@ impl GenericPointOfInterest for Stone {
         commands: &mut ChildBuilder,
         asset_server: &Res<AssetServer>,
         transform: Transform,
-    ) -> () {
+    ) -> Entity {
         let mut rng = rand::thread_rng();
         let texture = rng.gen_range(0..6);
 
@@ -29,7 +29,7 @@ impl GenericPointOfInterest for Stone {
                 },
                 Stone,
             ));
-        });
+        }).id()
     }
 }
 

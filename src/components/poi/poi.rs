@@ -1,4 +1,4 @@
-use std::f32::consts::{PI, TAU};
+use std::{f32::consts::{PI, TAU}, mem::discriminant};
 
 /* Imports */
 use bevy::{prelude::*, text::cosmic_text::ttf_parser::loca};
@@ -6,7 +6,7 @@ use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use super::{stone::Stone, tree::Tree};
-use crate::{components::planet::Planet, systems::traits::GenericPointOfInterest};
+use crate::{components::planet::Planet, systems::traits::GenericPointOfInterest, utils::color::hex};
 
 /// Some point of interest on the planet, like a stone or a tree.
 /// POI:s are often something that can be interacted with via e.g
@@ -20,6 +20,8 @@ pub struct PointOfInterest {
 
     /// The type of POI, like stone, tree, etc.
     pub poi_type: PointOfInterestType,
+
+    pub entity: Entity,
 }
 
 #[enum_delegate::implement(GenericPointOfInterest)]
@@ -29,9 +31,17 @@ pub enum PointOfInterestType {
     Tree(Tree),
 }
 
+// We only want to compare the type of POI, the content
+// of each enum variant is a ZST and doesn't need to be compared.
+impl PartialEq for PointOfInterestType {
+    fn eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
+    }
+}
+
 impl PointOfInterest {
     pub fn new(position_index: usize, poi_type: PointOfInterestType) -> Self {
-        Self { position_index, poi_type }
+        Self { position_index, poi_type, entity: Entity::PLACEHOLDER }
     }
     pub fn spawn_multiple(poi_type: PointOfInterestType) -> PointOfInterestBuilder {
         PointOfInterestBuilder::new(poi_type)
@@ -92,7 +102,8 @@ impl PointOfInterestBuilder {
         for position_index in PointOfInterest::generate_position_indices(planet, self.local_seed, self.probability) {
             let z = self.z_index + rand::random::<f32>() * 0.025 - 0.0125;
             let transform = planet.index_to_transform(position_index, self.origin_offset, z);
-            let new_poi = PointOfInterest { position_index, poi_type: self.poi_type };
+            let entity = self.poi_type.spawn(commands, asset_server, transform);
+            let new_poi = PointOfInterest { position_index, poi_type: self.poi_type, entity };
             
             match planet.points_of_interest.get_mut(&position_index) {
                 Some(e) => e.push(new_poi),
@@ -100,8 +111,59 @@ impl PointOfInterestBuilder {
                     planet.points_of_interest.insert(position_index, vec![new_poi]);
                 }
             }
-
-            self.poi_type.spawn(commands, asset_server, transform);
         }
+    }
+}
+
+/// A highlight animation for a point of interest.
+#[derive(Component)]
+pub struct PointOfInterestHighlight {
+    pub time: f32,
+    pub max_time: f32,
+}
+
+impl PointOfInterestHighlight {
+    pub fn new() -> Self {
+        Self { time: 0.0, max_time: 0.05 }
+    }
+
+    pub fn update(
+        mut commands: Commands,
+        time: Res<Time>,
+        mut query: Query<(Entity, &Children, &mut PointOfInterestHighlight)>,
+        mut highlight_q: Query<&mut Sprite>,
+    ) {
+        for (entity, children, mut highlight) in query.iter_mut() {
+            highlight.time += time.delta_secs();
+
+            for child in children {
+                match highlight_q.get_mut(*child) {
+                    Ok(mut sprite) => {
+                        sprite.color = sprite.color.mix(&Color::srgb(0.0, 1.2, 0.0), highlight.time / highlight.max_time);
+                    },
+                    Err(_) => ()
+                }
+            }
+
+            if highlight.time > highlight.max_time {
+                for child in children {
+                    match highlight_q.get_mut(*child) {
+                        Ok(mut sprite) => {
+                            sprite.color = Color::WHITE;
+                        },
+                        Err(_) => ()
+                    }
+                }
+                commands.entity(entity).remove::<PointOfInterestHighlight>();
+            }
+        }
+    }
+}
+
+pub struct PointOfInterestPlugin;
+impl Plugin for PointOfInterestPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(Update, PointOfInterestHighlight::update);
     }
 }

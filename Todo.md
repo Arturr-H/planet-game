@@ -15,7 +15,7 @@
 * ✅ Implementera metod för Planet att göra raycast ner från en degree. 
   
 ## Tiles och placering
-* Vissa tiles ska highlighta andra POI:s innan man sätter ut den, exempelvis borren ska highlighta stenar om det är i närheten av borren
+* ✅ Vissa tiles ska highlighta andra POI:s innan man sätter ut den, exempelvis borren ska highlighta stenar om det är i närheten av borren
 * ✅ Bättre placerings animationer (sätts ner i marken)
 
 ## Buggar

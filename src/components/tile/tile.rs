@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
-use crate::{components::planet::Planet, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
+use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
 use super::types::{debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
 
 /* Constants */

@@ -14,7 +14,7 @@ use bevy::{
 };
 use functional::damageable;
 use systems::game;
-use components::{cable::{cable, slot}, planet, tile};
+use components::{cable::{cable, slot}, planet, poi::PointOfInterestPlugin, tile};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -67,6 +67,7 @@ fn main() {
             camera::CameraDebugPlugin,
 
             ui::hud::HudPlugin,
+            PointOfInterestPlugin
         ))
         .run();
 }

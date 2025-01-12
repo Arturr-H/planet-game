@@ -1,7 +1,7 @@
 /* Imports */
 use std::f32::consts::PI;
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::planet::{Planet, PlayerPlanet}, systems::traits::GenericTile, utils::logger};
+use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, utils::{color::hex, logger}};
 use super::{types::{debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
 /* Constants */
@@ -11,7 +11,7 @@ const TILE_PREVIEW_ELEVATION: f32 = 10.0;
 pub struct TilePluginResource {
     selected: Option<(TileType, Entity)>,
     transform: Transform,
-    degree: f32,
+    position_index: usize,
 }
 
 pub struct TilePlugin;
@@ -22,7 +22,7 @@ impl Plugin for TilePlugin {
             .add_plugins(DrillPlugin)
 
             .add_systems(Update, (Self::update, Self::update_preview))
-            .insert_resource(TilePluginResource { selected: None, transform: Transform::default(), degree: 0.0 });
+            .insert_resource(TilePluginResource { selected: None, transform: Transform::default(), position_index: 0 });
     }
 }
 
@@ -42,7 +42,7 @@ impl TilePlugin {
         // Place tile
         if mb.just_pressed(MouseButton::Left) {
             if let Some((tile_type, tile_preview_entity)) = &tile_plugin_resource.selected {
-                let planet_position_index = Self::snap_index(tile_plugin_resource.degree, planet.angular_step());
+                let planet_position_index = tile_plugin_resource.position_index;
 
                 // Check if position is occupied
                 let false = planet.tiles.values()
@@ -128,6 +128,7 @@ impl TilePlugin {
     /// of the preview tile. (rotating around world matching
     /// cursor pos)
     fn update_preview(
+        mut commands: Commands,
         mut query: Query<&mut Transform, With<TilePreview>>,
         mut tile_plugin_resource: ResMut<TilePluginResource>,
         planet_q: Query<(&Planet, &Transform), (With<Planet>, With<PlayerPlanet>, Without<TilePreview>)>,
@@ -140,23 +141,34 @@ impl TilePlugin {
         let planet_rotation_z = planet_transform.rotation.to_euler(EulerRot::XYZ).2 - PI / 2.0;
         let planet_pos = planet_transform.translation.truncate();
 
-        if let Some(cursor_pos) = window
+        let Some((tile_type, _)) = &tile_plugin_resource.selected else { return };
+        let Some(cursor_pos) = window
             .cursor_position()
             .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())
-        {
-            let angle = (cursor_pos - planet_pos).angle_to(Vec2::Y);
-            if let Ok(mut transform) = query.get_single_mut() {
-                let degree = Self::snap(- planet_rotation_z - angle, planet.angular_step());
-                let p = planet.radians_to_transform(degree, TILE_PREVIEW_ELEVATION, 2.0);
+            else { return };
+        let Ok(mut transform) = query.get_single_mut() else { return };
 
-                tile_plugin_resource.transform = *transform;
-                tile_plugin_resource.degree = degree;
+        let cursor_angle = (cursor_pos - planet_pos).angle_to(Vec2::Y);
+        let index = planet.radians_to_index(- planet_rotation_z - cursor_angle);
+        let p = planet.index_to_transform(index, TILE_PREVIEW_ELEVATION, 2.0);
 
-                //Offset the placement with 1 unit to make sure the object is wedged into the ground
-                transform.translation = p.translation.with_z(-0.4) - Planet::forward(&transform) * 1.; 
-                transform.rotation = p.rotation;
-            }
+        if !tile_type.interacts_with().is_empty() {
+            for pos_index in planet.numbers_in_radius(index, 2) {
+                let Some(pois) = planet.points_of_interest.get(&pos_index) else { continue };
+                'inner: for poi in pois {
+                    if !tile_type.interacts_with().contains(&poi.poi_type) { continue };
+                    let Some(mut entity) = commands.get_entity(poi.entity) else { continue 'inner };
+                    entity.insert(PointOfInterestHighlight::new());
+                }
+            };
         }
+
+        tile_plugin_resource.transform = *transform;
+        tile_plugin_resource.position_index = index;
+
+        //Offset the placement with 1 unit to make sure the object is wedged into the ground
+        transform.translation = p.translation.with_z(-0.4) - Planet::forward(&transform) * 1.; 
+        transform.rotation = p.rotation;
     }
 
     fn snap(angle: f32, snap_to: f32) -> f32 {
