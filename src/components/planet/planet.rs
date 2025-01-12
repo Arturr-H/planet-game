@@ -7,7 +7,7 @@ use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
-use super::mesh::generate_planet_mesh;
+use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 1.5;
@@ -17,7 +17,7 @@ const CAMERA_ELEVATION: f32 = 50.0;
 const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-struct PlanetMaterial {
+pub struct PlanetMaterial {
     #[uniform(0)]
     seed: f32,
     #[uniform(1)]
@@ -77,6 +77,25 @@ pub struct Planet {
     pub radii: Vec<(f32, f32)>,
 }
 
+impl Default for Planet {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            points_of_interest: HashMap::new(),
+            tiles: HashMap::new(),
+            tile_id: 0,
+            resources: PlanetResources::default(),
+            planet_entity: None,
+            amplitude: 10.0,
+            frequency: 1.0,
+            resolution: 100,
+            radius: 100.0,
+            radii: Vec::new(),
+            seed: 0,
+        }
+    }
+}
+
 /// This struct is used to mark a planet as the
 /// current players (on this device) planet.
 /// 
@@ -87,7 +106,7 @@ pub struct PlayerPlanet;
 
 impl Planet {
     // Init
-    fn setup(
+    pub fn setup(
         mut commands: Commands,
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
@@ -271,19 +290,25 @@ impl Planet {
     pub const fn angular_step(&self) -> f32 { TILE_SIZE / self.radius }
     pub const fn tile_places(&self) -> usize { (TAU / self.angular_step()) as usize }
 
-    /// If number lies within the radius of other_number, also wraps around
-    /// the function `tile_places`.
-    /// 
-    /// E.g if the number = 99, and the amount of tile_places on the planet
-    /// is 100, and the other_number = 1, and the radius = 2, then the function
-    /// will return true because the distance between 99 and 1 is 2.
-    /// 
-    /// This function is used to calculate if e.g a drill can drill a stone POI
-    /// (if the stone is close enough to the drill).
-    pub const fn number_in_radius(&self, number: usize, other_number: usize, radius: usize) -> bool {
-        let clockwise_distance = (number + self.tile_places() - other_number) % self.tile_places();
-        let counterclockwise_distance = (other_number + self.tile_places() - number) % self.tile_places();
-        clockwise_distance <= radius || counterclockwise_distance <= radius
+    /// Returns a vector of position indices that are within a certain
+    /// radius of a position index. E.g if we have radius = 2, and the
+    /// position index is 5, we will get [3, 4, 5, 6, 7]. It also wraps
+    /// around the `planet.tile_places()` amount of tiles. So if we have
+    /// radius = 2, and the position index is 0, we will get [98, 99, 0, 1, 2].
+    pub fn numbers_in_radius(&self, position_index: usize, radius: usize) -> Vec<usize> {
+        let mut indices = Vec::with_capacity(radius * 2 + 1);
+        
+        for i in (position_index as isize - radius as isize)..=(position_index as isize + radius as isize) {
+            let mut index = i;
+            if index < 0 {
+                index += self.tile_places() as isize;
+            } else if index >= self.tile_places() as isize {
+                index -= self.tile_places() as isize;
+            }
+            indices.push(index as usize);
+        }
+
+        indices
     }
 
     /// Get planet entity or panic
@@ -406,7 +431,7 @@ impl Plugin for PlanetPlugin {
             .register_type::<PlanetConfiguration>()
             .add_plugins(ResourceInspectorPlugin::<PlanetConfiguration>::default())
             .add_systems(Startup, Planet::setup)
-            .add_systems(Update, (Planet::update, on_update))
+            .add_systems(Update, (Planet::update, debug::on_update))
             .add_systems(FixedUpdate, Self::tick);
     }
 }
@@ -430,61 +455,65 @@ impl PlanetPlugin {
     }
 }
 
-#[derive(Reflect, Resource, InspectorOptions)]
-#[reflect(Resource, InspectorOptions)]
-pub struct PlanetConfiguration {
-    pub seed: u32,
-    pub radius: f32,
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    #[inspector(min = 1)]
-    pub resolution: usize,
-    pub amplitude: f32,
-    pub frequency: f64,
-    pub octaves: u32,
-    pub persistence: f32,
-    pub lacunarity: f32,
-    pub warp_factor: f32,
-}
-
-impl Default for PlanetConfiguration {
-    fn default() -> Self {
-        Self {
-            seed: 11,
-            radius: RES_WIDTH * 0.625,
+    #[test]
+    fn planet_initialization_radii() {
+        let config = PlanetConfiguration {
             resolution: 100,
-            amplitude: 300.0,
-            frequency: 100.0,
-            octaves: 1,
-            persistence: 14.9,
-            lacunarity: 9.5,
-            warp_factor: 5.0,
+            ..default()
+        };
+        let radii = Planet::get_surface_radii(&config);
+        assert_eq!(radii.len(), config.resolution);
+    }
+
+    #[test]
+    fn planet_initialization_radii_values() {
+        let config = PlanetConfiguration {
+            resolution: 100,
+            seed: rand::random(),
+            ..default()
+        };
+        let radii = Planet::get_surface_radii(&config);
+        for (angle, radius) in radii {
+            assert!(radius >= config.radius - config.amplitude);
+            assert!(radius <= config.radius + config.amplitude);
         }
     }
-}
 
-/// On update configuration (system)
-fn on_update(
-    config: ResMut<PlanetConfiguration>,
-    mut commands: Commands,
-    meshes: ResMut<Assets<Mesh>>,
-    game_state: ResMut<GameState>,
-    planet_materials: ResMut<Assets<PlanetMaterial>>,
-    planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
-    camera_q: Query<&mut Transform, With<OuterCamera>>,
-    asset_server: Res<AssetServer>,
-) -> () {
-    if config.is_changed() {
-        if let Ok((_planet, entity)) = planet_q.get_single() {
-            commands.entity(entity).despawn_recursive();
-            Planet::setup(
-                commands,
-                meshes,
-                game_state,
-                planet_materials,
-                camera_q,
-                config,
-                asset_server
-            );
+    #[test]
+    fn planet_initialization_radii_values_seed() {
+        let config = PlanetConfiguration {
+            resolution: 100,
+            seed: 1,
+            ..default()
+        };
+        let radii = Planet::get_surface_radii(&config);
+        let radii_2 = Planet::get_surface_radii(&config);
+        for (i, (angle, radius)) in radii.iter().enumerate() {
+            let (angle_2, radius_2) = radii_2[i];
+            assert_eq!(*angle, angle_2);
+            assert_eq!(*radius, radius_2);
         }
+    }
+
+    #[test]
+    fn number_in_radius() {
+        let planet = Planet {
+            radius: 1000.0,
+            resolution: 100,
+            radii: vec![(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
+            ..default()
+        };
+
+        let tp = planet.tile_places() - 1;
+        assert_eq!(planet.numbers_in_radius(0, 0), vec![0]);
+        assert_eq!(planet.numbers_in_radius(5, 0), vec![5]);
+        assert_eq!(planet.numbers_in_radius(0, 1), vec![tp, 0, 1]);
+        assert_eq!(planet.numbers_in_radius(0, 2), vec![tp - 1, tp, 0, 1, 2]);
+        assert_eq!(planet.numbers_in_radius(0, 3), vec![tp - 2, tp - 1, tp, 0, 1, 2, 3]);
+        assert_eq!(planet.numbers_in_radius(5, 2), vec![3, 4, 5, 6, 7]);
     }
 }

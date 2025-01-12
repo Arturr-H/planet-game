@@ -71,17 +71,16 @@ impl GenericTile for Drill {
         // The position index of the drill
         let position_index = planet.tiles[&tile_id].planet_position_index.clone();
 
-        // Todo: Change to instead index ~DRILL_RANGE tiles aronud instead of searching for performance
-        for (poi_pos_index, local_pois) in planet.points_of_interest.iter() {
-            // Must be at least DRILL_RANGE tile indexes
-            // away from the POI to drill it.
-            if !planet.number_in_radius(position_index, *poi_pos_index, DRILL_RANGE) { continue; }
+        // Must be at least DRILL_RANGE tile indexes
+        // away from the POI to drill it.
+        for poi_pos_index in planet.numbers_in_radius(position_index, DRILL_RANGE) {
+            let Some(local_pois) = planet.points_of_interest.get(&poi_pos_index) else { continue; };
+
             for poi in local_pois {
                 match poi.poi_type {
                     PointOfInterestType::Stone(_) => {
                         planet.tiles.get_mut(&tile_id).map(|e| {
                             // If we have enough energy, mine one stone.
-                            logger::log::bright_red("drill", format!("Stored: {}", e.powergrid_status.energy_stored));
                             if e.powergrid_status.energy_stored >= 5.0 {
                                 e.powergrid_status.energy_stored = 0.0;
                                 logger::log::bright_red("drill", "Mined one stone");
