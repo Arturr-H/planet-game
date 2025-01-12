@@ -18,7 +18,7 @@ impl Grass {
         )).with_children(|parent| {
             parent.spawn((
                 Sprite {
-                    image: asset_server.load(Self::texture()),
+                    image: asset_server.load(Self::texture(rng.gen_range(0..4))),
                     anchor: Anchor::BottomCenter,
                     flip_x: rng.gen_bool(0.5),
                     ..default()
@@ -27,7 +27,7 @@ impl Grass {
             ));
         });
     }
-    fn texture() -> String {
-        format!("foliage/grass/grass.png")
+    fn texture(variant: u8) -> String {
+        format!("foliage/grass/0{variant}.png")
     }
 }

@@ -156,10 +156,10 @@ impl Planet {
         };
 
         /* Initialize foliage */
-        let points = (planet.radius / 3.0) as usize;
+        let points = (planet.radius / 1.0) as usize;
         planet_bundle.with_children(|parent| {
             Foliage::generate_foliage_positions(
-                1.0, points, seed,
+                0.8, 0.5, points, seed,
                 Grass::spawn, &asset_server, parent,
                 &planet, -1.0
             );

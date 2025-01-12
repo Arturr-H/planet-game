@@ -26,7 +26,7 @@ impl Foliage {
     /// I don't care about efficiency because it's
     /// called once in a startup function.
     pub fn generate_foliage_positions(
-        probability_multiplier: f64, points: usize, seed: u32,
+        probability_multiplier: f64, min_prob: f64, points: usize, seed: u32,
         spawn_function: fn(&mut ChildBuilder, &Res<AssetServer>, Transform),
         asset_server: &Res<AssetServer>, commands: &mut ChildBuilder,
         planet: &Planet, z_index: f32
@@ -41,7 +41,7 @@ impl Foliage {
             ]) + 1.0) / 2.0;
             let degree = (i as f32 / points as f32) * TAU;
 
-            if rng.gen_bool(value.powi(2) * probability_multiplier) {
+            if rng.gen_bool((value.powi(2) * probability_multiplier).max(min_prob)) {
                 let origin_offset = -6.0 - rng.gen_range(0.0..5.0);
                 let transform = planet.radians_to_transform(degree, origin_offset, -0.1);
                 let scale = rng.gen_range(0.9..1.1);
