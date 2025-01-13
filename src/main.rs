@@ -13,6 +13,7 @@ use bevy::{
     picking, prelude::*, window::{ PresentMode, WindowTheme },
     dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin},
 };
+use camera::background::background::BackgroundPlugin;
 use functional::damageable;
 use systems::game;
 use components::{cable::{cable, slot}, planet, poi::PointOfInterestPlugin, tile};
@@ -59,6 +60,7 @@ fn main() {
             /* Preferrable called first as many
                 plugins depend on the planet existing */
             planet::PlanetPlugin,
+            BackgroundPlugin,
 
             slot::CableSlotPlugin,
             cable::CablePlugin,

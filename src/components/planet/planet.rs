@@ -201,7 +201,7 @@ impl Planet {
         };
 
         /* Atmosphere */
-        let atmosphere_radius = radius * 5.1;
+        let atmosphere_radius = radius + 800.1;
         planet_bundle.with_children(|parent| {
             parent.spawn((
                 Mesh2d(meshes.add(Circle::new(atmosphere_radius))),
