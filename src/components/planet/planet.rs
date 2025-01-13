@@ -6,13 +6,14 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
+use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, solar_system::Orbit, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
 const PLANET_ROTATION_SPEED: f32 = 1.5;
 const FOLIAGE_SPAWNING_CHANCE: f32 = 0.8;
 const PLANET_SHADER_PATH: &str = "shaders/planet.wgsl";
+const PLANET_ATMOSPHERE_SHADER_PATH: &str = "shaders/planet_atmosphere.wgsl";
 const CAMERA_ELEVATION: f32 = 50.0;
 const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
 
@@ -27,6 +28,25 @@ pub struct PlanetMaterial {
 impl Material2d for PlanetMaterial {
     fn fragment_shader() -> ShaderRef {
         PLANET_SHADER_PATH.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
+    }
+}
+
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct PlanetAtmosphereMaterial {
+    #[uniform(0)]
+    planet_radius: f32,
+
+    #[uniform(1)]
+    atmosphere_radius: f32,
+}
+
+impl Material2d for PlanetAtmosphereMaterial {
+    fn fragment_shader() -> ShaderRef {
+        PLANET_ATMOSPHERE_SHADER_PATH.into()
     }
 
     fn alpha_mode(&self) -> AlphaMode2d {
@@ -111,7 +131,8 @@ impl Planet {
         mut meshes: ResMut<Assets<Mesh>>,
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
-        mut camera_q: Query<&mut Transform, With<OuterCamera>>,
+        mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
+        mut camera_q: Query<(&mut Transform, Entity), With<OuterCamera>>,
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
@@ -130,7 +151,9 @@ impl Planet {
             })),
             PickingBehavior::IGNORE,
             Transform::from_xyz(0.0, 0.0, 1.0),
+            Name::new("Planet"),
         ));
+        let planet_bundle_id = planet_bundle.id();
 
         /* Insert the Planet component */
         let mut planet = Self {
@@ -148,12 +171,6 @@ impl Planet {
             seed,
         };
         planet_bundle.insert(PlayerPlanet); // TODO: Only insert if it's the players own
-        match camera_q.get_single_mut() {
-            Ok(mut e) => {
-                Self::update_camera_transform(&planet, 0.0, &mut e);
-            },
-            Err(_) => (),
-        };
 
         /* Initialize foliage */
         let points = (planet.radius / 1.0) as usize;
@@ -174,8 +191,25 @@ impl Planet {
         planet_bundle.with_children(|parent| {
             planet.generate_pois(parent, &asset_server);
         });
-
+        
         planet_bundle.insert(planet.clone());
+        match camera_q.get_single_mut() {
+            Ok((mut transform, entity)) => {
+                commands.entity(entity).set_parent(planet_bundle_id);
+                Self::update_camera_transform(&planet, 0.0, &mut transform);
+            },
+            Err(_) => (),
+        };
+
+        let atmosphere_radius = radius * 5.1;
+        commands.spawn((
+            Mesh2d(meshes.add(Circle::new(atmosphere_radius))),
+            MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
+                planet_radius: radius,
+                atmosphere_radius,
+            })),
+            Transform::from_xyz(0.0, 0.0, -10.0)
+        ));
     }
 
     // Update
@@ -450,6 +484,7 @@ impl Plugin for PlanetPlugin {
             .add_plugins((
                 WindSwayPlugin,
                 Material2dPlugin::<PlanetMaterial>::default(),
+                Material2dPlugin::<PlanetAtmosphereMaterial>::default(),
             ))
             .init_resource::<CameraPlanetRotation>()
             .init_resource::<PlanetConfiguration>()
