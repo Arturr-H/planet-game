@@ -45,12 +45,15 @@ pub fn on_update(
     planet_materials: ResMut<Assets<PlanetMaterial>>,
     planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
     planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
-    camera_q: Query<(&mut Transform, Entity), With<OuterCamera>>,
+    camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
 ) -> () {
     if config.is_changed() {
         if let Ok((_planet, entity)) = planet_q.get_single() {
-            commands.entity(entity).despawn_recursive();
+            match commands.get_entity(entity) {
+                Some(e) => e.despawn_recursive(),
+                None => ()
+            };
             Planet::setup(
                 commands,
                 meshes,

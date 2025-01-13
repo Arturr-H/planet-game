@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, solar_system::Orbit, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
+use crate::{camera::OuterCamera, components::{foliage::{animation::WindSwayPlugin, grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -132,7 +132,7 @@ impl Planet {
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
-        mut camera_q: Query<(&mut Transform, Entity), With<OuterCamera>>,
+        mut camera_q: Query<&mut Transform, With<OuterCamera>>,
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
@@ -194,22 +194,24 @@ impl Planet {
         
         planet_bundle.insert(planet.clone());
         match camera_q.get_single_mut() {
-            Ok((mut transform, entity)) => {
-                commands.entity(entity).set_parent(planet_bundle_id);
+            Ok(mut transform) => {
                 Self::update_camera_transform(&planet, 0.0, &mut transform);
             },
             Err(_) => (),
         };
 
+        /* Atmosphere */
         let atmosphere_radius = radius * 5.1;
-        commands.spawn((
-            Mesh2d(meshes.add(Circle::new(atmosphere_radius))),
-            MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
-                planet_radius: radius,
-                atmosphere_radius,
-            })),
-            Transform::from_xyz(0.0, 0.0, -10.0)
-        ));
+        planet_bundle.with_children(|parent| {
+            parent.spawn((
+                Mesh2d(meshes.add(Circle::new(atmosphere_radius))),
+                MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
+                    planet_radius: radius,
+                    atmosphere_radius,
+                })),
+                Transform::from_xyz(0.0, 0.0, -10.0)
+            ));
+        });
     }
 
     // Update
