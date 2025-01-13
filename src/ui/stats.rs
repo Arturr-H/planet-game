@@ -43,7 +43,8 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
         },
         BackgroundColor(hex!("#503010")),
         StatsUI,
-        UI_LAYERS
+        UI_LAYERS,
+        Visibility::Hidden,
     ))
     .with_children(|parent| {
         parent.spawn((

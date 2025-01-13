@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use bevy::prelude::*;
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, utils::{color::hex, logger}};
-use super::{types::{debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
+use super::{types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
@@ -94,6 +94,7 @@ impl TilePlugin {
         if kb.just_pressed(KeyCode::KeyW) { tile = Some(TileType::DebugTile(DebugTile)); }
         if kb.just_pressed(KeyCode::KeyE) { tile = Some(TileType::SolarPanel(SolarPanel)); }
         if kb.just_pressed(KeyCode::KeyR) { tile = Some(TileType::Drill(Drill)); }
+        if kb.just_pressed(KeyCode::KeyT) { tile = Some(TileType::Battery(Battery)); }
         if kb.just_pressed(KeyCode::Escape) {
             for entity in preview_q.iter() { commands.entity(entity).despawn(); }
             tile_plugin_resource.selected = None;
