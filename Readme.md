@@ -1,3 +1,5 @@
 ## Planet game 
+A planet game we're working on using the bevy game engine. We haven't decided on the full game mechanics yet, or the core gameplay loop. We've been working the `wgsl` shaders (primarily for the ground shader) and manual 2d meshes for creating the planets.
 
-Kolla <a href="./Info.md">Info.md<a>
+## Contributions?
+We are not looking for contributors, but if you have some ideas / changes you think would be cool feel free to make a PR :)
