@@ -31,9 +31,24 @@ impl WindSway {
     }
 }
 
-pub struct WindSwayPlugin;
-impl Plugin for WindSwayPlugin {
+#[derive(Component)]
+pub struct Rotate(pub f32);
+impl Rotate {
+    pub fn update(
+        time: Res<Time>,
+        mut query: Query<(&Rotate, &mut Transform)>,
+    ) {
+        let time = time.delta_secs();
+        for (rotate, mut transform) in query.iter_mut() {
+            transform.rotate(Quat::from_rotation_z(rotate.0 * time));
+        }
+    }
+}
+
+pub struct FoliageAnimationPlugin;
+impl Plugin for FoliageAnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, WindSway::update);
+        app
+            .add_systems(Update, (WindSway::update, Rotate::update));
     }
 }

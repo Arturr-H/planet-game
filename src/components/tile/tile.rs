@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
-use super::types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel};
+use super::types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
@@ -31,7 +31,8 @@ pub enum TileType {
     SolarPanel(SolarPanel),
     DebugTile(DebugTile),
     Battery(Battery),
-    PowerPole(PowerPole)
+    PowerPole(PowerPole),
+    WindTurbine(WindTurbine),
 }
 
 impl Tile {
@@ -89,6 +90,7 @@ impl Tile {
 
         match &self.tile_type {
             SolarPanel(_) => 1.0,
+            &WindTurbine(_) => 5.0,
             DebugTile(_) | Empty(_) => 0.0,
             PowerPole(_) => 0.0,
             Drill(_) => 0.0,
@@ -112,14 +114,14 @@ impl Tile {
 
         match self.tile_type {
             DebugTile(_) | Drill(_) | Battery(_) => true,
-            SolarPanel(_) | PowerPole(_) | Empty(_) => false,
+            SolarPanel(_) | PowerPole(_) | Empty(_) | WindTurbine(_) => false,
         }
     }
     pub fn can_distribute_energy(&self) -> bool {
         use TileType::*;
 
         match self.tile_type {
-            SolarPanel(_) => true,
+            SolarPanel(_) | WindTurbine(_) => true,
             DebugTile(_) | PowerPole(_) | Empty(_) | Drill(_) | Battery(_) => false,
         }
     }

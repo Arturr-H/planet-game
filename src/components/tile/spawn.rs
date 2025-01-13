@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use bevy::prelude::*;
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, utils::{color::hex, logger}};
-use super::{types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel}, Tile, TileType};
+use super::{types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
@@ -59,7 +59,7 @@ impl TilePlugin {
                 };
 
                 // Remove preview
-                commands.entity(*tile_preview_entity).despawn();
+                commands.entity(*tile_preview_entity).despawn_recursive();
                 
                 //Play sound
                 let place_sound = asset_server.load("../assets/audio/place.wav");
@@ -95,6 +95,7 @@ impl TilePlugin {
         if kb.just_pressed(KeyCode::KeyE) { tile = Some(TileType::SolarPanel(SolarPanel)); }
         if kb.just_pressed(KeyCode::KeyR) { tile = Some(TileType::Drill(Drill)); }
         if kb.just_pressed(KeyCode::KeyT) { tile = Some(TileType::Battery(Battery)); }
+        if kb.just_pressed(KeyCode::KeyY) { tile = Some(TileType::WindTurbine(WindTurbine)); }
         if kb.just_pressed(KeyCode::Escape) {
             for entity in preview_q.iter() { commands.entity(entity).despawn(); }
             tile_plugin_resource.selected = None;

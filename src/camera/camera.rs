@@ -117,7 +117,7 @@ impl CameraPlugin {
             HIGH_RES_LAYERS,
 
             PostProcessSettings {
-                base_pixel_size: 1.1,
+                base_pixel_size: 1.025,
                 screen_height: 0.0,
                 screen_width: 0.0,
                 camera_scale: 1.0,

@@ -23,11 +23,12 @@ struct Label;
 pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup)
+        app
+            // .add_systems(Startup, setup)
             // .init_resource::<Events<OpenStats>>()
             .add_event::<OpenStats>()
-            .init_resource::<StatsUIState>()
-            .add_systems(FixedUpdate, update);
+            .init_resource::<StatsUIState>();
+            // .add_systems(FixedUpdate, update);
     }
 }
 
