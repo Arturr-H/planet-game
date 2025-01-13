@@ -12,6 +12,7 @@ use bevy::{
     }, window::WindowResized
 };
 use crate::{components::planet::PlayerPlanet, systems::game::GameState, utils::color::hex, RES_HEIGHT, RES_WIDTH};
+use super::post_processing::{PostProcessPlugin, PostProcessSettings};
 
 /// Default render layers for pixel-perfect rendering.
 /// You can skip adding this component, as this is the default.
@@ -25,8 +26,10 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_plugins(PostProcessPlugin)
             .insert_resource(ClearColor(hex!("#000000")))
-            .add_systems(Startup, Self::initialize);
+            .add_systems(Startup, Self::initialize)
+            .add_systems(Update, Self::update_camera_scale);
             // .add_systems(Update, fit_canvas);
     }
 }
@@ -63,6 +66,7 @@ impl CameraPlugin {
     pub fn initialize(
         mut commands: Commands,
         mut images: ResMut<Assets<Image>>,
+        window: Query<&Window>,
     ) -> () {
         let canvas_size = Extent3d {
             width: RES_WIDTH as u32,
@@ -103,12 +107,22 @@ impl CameraPlugin {
         //     PIXEL_PERFECT_LAYERS,
         // ));
 
+        
         // commands.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
+        let ratio = window.single().size().x / RES_WIDTH;
         commands.spawn((
             Camera2d,
             Msaa::Off,
             OuterCamera,
-            HIGH_RES_LAYERS
+            HIGH_RES_LAYERS,
+
+            PostProcessSettings {
+                base_pixel_size: 1.1,
+                screen_height: 0.0,
+                screen_width: 0.0,
+                camera_scale: 1.0,
+                ..default()
+            },
         ));
         commands.spawn((
             Camera2d,
@@ -124,46 +138,50 @@ impl CameraPlugin {
         ));
     }
 
-    // Scales camera projection to fit the window (integer
-    // multiples only) on window resize.
-    // pub fn fit_canvas(
-    //     mut resize_events: EventReader<WindowResized>,
-    //     mut projections: Query<&mut OrthographicProjection, With<OuterCamera>>,
-    // ) {
-    //     for event in resize_events.read() {
-    //         let h_scale = event.width / RES_WIDTH as f32;
-    //         let v_scale = event.height / RES_HEIGHT as f32;
-    //         let mut projection = projections.single_mut();
-    //         projection.scale = 1. / h_scale.min(v_scale).round();
-    //     }
-    // }
+    pub fn update_camera_scale(
+        mut resize_events: EventReader<WindowResized>,
+        mut projections: Query<(&mut OrthographicProjection, &mut PostProcessSettings), With<OuterCamera>>,
+    ) {
+        for event in resize_events.read() {
+            let h_scale = event.width / RES_WIDTH as f32;
+            let v_scale = event.height / RES_HEIGHT as f32;
+            let (mut projection, mut settings) = projections.single_mut();
+            settings.screen_width = event.width;
+            settings.screen_height = event.height;
+            // projection.scale = 1. / h_scale.min(v_scale).round();
+        }
+    }
 }
 
 impl CameraDebugPlugin {
     /// Zooms the camera in and out using the mouse wheel.
     pub fn debug_control(
-        mut query: Query<&mut OrthographicProjection, With<OuterCamera>>,
+        mut query: Query<(&mut OrthographicProjection, &mut PostProcessSettings), With<OuterCamera>>,
         mut scroll: EventReader<MouseWheel>,
         kb: Res<ButtonInput<KeyCode>>
     ) {
         for event in scroll.read() {
-            for mut projection in query.iter_mut() {
+            for (mut projection, mut settings) in query.iter_mut() {
                 projection.scale *= 1. + event.y * -0.0002;
+                settings.camera_scale = projection.scale;
             }
         }
 
         if kb.just_pressed(KeyCode::Backspace) {
-            for mut projection in query.iter_mut() {
+            for (mut projection, mut settings) in query.iter_mut() {
                 projection.scale = 1.;
+                settings.camera_scale = projection.scale;
             }
         }
         if kb.pressed(KeyCode::KeyL) {
-            for mut projection in query.iter_mut() {
+            for (mut projection, mut settings) in query.iter_mut() {
                 projection.scale *= 1.01;
+                settings.camera_scale = projection.scale;
             }
         }else if kb.pressed(KeyCode::KeyO) {
-            for mut projection in query.iter_mut() {
+            for (mut projection, mut settings) in query.iter_mut() {
                 projection.scale *= 0.99;
+                settings.camera_scale = projection.scale;
             }
         }
     }
