@@ -235,6 +235,3 @@ fn random2f(p: vec2<f32>, seed: f32) -> vec2<f32> {
         f32(rnd.y) / 4294967295.0
     );
 }
-
-fn permute_four(x: vec4<f32>) -> vec4<f32> { return ((x * 34. + 1.) * x) % vec4<f32>(289.); }
-fn fade_two(t: vec2<f32>) -> vec2<f32> { return t * t * t * (t * (t * 6. - 15.) + 10.); }
