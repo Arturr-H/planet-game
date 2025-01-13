@@ -1,15 +1,13 @@
 /* Imports */
 use super::slot_state::SlotCablePlacementResource;
 use crate::{
-    camera::HIGH_RES_LAYERS,
-    components::{
+    camera::HIGH_RES_LAYERS, components::{
         cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH},
         planet::{Planet, PlayerPlanet},
         tile::TILE_SIZE
-    },
-    utils::{color::hex, logger}
+    }, systems::game::GameState, ui::stats::OpenStats, utils::{color::hex, logger}
 };
-use bevy::prelude::*;
+use bevy::{ecs::event, prelude::*};
 
 /* Constants */
 const OUTLINE_SIZE: f32 = 6.0;
@@ -84,7 +82,8 @@ impl CableSlot {
         mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
         mut children_q: Query<&mut Sprite, Without<Self>>,
         mut slot_res: ResMut<SlotCablePlacementResource>,
-        cable_preview_q: Query<Entity, With<CablePreview>>
+        cable_preview_q: Query<Entity, With<CablePreview>>,
+        mut events: EventWriter<OpenStats>,
     ) {
         click.propagate(false);
 
@@ -94,6 +93,7 @@ impl CableSlot {
         
         if let Ok((slot, mut sprite, children, transform)) = slots_q.get_mut(click.entity()) {
             if let Some((id, other_entity)) = slot_res.active() {
+                events.send(OpenStats{open: false, tile_id: None});
                 Cable::remove_previews(&mut commands, cable_preview_q);
                 needs_highlight_reset = true;
                 let occupied = planet.powergrid_tiles_are_connected(id, slot.tile_id);
@@ -129,6 +129,8 @@ impl CableSlot {
                     &mut children_q,
                     &slot_res
                 );
+                // planet.tiles[slot.tile_id]
+                events.send(OpenStats{open: true, tile_id: Some(slot.tile_id)});
 
                 highlight_all = true;
             }
@@ -250,12 +252,15 @@ impl CableSlot {
         mut slots_q: Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
         mut children_q: Query<&mut Sprite, Without<Self>>,
         mut commands: Commands,
-        cable_preview_q: Query<Entity, With<CablePreview>>
+        cable_preview_q: Query<Entity, With<CablePreview>>,
+        mut events: EventWriter<OpenStats>
+
     ) {
         if kb.just_pressed(KeyCode::Escape) {
             Cable::remove_previews(&mut commands, cable_preview_q);
             Self::clear_all_highlight(&mut slots_q, &mut children_q, &slot_res);
             slot_res.reset();
+            events.send(OpenStats{open: false, tile_id: None});
         }
     }
 

@@ -67,6 +67,7 @@ fn main() {
             tile::spawn::TilePlugin,
 
             ui::hud::HudPlugin,
+            ui::stats::StatsPlugin,
             PointOfInterestPlugin,
         ))
 

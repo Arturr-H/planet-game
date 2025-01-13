@@ -82,7 +82,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let noise_scale = vec2u(u32(uv.x * 5.0 * radius), u32(uv.y * 5.0 * radius));
     let noise = f32(pcg2d(noise_scale).x) / 4294967295.0;
     let coating = vec4<f32>(
-        COATING_COLOR * (0.8 - noise * 0.2),
+        COATING_COLOR * (1.0 - noise * 0.0),
         1.0
     );
     let final_color = mix(coating, final_ground_color, final_ground_color.a);
