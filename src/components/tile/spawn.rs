@@ -97,13 +97,13 @@ impl TilePlugin {
         if kb.just_pressed(KeyCode::KeyT) { tile = Some(TileType::Battery(Battery)); }
         if kb.just_pressed(KeyCode::KeyY) { tile = Some(TileType::WindTurbine(WindTurbine)); }
         if kb.just_pressed(KeyCode::Escape) {
-            for entity in preview_q.iter() { commands.entity(entity).despawn(); }
+            for entity in preview_q.iter() { commands.entity(entity).despawn_recursive(); }
             tile_plugin_resource.selected = None;
         }
 
         if let Some(tile) = tile {
             // Remove previews
-            for entity in preview_q.iter() { commands.entity(entity).despawn(); }
+            for entity in preview_q.iter() { commands.entity(entity).despawn_recursive(); }
             let mut tile_entity = None;
 
             // Spawn preview 
