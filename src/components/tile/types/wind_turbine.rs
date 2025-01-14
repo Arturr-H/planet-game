@@ -1,7 +1,10 @@
 /* Imports */
 use std::f32::consts::TAU;
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, foliage::animation::Rotate}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, foliage::animation::Rotate, planet::Planet}, systems::{game::PlanetResource, traits::GenericTile}};
+
+/* Constants */
+const CABLE_SLOT_OFFSET: f32 = 28.0;
 
 #[derive(Component, Clone, Debug)]
 pub struct WindTurbine;
@@ -18,6 +21,9 @@ impl GenericTile for WindTurbine {
         if !preview {
             CableSlot::spawn(
                 commands, asset_server, tile_id, transform
+                    .with_translation(transform.translation
+                        .with_z(transform.translation.z + 0.1)
+                        + Planet::forward(&transform) * CABLE_SLOT_OFFSET)
             );
         }
 
