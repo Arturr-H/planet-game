@@ -46,9 +46,16 @@ impl TilePlugin {
 
                 // Check if position is occupied
                 let false = planet.tiles.values()
-                    .any(|tile| tile.planet_position_index == planet_position_index) 
+                    .any(|tile| tile.tile_identifier == planet_position_index) 
                 else {
                     logger::log::red("tile_plugin", "Position is occupied");
+                    return
+                };
+
+                // If we have enough distance from other tiles
+                // that require it
+                if !Self::is_keeping_distance_from(&planet, &tile_type.keep_distance_from(), planet_position_index).is_empty() {
+                    logger::log::red("tile_plugin", "Not enough distance from other tiles");
                     return
                 };
 
@@ -65,15 +72,10 @@ impl TilePlugin {
                 let place_sound = asset_server.load("../assets/audio/place.wav");
                 commands.spawn((AudioPlayer::new(place_sound), PlaybackSettings::DESPAWN));
 
-                // Add new tile to game state
-                let tile_id = planet.new_tile_id();
-                planet.tiles.insert(tile_id, Tile::new(
-                    tile_id,
-                    planet_position_index,
-                    tile_type.clone()
-                ));
+                // Spawn tile
+                let mut tile_entity = None;
                 commands.entity(planet.planet_entity()).with_children(|parent| {
-                    tile_type.spawn(
+                    tile_entity = Some(tile_type.spawn(
                         parent,
                         false,
                         tile_plugin_resource.transform.with_translation(
@@ -82,9 +84,17 @@ impl TilePlugin {
                         ),
                         &asset_server,
                         &mut texture_atlas_layouts,
-                        tile_id
-                    );
+                        planet_position_index
+                    ));
                 });
+
+                // Add the new tile to game state
+                planet.tiles.insert(planet_position_index, Tile::new(
+                    planet_position_index,
+                    tile_type.clone(),
+                    tile_entity.unwrap()
+                ));
+
                 tile_plugin_resource.selected = None;
             }
         }
@@ -154,16 +164,27 @@ impl TilePlugin {
         let index = planet.radians_to_index(- planet_rotation_z - cursor_angle);
         let p = planet.index_to_transform(index, TILE_PREVIEW_ELEVATION, 2.0);
 
+        // Highlight some POI:s
         if !tile_type.interacts_with().is_empty() {
-            for pos_index in planet.numbers_in_radius(index, 2) {
-                let Some(pois) = planet.points_of_interest.get(&pos_index) else { continue };
+            for poi_pos_index in planet.numbers_in_radius(index, 2) {
+                let Some(pois) = planet.points_of_interest.get(&poi_pos_index) else { continue };
                 'inner: for poi in pois {
                     if !tile_type.interacts_with().contains(&poi.poi_type) { continue };
                     let Some(mut entity) = commands.get_entity(poi.entity) else { continue 'inner };
+
+                    println!("YES");
                     entity.insert(PointOfInterestHighlight::new());
                 }
             };
         }
+
+        // Highlight tiles that are in the way
+        let keep_distance_from = tile_type.keep_distance_from();
+        for entity in Self::is_keeping_distance_from(planet, &keep_distance_from, index) {
+            if let Some(mut entity) = commands.get_entity(entity) { 
+                entity.insert(PointOfInterestHighlight::red());
+            };
+        };
 
         tile_plugin_resource.transform = *transform;
         tile_plugin_resource.position_index = index;
@@ -171,6 +192,24 @@ impl TilePlugin {
         //Offset the placement with 1 unit to make sure the object is wedged into the ground
         transform.translation = p.translation.with_z(-0.4) - Planet::forward(&transform) * 1.; 
         transform.rotation = p.rotation;
+    }
+
+    /// If this function returns an empty vector, the tile can be placed
+    /// at the given index. Otherwise, the vector contains the entities
+    /// of the tiles that are in the way.
+    fn is_keeping_distance_from(planet: &Planet, keep_distance_from: &Vec<(usize, TileType)>, index: usize) -> Vec<Entity> {
+        let mut entities = Vec::new();
+        let max_radius = keep_distance_from.iter().map(|(r, _)| r).max().unwrap_or(&0);
+        for tile_pos_index in planet.numbers_in_radius(index, *max_radius) {
+            let Some(tile) = planet.tiles.get(&tile_pos_index) else { continue };
+            let Some((radius, _)) = keep_distance_from.iter().find(|(_, t)| *t == tile.tile_type) else { continue };
+
+            if planet.number_is_in_radius(index, *radius, tile.tile_identifier) {
+                entities.push(tile.entity);
+            }
+        };
+
+        entities
     }
 
     fn snap(angle: f32, snap_to: f32) -> f32 {

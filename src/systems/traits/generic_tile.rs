@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::game::PlanetResource};
+use crate::{components::{planet::Planet, poi::PointOfInterestType}, tile::TileType, systems::game::PlanetResource};
 
 #[enum_delegate::register]
 #[allow(unused_variables)]
@@ -27,4 +27,13 @@ pub trait GenericTile {
 
     /// What POI:s this tile interacts with
     fn interacts_with(&self) -> Vec<PointOfInterestType> { Vec::new() }
+
+    /// What tiles this tile needs to "keep distance" from
+    /// to avoid collisions looking ugly. Like wind turbines
+    /// which would cause the rotors to overlap.
+    /// 
+    /// Returns Vec<(a, b)> where a is the minimum radius needed
+    /// from tile type b to place this tile. Checking if tiles are
+    /// being placed on one another is already implemented. 
+    fn keep_distance_from(&self) -> Vec<(usize, TileType)> { Vec::new() }
 }

@@ -1,3 +1,5 @@
+use std::mem::discriminant;
+
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
@@ -12,14 +14,12 @@ pub const TILE_SIZE: f32 = 20.0;
 #[derive(Debug, Component, Clone)]
 pub struct Tile {
     pub tile_type: TileType,
-    pub tile_id: usize,
     pub powergrid_status: PowergridStatus,
+    pub entity: Entity,
 
-    /// This multiplied by the planets angular step yields
-    /// an angle in radians where this tile is located.
-    ///
-    /// Will be between 0..(planets tile places - 1)
-    pub planet_position_index: usize,
+    /// Aka planet_position_index. The index of the tile
+    /// in the planet's tile grid.
+    pub tile_identifier: usize,
 }
 
 /// Something that can be placed in a slot
@@ -35,14 +35,22 @@ pub enum TileType {
     WindTurbine(WindTurbine),
 }
 
+// We only want to compare the type of Tile, the content
+// of each enum variant is a ZST and doesn't need to be compared.
+impl PartialEq for TileType {
+    fn eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
+    }
+}
+
 impl Tile {
     /// Creates a new tile
-    pub fn new(tile_id: usize, planet_position_index: usize, tile_type: TileType) -> Self {
+    pub fn new(tile_identifier: usize, tile_type: TileType, entity: Entity) -> Self {
         Self {
             tile_type,
-            tile_id,
             powergrid_status: PowergridStatus::default(),
-            planet_position_index
+            tile_identifier,
+            entity
         }
     }
 
@@ -126,7 +134,7 @@ impl Tile {
         }
     }
 
-    pub fn tile_id(&self) -> usize { self.tile_id }
+    pub fn tile_identifier(&self) -> usize { self.tile_identifier }
     pub fn powergrid_status(&self) -> &PowergridStatus { &self.powergrid_status }
     pub fn powergrid_status_mut(&mut self) -> &mut PowergridStatus { &mut self.powergrid_status }
 }

@@ -1,7 +1,7 @@
 /* Imports */
 use std::f32::consts::TAU;
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, foliage::animation::Rotate, planet::Planet}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, foliage::animation::Rotate, planet::Planet, tile::TileType}, systems::{game::PlanetResource, traits::GenericTile}};
 
 /* Constants */
 const CABLE_SLOT_OFFSET: f32 = 28.0;
@@ -29,32 +29,37 @@ impl GenericTile for WindTurbine {
 
         commands.spawn((
             transform,
-            Sprite {
-                image: asset_server.load("machines/wind_turbine/stem.png"),
-                anchor: Anchor::BottomCenter,
-                ..default()
-            },
+            Visibility::Visible,
             self.clone(),
         ))
         .with_children(|parent| {
+            /* Wind turbine "stem" */
             parent.spawn((
-                Visibility::Visible,
-                Transform::from_translation(Vec3::new(0.0, 256.0, 0.0)),
-                Rotate(2.0)
-            )).with_children(|parent| {
-                for i in 0..3 {
-                    parent.spawn((
-                        Sprite {
-                            image: asset_server.load("machines/wind_turbine/fein.png"),
-                            anchor: Anchor::BottomCenter,
-                            ..default()
-                        },
-                        Transform::from_translation(Vec3::new(0.0, 0.0, 0.1))
-                            .with_scale(Vec3::splat(1.1))
-                            .with_rotation(Quat::from_rotation_z(i as f32 * TAU / 3.0))
-                    ));
-                }
-            });
+                Sprite {
+                    image: asset_server.load("machines/wind_turbine/stem.png"),
+                    anchor: Anchor::BottomCenter,
+                    ..default()
+                },
+            ));
+
+            /* Rotorblades or whatever they're called */
+            parent.spawn((
+                Sprite {
+                    image: asset_server.load("machines/wind_turbine/rotors.png"),
+                    ..default()
+                },
+                Transform::from_translation(Vec3::new(0.0, 256.0, 0.05)),
+                Rotate(2.0),
+            ));
+
+            /* The circle in the middle */
+            parent.spawn((
+                Sprite {
+                    image: asset_server.load("machines/wind_turbine/knob.png"),
+                    ..default()
+                },
+                Transform::from_translation(Vec3::new(0.0, 256.0, 0.10)),
+            ));
         })
         .id()
     }
@@ -62,6 +67,13 @@ impl GenericTile for WindTurbine {
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![
             (PlanetResource::Wood, 2)
+        ]
+    }
+
+    // So wind turbine rotors don't overlap
+    fn keep_distance_from(&self) -> Vec<(usize,crate::components::tile::TileType)> {
+        vec![
+            (8, TileType::WindTurbine(WindTurbine))
         ]
     }
 }

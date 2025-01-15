@@ -94,6 +94,5 @@ fn update(
                 tile.powergrid_status.energy_stored,
             );
         }
-        println!("Tile: {:?}", tile);
     }
 }
