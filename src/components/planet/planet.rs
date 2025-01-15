@@ -100,10 +100,10 @@ impl Default for Planet {
             tiles: HashMap::new(),
             resources: PlanetResources::default(),
             planet_entity: None,
-            amplitude: 10.0,
-            frequency: 1.0,
-            resolution: 100,
-            radius: 100.0,
+            amplitude: 2000.0,
+            frequency: 80.0,
+            resolution: 500,
+            radius: 1400.0,
             radii: Vec::new(),
             seed: 0,
         }
@@ -269,30 +269,18 @@ impl Planet {
     pub fn get_surface_radii(config: &PlanetConfiguration) -> Vec<(f32, f32)> {
         let mut radii: Vec<(f32, f32)> = Vec::with_capacity(config.resolution);
         let perlin = Perlin::new(config.seed);
+        let frequency = config.frequency / 100.0;
+        let amplitude = config.amplitude / 10.0;
     
         for i in 0..config.resolution {
             let angle = (std::f32::consts::PI * 2.0 / config.resolution as f32) * i as f32;
+            let x = angle.cos() as f64 * frequency;
+            let y = angle.sin() as f64 * frequency;
             
-            let mut total_noise = 0.0;
-            let mut frequency = config.frequency / 100.0;
-            let mut amplitude = config.amplitude / 10.0;
+            let noise = perlin.get([x, y]) as f32;
+            let height = noise * amplitude + config.radius;
+            println!("{height}");
     
-            for _ in 0..config.octaves {
-                let x = angle.cos() as f64 * frequency;
-                let y = angle.sin() as f64 * frequency;
-                
-                // Add some warping to the coordinates
-                let warp_x = perlin.get([x * 0.5, y * 0.5]) * config.warp_factor as f64 / 10.0;
-                let warp_y = perlin.get([x * 0.5 + 100.0, y * 0.5 + 100.0]) * config.warp_factor as f64 / 10.0;
-                
-                let noise = perlin.get([x + warp_x, y + warp_y]) as f32;
-                total_noise += noise * amplitude;
-    
-                frequency *= config.lacunarity as f64 / 100.0;
-                amplitude *= config.persistence / 10.0;
-            }
-    
-            let height = config.radius + total_noise;
             radii.push((angle, height));
         }
     
