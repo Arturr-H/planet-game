@@ -69,7 +69,7 @@ impl GenericTile for Drill {
 
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // The position index of the drill
-        let position_index = planet.tiles[&tile_id].planet_position_index.clone();
+        let position_index = planet.tiles[&tile_id].tile_identifier.clone();
 
         // Must be at least DRILL_RANGE tile indexes
         // away from the POI to drill it.

@@ -67,11 +67,6 @@ pub struct Planet {
     /// on the planet. E.g stones that can be mined.
     pub points_of_interest: HashMap<usize, Vec<PointOfInterest>>,
 
-    /// The current tile id we're at. Not public because
-    /// the `new_tile_id` method handles incrementing and
-    /// returning the new id.
-    tile_id: usize,
-
     /// The resources of the planet
     /// TODO: Maybe move this to a player instead?
     pub resources: PlanetResources,
@@ -103,7 +98,6 @@ impl Default for Planet {
             id: 0,
             points_of_interest: HashMap::new(),
             tiles: HashMap::new(),
-            tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: None,
             amplitude: 10.0,
@@ -154,7 +148,6 @@ impl Planet {
             Transform::from_xyz(0.0, 0.0, 1.0),
             Name::new("Planet"),
         ));
-        let planet_bundle_id = planet_bundle.id();
 
         let atmosphere_radius = radius + 800.1;
         planet_bundle.with_children(|parent| {
@@ -173,7 +166,6 @@ impl Planet {
             id: game_state.new_planet_id(),
             points_of_interest: HashMap::new(),
             tiles: HashMap::new(),
-            tile_id: 0,
             resources: PlanetResources::default(),
             planet_entity: Some(planet_bundle.id()),
             amplitude: config.amplitude,
@@ -433,6 +425,12 @@ impl Planet {
 
         indices
     }
+    pub fn number_is_in_radius(&self, position_index: usize, radius: usize, number: usize) -> bool {
+        let clockwise_distance = (position_index + self.tile_places() - number) % self.tile_places();
+        let counterclockwise_distance = (number + self.tile_places() - position_index) % self.tile_places();
+        clockwise_distance <= radius || counterclockwise_distance <= radius
+    }
+
     /// Jag kan inte förklara denna på engelska. Men den ger tillbaka en Vec3
     /// som man kan multiplicera med ett värde, exempelvis 5.0, vilket ger tillbaka
     /// en Vec3 som är 5.0 units längre ifrån origo av planeten.
@@ -463,12 +461,6 @@ impl Planet {
             .with_probability(0.4)
             .with_local_seed(0)
             .spawn_all(commands, asset_server, self);
-    }
-    /// Increments the tile_id and then returns it
-    pub fn new_tile_id(&mut self) -> usize {
-        let slot_id = self.tile_id;
-        self.tile_id += 1;
-        slot_id
     }
 
     /// If two tiles are connected via cables
@@ -516,7 +508,7 @@ impl PlanetPlugin {
                 if tile.can_distribute_energy() {
                     Tile::distribute_energy(
                         tile.energy_output(),
-                        tile.tile_id,
+                        tile.tile_identifier,
                         &mut planet
                     );
                 }
@@ -585,5 +577,21 @@ mod tests {
         assert_eq!(planet.numbers_in_radius(0, 2), vec![tp - 1, tp, 0, 1, 2]);
         assert_eq!(planet.numbers_in_radius(0, 3), vec![tp - 2, tp - 1, tp, 0, 1, 2, 3]);
         assert_eq!(planet.numbers_in_radius(5, 2), vec![3, 4, 5, 6, 7]);
+    }
+
+    #[test]
+    fn number_is_in_radius() {
+        let planet = Planet {
+            radius: 1000.0,
+            resolution: 100,
+            radii: vec![(0.0, 100.0), (0.0, 100.0), (0.0, 100.0)],
+            ..default()
+        };
+
+        let tp = planet.tile_places() - 1;
+        assert!(planet.number_is_in_radius(0, 0, 0));
+        assert!(planet.number_is_in_radius(0, 1, tp));
+        assert!(planet.number_is_in_radius(0, 2, tp - 1));
+        assert!(planet.number_is_in_radius(0, 2, tp - 2) == false);
     }
 }

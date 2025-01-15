@@ -120,12 +120,18 @@ impl PointOfInterestBuilder {
 pub struct PointOfInterestHighlight {
     pub time: f32,
     pub max_time: f32,
+    pub color: Color,
 }
 
-impl PointOfInterestHighlight {
-    pub fn new() -> Self {
-        Self { time: 0.0, max_time: 0.05 }
+impl Default for PointOfInterestHighlight {
+    fn default() -> Self {
+        Self { time: 0.0, max_time: 0.05, color: Color::WHITE }
     }
+}
+impl PointOfInterestHighlight {
+    pub fn new() -> Self { Self::green() }
+    pub fn green() -> Self { Self { color: Color::srgb(0.0, 1.2, 0.0), ..default() } }
+    pub fn red() -> Self { Self { color: hex!("#db1a1a"), ..default() } }
 
     pub fn update(
         mut commands: Commands,
@@ -138,19 +144,15 @@ impl PointOfInterestHighlight {
 
             for child in children {
                 match highlight_q.get_mut(*child) {
-                    Ok(mut sprite) => {
-                        sprite.color = sprite.color.mix(&Color::srgb(0.0, 1.2, 0.0), highlight.time / highlight.max_time);
-                    },
+                    Ok(mut sprite) => sprite.color = highlight.color,
                     Err(_) => ()
                 }
             }
 
             if highlight.time > highlight.max_time {
                 for child in children {
-                    match highlight_q.get_mut(*child) {
-                        Ok(mut sprite) => {
-                            sprite.color = Color::WHITE;
-                        },
+                   match highlight_q.get_mut(*child) {
+                        Ok(mut sprite) => sprite.color = Color::WHITE,
                         Err(_) => ()
                     }
                 }
