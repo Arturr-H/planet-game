@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::OuterCamera, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -41,7 +41,7 @@ pub struct PlanetAtmosphereMaterial {
     planet_radius: f32,
 
     #[uniform(1)]
-    atmosphere_radius: f32,
+    zoom: f32,
 }
 
 impl Material2d for PlanetAtmosphereMaterial {
@@ -134,7 +134,8 @@ impl Planet {
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
         mut camera_q: Query<&mut Transform, With<OuterCamera>>,
         config: ResMut<PlanetConfiguration>,
-        asset_server: Res<AssetServer>
+        asset_server: Res<AssetServer>,
+
     ) -> () {
         let radius = config.radius.max(15.0);
         let seed = config.seed;
@@ -144,7 +145,7 @@ impl Planet {
         let radii = Planet::get_surface_radii(&config);
         let mesh = generate_planet_mesh(&mut meshes, &radii);
         let mut planet_bundle = commands.spawn((
-            Mesh2d(mesh),
+            Mesh2d(mesh.clone()),
             MeshMaterial2d(planet_materials.add(PlanetMaterial {
                 seed: config.seed as f32,
                 radius: config.radius,
@@ -154,6 +155,18 @@ impl Planet {
             Name::new("Planet"),
         ));
         let planet_bundle_id = planet_bundle.id();
+
+        let atmosphere_radius = radius + 800.1;
+        planet_bundle.with_children(|parent| {
+            parent.spawn((
+                Mesh2d(mesh),
+                MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
+                    planet_radius: radius,
+                    zoom: 1.0,
+                })),
+                Transform::from_xyz(0.0, 0.0, -10.0).with_scale(Vec3::splat((radius + 800.0) / radius)),
+            ));
+        });
 
         /* Insert the Planet component */
         let mut planet = Self {
@@ -201,29 +214,21 @@ impl Planet {
         };
 
         /* Atmosphere */
-        let atmosphere_radius = radius + 800.1;
-        planet_bundle.with_children(|parent| {
-            parent.spawn((
-                Mesh2d(meshes.add(Circle::new(atmosphere_radius))),
-                MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
-                    planet_radius: radius,
-                    atmosphere_radius,
-                })),
-                Transform::from_xyz(0.0, 0.0, -10.0)
-            ));
-        });
+        
     }
 
     // Update
     fn update(
         time: Res<Time>,
-        mut camera_q: Query<&mut Transform, With<OuterCamera>>,
+        mut camera_q: Query<(&mut Transform, &OrthographicProjection), With<OuterCamera>>,
         mut camera_rotation: ResMut<CameraPlanetRotation>,
         keyboard_input: Res<ButtonInput<KeyCode>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
+        mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
+
     ) -> () {
         let planet = planet_q.single();
-        if let Ok(mut camera_transform) = camera_q.get_single_mut() {
+        if let Ok((mut camera_transform, projection)) = camera_q.get_single_mut() {
             let mut update = false;
             if keyboard_input.pressed(KeyCode::ArrowRight)
             || keyboard_input.pressed(KeyCode::KeyD) {
@@ -235,6 +240,10 @@ impl Planet {
                     camera_rotation.radians += time.delta_secs() * PLANET_ROTATION_SPEED;
                 update = true;
             }
+
+            planet_atmosphere_materials.iter_mut().for_each(|(_, mat)| {
+                mat.zoom = projection.scale;
+            });
 
             if update {
                 Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform);

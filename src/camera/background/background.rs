@@ -1,5 +1,5 @@
 /* Imports */
-use bevy::{asset::RenderAssetUsages, prelude::*, render::{mesh::{Indices, PrimitiveTopology}, render_resource::{AsBindGroup, ShaderRef}}, sprite::{Material2d, Material2dPlugin}};
+use bevy::{asset::RenderAssetUsages, prelude::*, render::{mesh::{Indices, PrimitiveTopology}, render_resource::{AsBindGroup, ShaderRef}, view::NoFrustumCulling}, sprite::{Material2d, Material2dPlugin}};
 
 use crate::{components::planet::PlanetMaterial, utils::color::hex};
 
@@ -11,8 +11,8 @@ pub struct Background;
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone, Component)]
 pub struct BackgroundMaterial {
-    #[uniform(0)]
-    pub time: f32,
+    // #[uniform(0)]
+    // pub time: f32,
 }
 
 impl Material2d for BackgroundMaterial {
@@ -72,9 +72,10 @@ impl Background {
         commands.spawn((
             Background,
             Mesh2d(meshes.add(mesh)),
-            Transform::from_xyz(0.0, 0.0, -5.0),
+            Transform::from_xyz(0.0, 0.0, -10.0),
                 // .with_scale(Vec3::new(1000.0, 1000.0, 1.0)),
-            MeshMaterial2d (background_material.add(BackgroundMaterial{ time: 0.0 }))
+            MeshMaterial2d (background_material.add(BackgroundMaterial{})),
+            NoFrustumCulling,
         ));
     }
     

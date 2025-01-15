@@ -24,11 +24,11 @@ pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
     fn build(&self, app: &mut App) {
         app
-            // .add_systems(Startup, setup)
+            .add_systems(Startup, setup)
             // .init_resource::<Events<OpenStats>>()
             .add_event::<OpenStats>()
-            .init_resource::<StatsUIState>();
-            // .add_systems(FixedUpdate, update);
+            .init_resource::<StatsUIState>()
+            .add_systems(FixedUpdate, update);
     }
 }
 
@@ -36,8 +36,9 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn((
         Node {
             position_type: PositionType::Absolute,
-            width: Val::Percent(20.0),
-            height: Val::Percent(50.0),
+            width: Val::Percent(10.0),
+            height: Val::Percent(20.0),
+            top: Val::Percent(10.0),
             right: Val::Px(0.0),
             justify_content: JustifyContent::SpaceBetween,
             ..default()
@@ -71,7 +72,7 @@ fn update(
     for event in events.read() {
         for mut visibility in query.iter_mut() {
             *visibility = if event.open {
-                Visibility::Inherited
+                Visibility::Visible
             } else {
                 Visibility::Hidden
             };
