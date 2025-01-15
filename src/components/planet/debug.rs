@@ -14,24 +14,16 @@ pub struct PlanetConfiguration {
     pub resolution: usize,
     pub amplitude: f32,
     pub frequency: f64,
-    pub octaves: u32,
-    pub persistence: f32,
-    pub lacunarity: f32,
-    pub warp_factor: f32,
 }
 
 impl Default for PlanetConfiguration {
     fn default() -> Self {
         Self {
             seed: 11,
-            radius: RES_WIDTH * 0.625,
-            resolution: 100,
-            amplitude: 300.0,
-            frequency: 100.0,
-            octaves: 1,
-            persistence: 14.9,
-            lacunarity: 9.5,
-            warp_factor: 5.0,
+            radius: 1400.0,
+            resolution: 500,
+            amplitude: 2000.0,
+            frequency: 80.0,
         }
     }
 }
