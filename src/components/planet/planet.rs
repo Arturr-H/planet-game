@@ -154,7 +154,7 @@ impl Planet {
             parent.spawn((
                 Mesh2d(mesh),
                 MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
-                    planet_radius: radius,
+                    planet_radius: config.radius as f32,
                     zoom: 1.0,
                 })),
                 Transform::from_xyz(0.0, 0.0, -10.0).with_scale(Vec3::splat((radius + 800.0) / radius)),
