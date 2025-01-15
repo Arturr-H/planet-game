@@ -28,7 +28,7 @@ impl Plugin for StatsPlugin {
             // .init_resource::<Events<OpenStats>>()
             .add_event::<OpenStats>()
             .init_resource::<StatsUIState>()
-            .add_systems(FixedUpdate, update);
+            .add_systems(Update, update);
     }
 }
 
