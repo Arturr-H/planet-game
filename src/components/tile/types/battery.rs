@@ -31,6 +31,10 @@ impl GenericTile for Battery {
         )).id()
     }
 
+    fn display_name(&self) -> String {
+        "Battery".to_string()
+    }
+
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![
             (PlanetResource::Wood, 2)

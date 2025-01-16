@@ -32,6 +32,10 @@ impl GenericTile for LandedRocket {
         )).id()
     }
 
+    fn display_name(&self) -> String {
+        "Landed rocket".to_string()
+    }
+
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         Vec::new()
     }

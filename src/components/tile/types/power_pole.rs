@@ -43,6 +43,10 @@ impl GenericTile for PowerPole {
         id
     }
 
+    fn display_name(&self) -> String {
+        "Power pole".to_string()
+    }
+
     fn cost(&self) -> Vec<(PlanetResource,usize)> {
         vec![
             (PlanetResource::Wood, 6)

@@ -32,6 +32,10 @@ impl GenericTile for EmptyTile {
         )).id()
     }
 
+    fn display_name(&self) -> String {
+        "Empty".to_string()
+    }
+
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         Vec::new()
     }

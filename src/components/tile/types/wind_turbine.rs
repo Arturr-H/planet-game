@@ -70,6 +70,10 @@ impl GenericTile for WindTurbine {
         ]
     }
 
+    fn display_name(&self) -> String {
+        "Wind turbine".to_string()
+    }
+
     // So wind turbine rotors don't overlap
     fn keep_distance_from(&self) -> Vec<(usize,crate::components::tile::TileType)> {
         vec![

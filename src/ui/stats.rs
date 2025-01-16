@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{camera::UI_LAYERS, components::{planet::{Planet, PlayerPlanet}, tile::Tile}, utils::color::hex};
+use crate::{camera::UI_LAYERS, components::{planet::{Planet, PlayerPlanet}, tile::Tile}, systems::traits::GenericTile, utils::color::hex};
 
 #[derive(Event, Resource, Clone)]
 pub struct OpenStats {
@@ -36,11 +36,12 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn((
         Node {
             position_type: PositionType::Absolute,
-            width: Val::Percent(10.0),
-            height: Val::Percent(20.0),
-            top: Val::Percent(10.0),
-            right: Val::Px(0.0),
+            width: Val::Percent(50.0),
+            height: Val::Px(200.0),
+            bottom: Val::Px(10.0),
+            left: Val::Vw(25.0),
             justify_content: JustifyContent::SpaceBetween,
+            padding: UiRect::all(Val::Px(10.0)),
             ..default()
         },
         BackgroundColor(hex!("#503010")),
@@ -52,7 +53,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
         parent.spawn((
             Text::new("Type: [], Energy: 0"),
             TextFont {
-                font_size: 12.0,
+                font_size: 22.0,
                 ..default()
             },
             Label,
@@ -90,8 +91,8 @@ fn update(
     if let Some(tile_id) = &stats.tile_id {
         let tile = planet.tiles[tile_id].clone();
         for mut text in &mut label {
-            text.0 = format!("Tile: {:?}, Energy: {}",
-                tile.tile_type,
+            text.0 = format!("{}\nEnergy: {}",
+                tile.tile_type.display_name(),
                 tile.powergrid_status.energy_stored,
             );
         }

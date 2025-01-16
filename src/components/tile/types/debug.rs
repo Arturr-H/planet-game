@@ -31,6 +31,10 @@ impl GenericTile for DebugTile {
         )).id()
     }
 
+    fn display_name(&self) -> String {
+        "Debug tile".to_string()
+    }
+
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![
             (PlanetResource::Wood, 2)

@@ -67,6 +67,10 @@ impl GenericTile for Drill {
         ]
     }
 
+    fn display_name(&self) -> String {
+        "Drill".to_string()
+    }
+
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // The position index of the drill
         let position_index = planet.tiles[&tile_id].tile_identifier.clone();

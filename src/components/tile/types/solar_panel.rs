@@ -34,6 +34,10 @@ impl GenericTile for SolarPanel {
         )).id()
     }
 
+    fn display_name(&self) -> String {
+        "Solar panel".to_string()
+    }
+
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![
             (PlanetResource::Wood, 4)

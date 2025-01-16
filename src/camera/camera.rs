@@ -162,7 +162,7 @@ impl CameraDebugPlugin {
     ) {
         for event in scroll.read() {
             for (mut projection, mut settings) in query.iter_mut() {
-                projection.scale *= 1. + event.y * -0.0002;
+                projection.scale *= 1. + event.y * -0.04;
                 settings.camera_scale = projection.scale;
             }
         }
