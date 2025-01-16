@@ -21,8 +21,11 @@ impl Plugin for CablePlugin {
 /// Component to represent a cable between two entities
 #[derive(Component)]
 pub struct Cable {
-    start_entity: Entity,
-    end_entity: Entity,
+    pub start_entity: Entity,
+    pub end_entity: Entity,
+
+    pub start_tile_id: usize,
+    pub end_tile_id: usize,
 }
 
 /// Used to highlight the cable between two entities
@@ -38,6 +41,9 @@ impl Cable {
         commands: &mut ChildBuilder,
         start_entity: Entity,
         end_entity: Entity,
+
+        start_tile_id: usize,
+        end_tile_id: usize,
     ) {
         commands.spawn((
             PickingBehavior::IGNORE,
@@ -50,6 +56,9 @@ impl Cable {
             Cable {
                 start_entity,
                 end_entity,
+
+                start_tile_id,
+                end_tile_id,
             },
         ));
     }

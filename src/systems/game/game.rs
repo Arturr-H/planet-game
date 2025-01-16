@@ -4,7 +4,8 @@ use bevy::prelude::*;
 /// The state of the game. 
 #[derive(Resource)]
 pub struct GameState {
-    /// What planet ID we're at.
+    /// What planet ID we're at. ????
+    /// TODO: this is stupid why do we have this
     pub planet_id: usize,
 
     /// Seed of the game we're in

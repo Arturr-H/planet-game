@@ -6,7 +6,7 @@ use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use super::{stone::Stone, tree::Tree};
-use crate::{components::planet::Planet, systems::traits::GenericPointOfInterest, utils::color::hex};
+use crate::{components::{cable::slot::RemoveAllCableSlotHighlightsCommand, planet::Planet}, systems::traits::GenericPointOfInterest, utils::color::hex};
 
 /// Some point of interest on the planet, like a stone or a tree.
 /// POI:s are often something that can be interacted with via e.g
@@ -118,20 +118,20 @@ impl PointOfInterestBuilder {
 /// A highlight animation for a point of interest.
 #[derive(Component)]
 pub struct PointOfInterestHighlight {
-    pub time: f32,
-    pub max_time: f32,
-    pub color: Color,
+    time: f32,
+    max_time: f32,
+    color: Srgba,
 }
 
 impl Default for PointOfInterestHighlight {
     fn default() -> Self {
-        Self { time: 0.0, max_time: 0.05, color: Color::WHITE }
+        Self { time: 0.0, max_time: 0.05, color: Color::WHITE.into() }
     }
 }
 impl PointOfInterestHighlight {
     pub fn new() -> Self { Self::green() }
-    pub fn green() -> Self { Self { color: Color::srgb(0.0, 1.2, 0.0), ..default() } }
-    pub fn red() -> Self { Self { color: hex!("#db1a1a"), ..default() } }
+    pub fn green() -> Self { Self { color: Color::srgb(0.0, 1.2, 0.0).into(), ..default() } }
+    pub fn red() -> Self { Self { color: hex!("#db1a1a").into(), ..default() } }
 
     pub fn update(
         mut commands: Commands,
@@ -144,7 +144,16 @@ impl PointOfInterestHighlight {
 
             for child in children {
                 match highlight_q.get_mut(*child) {
-                    Ok(mut sprite) => sprite.color = highlight.color,
+                    Ok(mut sprite) => {
+                        let Srgba { red, green, blue, .. }
+                            = highlight.color;
+
+                        let sprite_color = sprite.color.to_srgba();
+                        sprite.color = Color::srgba(
+                            red, green, blue,
+                            sprite_color.alpha
+                        );
+                    },
                     Err(_) => ()
                 }
             }
@@ -156,6 +165,8 @@ impl PointOfInterestHighlight {
                         Err(_) => ()
                     }
                 }
+                
+                commands.queue(RemoveAllCableSlotHighlightsCommand);
                 commands.entity(entity).remove::<PointOfInterestHighlight>();
             }
         }
