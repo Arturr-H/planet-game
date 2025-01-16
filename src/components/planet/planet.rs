@@ -228,7 +228,7 @@ impl Planet {
             }
             else if keyboard_input.pressed(KeyCode::ArrowLeft)
                 || keyboard_input.pressed(KeyCode::KeyA) {
-                    camera_rotation.radians += (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 5.0).max(0.001).min(1.0);
+                    camera_rotation.radians += (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(1.0);
                 update = true;
             }
 

@@ -36,7 +36,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
         Node {
             position_type: PositionType::Absolute,
             width: Val::Percent(50.0),
-            height: Val::Px(200.0),
+            height: Val::Vh(15.0),
             bottom: Val::Px(10.0),
             left: Val::Vw(25.0),
             flex_direction: FlexDirection::Column,
