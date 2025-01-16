@@ -99,7 +99,9 @@ impl TileSpawnPlugin {
         if kb.just_pressed(KeyCode::KeyE) { tile = Some(TileType::SolarPanel(SolarPanel)); }
         if kb.just_pressed(KeyCode::KeyR) { tile = Some(TileType::Drill(Drill)); }
         if kb.just_pressed(KeyCode::KeyT) { tile = Some(TileType::Battery(Battery)); }
-        if kb.just_pressed(KeyCode::KeyY) { tile = Some(TileType::WindTurbine(WindTurbine)); }
+        if kb.just_pressed(KeyCode::KeyY) && !matches!(tile_plugin_resource.selected, Some((TileType::WindTurbine(WindTurbine), _))) {
+            tile = Some(TileType::WindTurbine(WindTurbine));
+        }
         if kb.just_pressed(KeyCode::Escape) {
             for entity in preview_q.iter() { commands.entity(entity).despawn_recursive(); }
             tile_plugin_resource.selected = None;
