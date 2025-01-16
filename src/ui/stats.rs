@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{camera::UI_LAYERS, components::{planet::{Planet, PlayerPlanet}, tile::Tile}, systems::traits::GenericTile, utils::color::hex};
+use crate::{camera::UI_LAYERS, components::{planet::{Planet, PlayerPlanet}, tile::{RemoveTileCommand, Tile}}, systems::traits::GenericTile, utils::color::hex};
 
 #[derive(Event, Resource, Clone)]
 pub struct OpenStats {
@@ -12,7 +12,6 @@ pub struct OpenStats {
 struct StatsUIState {
     stats: Option<OpenStats>,
 }
-
 
 #[derive(Component)]
 struct StatsUI;
@@ -40,6 +39,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             height: Val::Px(200.0),
             bottom: Val::Px(10.0),
             left: Val::Vw(25.0),
+            flex_direction: FlexDirection::Column,
             justify_content: JustifyContent::SpaceBetween,
             padding: UiRect::all(Val::Px(10.0)),
             ..default()
@@ -58,6 +58,29 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             },
             Label,
         ));
+
+        /* Delete button */
+        parent.spawn((
+            Transform::from_xyz(0.0, 10.0, 10.0),
+            Button,
+            Node {
+                width: Val::Px(150.0),
+                height: Val::Px(65.0),
+                border: UiRect::all(Val::Px(5.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BorderColor(Color::BLACK),
+            BorderRadius::MAX,
+        )).with_child((
+            Text::new("Delete"),
+            TextFont {
+                font_size: 12.0,
+                ..default()
+            },
+        ))
+        .observe(on_delete);
     });
 }
 
@@ -97,4 +120,18 @@ fn update(
             );
         }
     }
+}
+
+fn on_delete(
+    _: Trigger<Pointer<Down>>,
+    mut commands: Commands,
+    mut events: EventWriter<OpenStats>,
+    ui_state: Res<StatsUIState>,
+) -> () {
+    if let Some(stats) = &ui_state.stats {
+        if let Some(tile_id) = stats.tile_id {
+            commands.queue(RemoveTileCommand { tile_id });
+        }
+    }
+    events.send(OpenStats { open: false, tile_id: None });
 }

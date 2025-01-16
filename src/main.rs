@@ -66,12 +66,12 @@ fn main() {
             cable::CablePlugin,
             game::GamePlugin,
             damageable::DamageablePlugin,
-            tile::spawn::TilePlugin,
             FoliageAnimationPlugin,
 
             ui::hud::HudPlugin,
             ui::stats::StatsPlugin,
             PointOfInterestPlugin,
+            tile::TilePlugin,
         ))
 
         /* Debug */

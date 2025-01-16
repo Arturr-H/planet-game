@@ -3,7 +3,7 @@ use std::mem::discriminant;
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
-use super::types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine};
+use super::{spawn::TileSpawnPlugin, types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
@@ -143,4 +143,15 @@ impl Tile {
 impl EnergyStorage for Tile {
     fn stored(&self) -> f32 { self.powergrid_status.energy_stored }
     fn add_energy(&mut self, amount: f32) { self.powergrid_status.energy_stored += amount; }
+}
+
+pub struct TilePlugin;
+impl Plugin for TilePlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_plugins((
+                DrillPlugin,
+                TileSpawnPlugin
+            ));
+    }
 }

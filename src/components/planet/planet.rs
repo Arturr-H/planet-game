@@ -149,7 +149,6 @@ impl Planet {
             Name::new("Planet"),
         ));
 
-        let atmosphere_radius = radius + 800.1;
         planet_bundle.with_children(|parent| {
             parent.spawn((
                 Mesh2d(mesh),

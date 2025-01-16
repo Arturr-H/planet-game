@@ -1,35 +1,29 @@
 /* Imports */
 use std::f32::consts::PI;
 use bevy::prelude::*;
-use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, utils::{color::hex, logger}};
+use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::stats::StatsPlugin, utils::{color::hex, logger}};
 use super::{types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
 
+/// Keeps track of the tile we're going to place (or not)
 #[derive(Resource)]
-pub struct TilePluginResource {
+pub struct TileSpawnResource {
     selected: Option<(TileType, Entity)>,
     transform: Transform,
     position_index: usize,
 }
 
-pub struct TilePlugin;
-impl Plugin for TilePlugin {
-    fn build(&self, app: &mut App) {
-        app
-            /* Tile plugins */
-            .add_plugins(DrillPlugin)
+/// A component that is added to the preview tile
+#[derive(Component)]
+pub struct TilePreview;
 
-            .add_systems(Update, (Self::update, Self::update_preview))
-            .insert_resource(TilePluginResource { selected: None, transform: Transform::default(), position_index: 0 });
-    }
-}
-
-impl TilePlugin {
+pub struct TileSpawnPlugin;
+impl TileSpawnPlugin {
     fn update(
         mut commands: Commands,
-        mut tile_plugin_resource: ResMut<TilePluginResource>,
+        mut tile_plugin_resource: ResMut<TileSpawnResource>,
         mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
         mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
         preview_q: Query<Entity, With<TilePreview>>,
@@ -142,7 +136,7 @@ impl TilePlugin {
     fn update_preview(
         mut commands: Commands,
         mut query: Query<&mut Transform, With<TilePreview>>,
-        mut tile_plugin_resource: ResMut<TilePluginResource>,
+        mut tile_plugin_resource: ResMut<TileSpawnResource>,
         planet_q: Query<(&Planet, &Transform), (With<Planet>, With<PlayerPlanet>, Without<TilePreview>)>,
         windows_q: Query<&Window>,
         camera_q: Query<(&Camera, &GlobalTransform), With<OuterCamera>>,
@@ -233,5 +227,14 @@ impl TilePlugin {
     }
 }
 
-#[derive(Component)]
-pub struct TilePreview;
+impl Plugin for TileSpawnPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(Update, (Self::update, Self::update_preview))
+            .insert_resource(TileSpawnResource {
+                selected: None,
+                transform: Transform::default(),
+                position_index: 0
+            });
+    }
+}

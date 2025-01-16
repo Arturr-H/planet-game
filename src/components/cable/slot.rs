@@ -7,7 +7,7 @@ use crate::{
         tile::TILE_SIZE
     }, systems::game::GameState, ui::stats::OpenStats, utils::{color::hex, logger}
 };
-use bevy::{ecs::event, prelude::*};
+use bevy::{ecs::{entity, event}, prelude::*};
 
 /* Constants */
 const OUTLINE_SIZE: f32 = 6.0;
@@ -29,6 +29,9 @@ pub struct CableSlot {
     pub tile_id: usize,
 }
 
+#[derive(Component)]
+struct CableSlotColored;
+
 impl CableSlot {
     /// [UTILITY] Spawns a slot
     pub fn spawn(
@@ -42,6 +45,7 @@ impl CableSlot {
             Self { tile_id },
             transform.with_translation(transform.translation
                 + Planet::forward(&transform) * TILE_SIZE / 2.0),
+            CableSlotColored,
             Sprite {
                 color: hex!(SLOT_INACTIVE_COLOR),
                 custom_size: Some(Vec2::new(TILE_SIZE, TILE_SIZE)),
@@ -62,6 +66,7 @@ impl CableSlot {
                     image: asset_server.load("../assets/planet/selection.png"),
                     ..default()
                 },
+                CableSlotColored,
                 Transform::from_xyz(0.0, 0.0, 2.0),
                 HIGH_RES_LAYERS,
             ));
@@ -110,7 +115,9 @@ impl CableSlot {
                         Cable::spawn_between_slots(
                             parent,
                             click.entity(),
-                            other_entity
+                            other_entity,
+                            id,
+                            slot.tile_id,
                         );
                     });
 
@@ -127,7 +134,7 @@ impl CableSlot {
                     &mut sprite,
                     children,
                     &mut children_q,
-                    &slot_res
+                    slot_res.active().is_some()
                 );
                 // planet.tiles[slot.tile_id]
                 events.send(OpenStats{open: true, tile_id: Some(slot.tile_id)});
@@ -138,7 +145,7 @@ impl CableSlot {
 
         /* Clear all highlights */
         if needs_highlight_reset {
-            Self::clear_all_highlight(&mut slots_q, &mut children_q, &slot_res);
+            Self::clear_all_highlight(&mut slots_q, &mut children_q, slot_res.active().is_some());
         }
 
         if highlight_all {
@@ -163,7 +170,7 @@ impl CableSlot {
                 &mut sprite,
                 &children,
                 &mut children_q,
-                &slot_res
+                slot_res.active().is_some()
             );
         }
     }
@@ -181,7 +188,7 @@ impl CableSlot {
                 &mut sprite,
                 &children,
                 &mut children_q,
-                &slot_res
+                slot_res.active().is_some()
             );
         }
     }
@@ -191,10 +198,9 @@ impl CableSlot {
         sprite: &mut Sprite,
         children: &Children,
         children_q: &mut Query<&mut Sprite, Without<Self>>,
-        slot_res: &ResMut<SlotCablePlacementResource>
+        highlight_all: bool
     ) -> () {
         let mut outline = children_q.get_mut(children[0]).unwrap();
-        let highlight_all = slot_res.active().is_some();
 
         /* Inner color change */
         if let Some(highlight) = change_highlight {
@@ -230,17 +236,17 @@ impl CableSlot {
             }
         }
     }
-    fn clear_all_highlight(
+    pub fn clear_all_highlight(
         slots_q: &mut Query<(&Self, &mut Sprite, &Children, &Transform), With<Self>>,
         children_q: &mut Query<&mut Sprite, Without<Self>>,
-        slot_res: &ResMut<SlotCablePlacementResource>
+        highlight_all: bool
     ) -> () {
         for (_, mut sprite, children, _) in slots_q.iter_mut() {
             Self::highlight(
                 Some(false),
                 Some(false),
                 &mut sprite, &children, children_q,
-                slot_res
+                highlight_all
             );
         }
     }
@@ -254,11 +260,10 @@ impl CableSlot {
         mut commands: Commands,
         cable_preview_q: Query<Entity, With<CablePreview>>,
         mut events: EventWriter<OpenStats>
-
     ) {
         if kb.just_pressed(KeyCode::Escape) {
             Cable::remove_previews(&mut commands, cable_preview_q);
-            Self::clear_all_highlight(&mut slots_q, &mut children_q, &slot_res);
+            Self::clear_all_highlight(&mut slots_q, &mut children_q, slot_res.active().is_some());
             slot_res.reset();
             events.send(OpenStats{open: false, tile_id: None});
         }
@@ -269,6 +274,53 @@ impl CableSlot {
         for (mut transform, slot) in query.iter_mut() {
             let scale = 1.0 + (time.elapsed_secs() * 2.0 + slot.tile_id as f32 * 12.124511).sin() * 0.1;
             transform.scale = Vec3::new(scale, scale, 1.0);
+        }
+    }
+}
+
+pub struct RemoveAllCableSlotHighlightsCommand;
+impl Command for RemoveAllCableSlotHighlightsCommand {
+    fn apply(self, commands: &mut World) {
+        let mut slots_q = commands.query::<(&CableSlotColored, &mut Sprite)>();
+        let mut cable_preview_q = commands.query_filtered::<Entity, With<CablePreview>>();
+        
+        /* Remove cable previews */
+        commands.resource_mut::<SlotCablePlacementResource>().reset();
+        if let Ok(entity) = cable_preview_q.get_single(commands) {
+            DespawnRecursive { entity, warn: true }.apply(commands);
+        }
+
+        for (_, mut sprite) in slots_q.iter_mut(commands) {
+            sprite.color = hex!(SLOT_INACTIVE_COLOR);
+        }
+    }
+}
+
+pub struct RemoveCableSlotCommand {
+    pub tile_id: usize,
+}
+impl Command for RemoveCableSlotCommand {
+    fn apply(self, commands: &mut World) {
+        let tile_id = self.tile_id;
+
+        if let Some(slot) = commands.query_filtered::<Entity, With<CableSlot>>().iter(commands).find(|&slot| {
+            let slot = commands.get::<CableSlot>(slot).unwrap();
+            slot.tile_id == tile_id
+        }) {
+            DespawnRecursive { entity: slot, warn: false }.apply(commands);
+        }
+
+        /* Remove cables previews */
+        let mut cable_q = commands.query_filtered::<(Entity, &Cable), With<Cable>>();
+        let mut entities_to_despawn = Vec::new();
+        for (entity, cable) in cable_q.iter(commands) {
+            if cable.start_tile_id == tile_id || cable.end_tile_id == tile_id {
+                entities_to_despawn.push(entity);
+            }
+        }
+
+        for entity in entities_to_despawn {
+            DespawnRecursive { entity, warn: true }.apply(commands);
         }
     }
 }
