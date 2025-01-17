@@ -3,7 +3,7 @@ use std::mem::discriminant;
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
-use super::{spawn::TileSpawnPlugin, types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, empty::EmptyTile, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
+use super::{spawn::TileSpawnPlugin, types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, empty::EmptyTile, landed_rocket::LandedRocket, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
@@ -33,6 +33,7 @@ pub enum TileType {
     Battery(Battery),
     PowerPole(PowerPole),
     WindTurbine(WindTurbine),
+    LandedRocket(LandedRocket),
 }
 
 // We only want to compare the type of Tile, the content
@@ -103,6 +104,7 @@ impl Tile {
             PowerPole(_) => 0.0,
             Drill(_) => 0.0,
             Battery(_) => 0.0,
+            LandedRocket(_) => 0.0,
         }
     }
 
@@ -122,7 +124,7 @@ impl Tile {
 
         match self.tile_type {
             DebugTile(_) | Drill(_) | Battery(_) => true,
-            SolarPanel(_) | PowerPole(_) | Empty(_) | WindTurbine(_) => false,
+            SolarPanel(_) | PowerPole(_) | Empty(_) | WindTurbine(_) | LandedRocket(_) => false,
         }
     }
     pub fn can_distribute_energy(&self) -> bool {
@@ -130,7 +132,7 @@ impl Tile {
 
         match self.tile_type {
             SolarPanel(_) | WindTurbine(_) => true,
-            DebugTile(_) | PowerPole(_) | Empty(_) | Drill(_) | Battery(_) => false,
+            DebugTile(_) | PowerPole(_) | Empty(_) | Drill(_) | Battery(_) | LandedRocket(_) => false,
         }
     }
 

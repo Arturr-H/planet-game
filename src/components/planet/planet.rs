@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::GenericPointOfInterest}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -127,9 +127,9 @@ impl Planet {
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
         mut camera_q: Query<&mut Transform, With<OuterCamera>>,
+        mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
         config: ResMut<PlanetConfiguration>,
-        asset_server: Res<AssetServer>,
-
+        asset_server: Res<AssetServer>
     ) -> () {
         let radius = config.radius.max(15.0);
         let seed = config.seed;
@@ -189,6 +189,17 @@ impl Planet {
                 Rock::spawn, &asset_server, parent,
                 &planet, -1.0
             );
+        });
+
+        /* Landed rocket */
+        planet_bundle.with_children(|parent| {
+            let entity = TileType::LandedRocket(LandedRocket).spawn(
+                parent, false,
+                planet.index_to_transform(0, 0.0, 5.0),
+                &asset_server, &mut texture_atlas_layouts, 0
+            );
+
+            planet.tiles.insert(0, Tile::new(0, TileType::LandedRocket(LandedRocket), entity));
         });
 
         /* Initialize POI:s */
