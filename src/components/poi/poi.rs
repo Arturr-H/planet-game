@@ -101,7 +101,7 @@ impl PointOfInterestBuilder {
         assert!(self.probability >= 0.0 && self.probability <= 1.0, "Probability must be between 0.0 and 1.0");
         for position_index in PointOfInterest::generate_position_indices(planet, self.local_seed, self.probability) {
             let z = self.z_index + rand::random::<f32>() * 0.025 - 0.0125;
-            let transform = planet.index_to_transform(position_index, self.origin_offset, z);
+            let transform = planet.index_to_transform(position_index, self.origin_offset, z, 0);
             let entity = self.poi_type.spawn(commands, asset_server, transform);
             let new_poi = PointOfInterest { position_index, poi_type: self.poi_type, entity };
             

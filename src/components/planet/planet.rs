@@ -390,9 +390,11 @@ impl Planet {
         let rotation = Quat::from_rotation_z(surface_radians + PI);
         Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
     }
-    pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32) -> Transform {
+    pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32, tile_width: usize) -> Transform {
         assert!(index < self.tile_places(), "Index needs to be less than the amount of tile places on the planet");
-        let radians = index as f32 * self.angular_step() + self.angular_step() / 2.0;
+        
+        let a = if tile_width % 2 == 0 { self.angular_step() / 2.0 } else { 0.0 };
+        let radians = index as f32 * self.angular_step() + a;
         self.radians_to_transform(radians, origin_offset, z)
     }
     pub fn normalize_radians(angle: f32) -> f32 {

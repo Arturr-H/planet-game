@@ -27,7 +27,8 @@ impl GenericTile for Drill {
         spawn_data: &TileSpawnEvent,
     ) -> Entity {
         let transform = spawn_params.planet.index_to_transform(
-            spawn_data.tile_id, 0.0, 1.0);
+            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width()
+        );
 
         if !spawn_data.is_preview {
             CableSlot::spawn(
@@ -87,7 +88,6 @@ impl GenericTile for Drill {
                             // If we have enough energy, mine one stone.
                             if e.powergrid_status.energy_stored >= 5.0 {
                                 e.powergrid_status.energy_stored = 0.0;
-                                logger::log::bright_red("drill", "Mined one stone");
                                 planet.resources.add(PlanetResource::Stone, 1);
                             }
                         });

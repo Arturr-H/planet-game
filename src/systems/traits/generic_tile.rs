@@ -24,6 +24,9 @@ pub trait GenericTile {
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // Default is to do nothing
     }
+    
+    /// How many tile slots this takes up
+    fn width(&self) -> usize { 1 }
 
     /// What POI:s this tile interacts with
     fn interacts_with(&self) -> Vec<PointOfInterestType> { Vec::new() }

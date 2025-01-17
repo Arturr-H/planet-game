@@ -1,6 +1,6 @@
 /* Imports */
 use std::f32::consts::PI;
-use bevy::{prelude::*, render::texture};
+use bevy::{prelude::*, render::texture, utils::hashbrown::HashSet};
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::stats::StatsPlugin, utils::{color::hex, logger}};
 use super::{types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
@@ -85,6 +85,12 @@ impl TileSpawnPlugin {
                     logger::log::red("tile_plugin", "Not enough distance from other tiles");
                     return
                 };
+                
+                // If the tile fits within the tile grid
+                if Self::tile_fits(&spawn_params.planet, &spawn_data.tile_type.width(), spawn_data.tile_id) == false {
+                    logger::log::red("tile_plugin", "Tile does not fit");
+                    return
+                };
 
                 // If we have enough resources - spend them
                 if let Err(e) = spawn_params.planet.resources.try_spend(spawn_data.tile_type.cost()) {
@@ -142,7 +148,7 @@ impl TileSpawnPlugin {
 
         let cursor_angle = (cursor_pos - planet_pos).angle_to(Vec2::Y);
         let index = planet.radians_to_index(- planet_rotation_z - cursor_angle);
-        let p = planet.index_to_transform(index, TILE_PREVIEW_ELEVATION, 2.0);
+        let p = planet.index_to_transform(index, TILE_PREVIEW_ELEVATION, 2.0, tile_type.width());
 
         if mb.just_pressed(MouseButton::Left) {
             event_writer.send(TileSpawnEvent {
@@ -225,6 +231,32 @@ impl TileSpawnPlugin {
         };
 
         entities
+    }
+
+    /// Every tile_type has a width, which is the amount of tiles
+    /// it occupies in the grid. This function returns an empty
+    /// vector if the tile fits, otherwise it returns the entities
+    /// of the tiles that are in the way.
+    fn tile_fits(planet: &Planet, width: &usize, index: usize) -> bool {
+        let mut occupied = HashSet::new();
+
+        for i in planet.numbers_in_radius(index, 5) {
+            if let Some(tile) = &planet.tiles.get(&i) {
+                for position in Tile::get_tile_spread(tile.tile_type.width(), i, planet.tile_places()) {
+                    occupied.insert(position);
+                }
+            }
+        }
+
+        println!("{:?}", occupied);
+        for position in Tile::get_tile_spread(*width, index, planet.tile_places()) {
+            if occupied.contains(&position) {
+                println!("ahoahouawhodhuawd");
+                return false
+            }
+        }
+    
+        true
     }
 }
 

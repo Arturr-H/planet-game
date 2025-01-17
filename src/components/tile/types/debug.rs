@@ -12,7 +12,7 @@ impl GenericTile for DebugTile {
         spawn_data: &TileSpawnEvent,
     ) -> Entity {
         let transform = spawn_params.planet.index_to_transform(
-            spawn_data.tile_id, 0.0, 1.0);
+            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width());
         
             println!("Spawned debug tile at {:?}", transform.translation);
 
@@ -25,12 +25,16 @@ impl GenericTile for DebugTile {
         commands.spawn((
             transform,
             Sprite {
-                image: spawn_params.asset_server.load("machines/debug.png"),
+                image: spawn_params.asset_server.load("machines/96.png"),
                 anchor: Anchor::BottomCenter,
                 ..default()
             },
             self.clone(),
         )).id()
+    }
+
+    fn width(&self) -> usize {
+        6
     }
 
     fn display_name(&self) -> String {
@@ -39,7 +43,7 @@ impl GenericTile for DebugTile {
 
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![
-            (PlanetResource::Wood, 2)
+            (PlanetResource::Wood, 0)
         ]
     }
 }

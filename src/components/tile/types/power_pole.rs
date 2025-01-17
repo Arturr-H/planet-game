@@ -17,7 +17,7 @@ impl GenericTile for PowerPole {
         spawn_data: &TileSpawnEvent,
     ) -> Entity {
         let transform = spawn_params.planet.index_to_transform(
-            spawn_data.tile_id, 0.0, 1.0);
+            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width());
 
         /* Power pole sprite */
         let id = commands.spawn((
