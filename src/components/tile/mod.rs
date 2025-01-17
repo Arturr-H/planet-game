@@ -1,6 +1,6 @@
 pub mod types;
-mod spawn;
-mod remove;
+pub mod spawn;
+pub mod remove;
 pub use remove::RemoveTileCommand;
 
 mod tile;

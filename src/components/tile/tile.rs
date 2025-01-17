@@ -1,9 +1,8 @@
-use std::mem::discriminant;
-
 /* Imports */
+use std::mem::discriminant;
 use bevy::{prelude::*, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
-use super::{spawn::TileSpawnPlugin, types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, empty::EmptyTile, landed_rocket::LandedRocket, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
+use super::{spawn::{TileSpawnEvent, TileSpawnEventParams, TileSpawnPlugin}, types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, landed_rocket::LandedRocket, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
@@ -99,7 +98,7 @@ impl Tile {
 
         match &self.tile_type {
             SolarPanel(_) => 1.0,
-            &WindTurbine(_) => 5.0,
+            WindTurbine(_) => 5.0,
             DebugTile(_) | Empty(_) => 0.0,
             PowerPole(_) => 0.0,
             Drill(_) => 0.0,
@@ -151,9 +150,9 @@ pub struct TilePlugin;
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins((
-                DrillPlugin,
+            .add_plugins(
+                // DrillPlugin,
                 TileSpawnPlugin
-            ));
+            );
     }
 }

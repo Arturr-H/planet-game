@@ -66,7 +66,6 @@ impl CameraPlugin {
     pub fn initialize(
         mut commands: Commands,
         mut images: ResMut<Assets<Image>>,
-        window: Query<&Window>,
     ) -> () {
         let canvas_size = Extent3d {
             width: RES_WIDTH as u32,
@@ -107,9 +106,8 @@ impl CameraPlugin {
         //     PIXEL_PERFECT_LAYERS,
         // ));
 
-        
         // commands.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
-        let ratio = window.single().size().x / RES_WIDTH;
+        // let ratio = window.single().size().x / RES_WIDTH;
         commands.spawn((
             Camera2d,
             Msaa::Off,
@@ -140,12 +138,10 @@ impl CameraPlugin {
 
     pub fn update_camera_scale(
         mut resize_events: EventReader<WindowResized>,
-        mut projections: Query<(&mut OrthographicProjection, &mut PostProcessSettings), With<OuterCamera>>,
+        mut settings: Query<&mut PostProcessSettings, With<OuterCamera>>,
     ) {
         for event in resize_events.read() {
-            let h_scale = event.width / RES_WIDTH as f32;
-            let v_scale = event.height / RES_HEIGHT as f32;
-            let (mut projection, mut settings) = projections.single_mut();
+            let mut settings = settings.single_mut();
             settings.screen_width = event.width;
             settings.screen_height = event.height;
             // projection.scale = 1. / h_scale.min(v_scale).round();
