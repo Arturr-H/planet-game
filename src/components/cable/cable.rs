@@ -8,7 +8,7 @@ use super::slot::CableSlot;
 /* Constants */
 const CABLE_Z_INDEX: f32 = 3.0;
 const CABLE_THICKNESS: f32 = 12.5;
-const FIXED_HEIGHT: f32 = 15.0;
+const FIXED_HEIGHT: f32 = 18.0;
 const CABLE_COLOR: &str = "#020410";
 pub const MAX_CABLE_LENGTH: f32 = 200.0;
 
@@ -16,7 +16,7 @@ pub const MAX_CABLE_LENGTH: f32 = 200.0;
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct CableMaterial {
     #[uniform(0)]
-    pub aspect_ratio: f32,
+    pub dimensions: Vec2<>,
 }
 
 impl Material2d for CableMaterial {
@@ -77,7 +77,7 @@ impl Cable {
             //     ..default()
             // },
             Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
-            MeshMaterial2d(cable_materials.add(CableMaterial {aspect_ratio: 1.0})),
+            MeshMaterial2d(cable_materials.add(CableMaterial {dimensions: Vec2::new(1.0, 1.0)})),
             Transform::from_xyz(0.0, 0.0, CABLE_Z_INDEX),
             Cable {
                 start_entity,
@@ -91,11 +91,11 @@ impl Cable {
 
     /// Update system
     fn update_cables(
-        mut query: Query<(&mut Transform, &Cable)>,
+        mut query: Query<(&mut Transform, &Cable, &mut MeshMaterial2d<CableMaterial>)>,
         slots_q: Query<&Transform, (With<CableSlot>, Without<Cable>)>,
-        mut material: ResMut<Assets<CableMaterial>>,
+        mut cable_material: ResMut<Assets<CableMaterial>>,
     ) {
-        for (mut transform, cable) in query.iter_mut() {
+        for (mut transform, cable, mesh_material) in query.iter_mut() {
             if let (Ok(start_transform), Ok(end_transform)) = (
                 slots_q.get(cable.start_entity),
                 slots_q.get(cable.end_entity),
@@ -107,19 +107,22 @@ impl Cable {
 
                 let direction = left - right;
                 let length = direction.length();
+                // Jag har ingen aning hur detta funkar men det ger helt okej resultat, känns nästan random
+                // let height = (FIXED_HEIGHT * (1.0 - (length - 60.0).abs() / 60.0).max(0.0)).max(2.0); 
+                let height = 1.2 + (FIXED_HEIGHT - 1.2) * 
+                (1.0 - (-length / 80.0).exp());
+                let height = height.clamp(1.2, FIXED_HEIGHT);
 
-                let height = FIXED_HEIGHT * (1.0 - (length - 60.0).abs() / 60.0).max(0.0);
-                // let height = FIXED_HEIGHT * 0.1;
                 let angle = direction.y.atan2(direction.x);
                 println!("length: {}, height: {}", length, height);
 
                 let midpoint = (right + left) / 2.0;
                 let offset = Vec2::new(-direction.y, direction.x).normalize() * height / 2.0;
 
-                let aspect_ratio = length / height;
-                material.iter_mut().for_each(|(_, mat)| {
-                    mat.aspect_ratio = aspect_ratio;
-                });                
+                // let aspect_ratio = length / height;
+                if let Some(material) = cable_material.get_mut(&mesh_material.0) {
+                    material.dimensions = Vec2::new(length, height);
+                }
 
                 transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX);
                                         // + Vec3::new((angle + PI / 2.0).cos() * FIXED_HEIGHT, (angle + PI / 2.0).sin() * FIXED_HEIGHT, 0.0); // Mid
@@ -144,7 +147,7 @@ impl Cable {
             //     ..default()
             // },
             Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
-            MeshMaterial2d(cable_materials.add(CableMaterial { aspect_ratio: 1.0 })),
+            MeshMaterial2d(cable_materials.add(CableMaterial { dimensions: Vec2::new(1.0, 1.0) })),
             Transform::from_xyz(0.0, 0.0, CABLE_Z_INDEX),
             CablePreview { start_entity },
         ));
