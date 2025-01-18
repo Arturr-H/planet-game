@@ -1,22 +1,44 @@
+use std::f32::consts::PI;
+
 /* Imports */
-use bevy::prelude::*;
+use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}};
 use crate::{camera::OuterCamera, utils::color::hex};
 use super::slot::CableSlot;
 
 /* Constants */
 const CABLE_Z_INDEX: f32 = 3.0;
-const CABLE_THICKNESS: f32 = 1.25;
+const CABLE_THICKNESS: f32 = 12.5;
+const FIXED_HEIGHT: f32 = 15.0;
 const CABLE_COLOR: &str = "#020410";
 pub const MAX_CABLE_LENGTH: f32 = 200.0;
 
 /// Plugin to add cable rendering functionality
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct CableMaterial {
+    #[uniform(0)]
+    pub aspect_ratio: f32,
+}
+
+impl Material2d for CableMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/cable.wgsl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
+    }
+}
+
 pub struct CablePlugin;
 impl Plugin for CablePlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_plugins(Material2dPlugin::<CableMaterial>::default())
             .add_systems(Update, (Cable::update_cables, Cable::update_previews));
     }
 }
+
+
 
 /// Component to represent a cable between two entities
 #[derive(Component)]
@@ -44,14 +66,18 @@ impl Cable {
 
         start_tile_id: usize,
         end_tile_id: usize,
+        mut cable_materials: ResMut<Assets<CableMaterial>>,
+        mut meshes: ResMut<Assets<Mesh>>,
     ) {
         commands.spawn((
             PickingBehavior::IGNORE,
-            Sprite {
-                color: hex!(CABLE_COLOR),
-                custom_size: Some(Vec2::new(1.0, CABLE_THICKNESS)),
-                ..default()
-            },
+            // Sprite {
+            //     color: hex!(CABLE_COLOR),
+            //     custom_size: Some(Vec2::new(1.0, 1.0)),
+            //     ..default()
+            // },
+            Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
+            MeshMaterial2d(cable_materials.add(CableMaterial {aspect_ratio: 1.0})),
             Transform::from_xyz(0.0, 0.0, CABLE_Z_INDEX),
             Cable {
                 start_entity,
@@ -67,6 +93,7 @@ impl Cable {
     fn update_cables(
         mut query: Query<(&mut Transform, &Cable)>,
         slots_q: Query<&Transform, (With<CableSlot>, Without<Cable>)>,
+        mut material: ResMut<Assets<CableMaterial>>,
     ) {
         for (mut transform, cable) in query.iter_mut() {
             if let (Ok(start_transform), Ok(end_transform)) = (
@@ -76,13 +103,28 @@ impl Cable {
                 let start = start_transform.translation.truncate();
                 let end = end_transform.translation.truncate();
 
-                let direction = end - start;
-                let length = direction.length();
-                let angle = direction.y.atan2(direction.x);
+                let (left, right) = if start.x <= end.x { (start, end) } else { (end, start) };
 
-                transform.translation = ((start + end) / 2.0).extend(CABLE_Z_INDEX); // Mid
+                let direction = left - right;
+                let length = direction.length();
+
+                let height = FIXED_HEIGHT * (1.0 - (length - 60.0).abs() / 60.0).max(0.0);
+                // let height = FIXED_HEIGHT * 0.1;
+                let angle = direction.y.atan2(direction.x);
+                println!("length: {}, height: {}", length, height);
+
+                let midpoint = (right + left) / 2.0;
+                let offset = Vec2::new(-direction.y, direction.x).normalize() * height / 2.0;
+
+                let aspect_ratio = length / height;
+                material.iter_mut().for_each(|(_, mat)| {
+                    mat.aspect_ratio = aspect_ratio;
+                });                
+
+                transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX);
+                                        // + Vec3::new((angle + PI / 2.0).cos() * FIXED_HEIGHT, (angle + PI / 2.0).sin() * FIXED_HEIGHT, 0.0); // Mid
                 transform.rotation = Quat::from_rotation_z(angle); // Align with direction
-                transform.scale = Vec3::new(length, CABLE_THICKNESS, 1.0); // Adjust size
+                transform.scale = Vec3::new(length, height, 1.0); // Adjust size
             }
         }
     }
@@ -91,14 +133,18 @@ impl Cable {
     pub fn spawn_preview(
         commands: &mut Commands,
         start_entity: Entity,
+        mut cable_materials: ResMut<Assets<CableMaterial>>,
+        mut meshes: ResMut<Assets<Mesh>>,
     ) {
         commands.spawn((
             PickingBehavior::IGNORE,
-            Sprite {
-                color: hex!(CABLE_COLOR),
-                custom_size: Some(Vec2::new(1.0, CABLE_THICKNESS)),
-                ..default()
-            },
+            // Sprite {
+            //     color: hex!(CABLE_COLOR),
+            //     custom_size: Some(Vec2::new(1.0, CABLE_THICKNESS)),
+            //     ..default()
+            // },
+            Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
+            MeshMaterial2d(cable_materials.add(CableMaterial { aspect_ratio: 1.0 })),
             Transform::from_xyz(0.0, 0.0, CABLE_Z_INDEX),
             CablePreview { start_entity },
         ));
@@ -125,15 +171,18 @@ impl Cable {
                 let length = direction.length();
                 let angle = direction.y.atan2(direction.x);
 
+                let midpoint = (start + world_position) / 2.0;
+                let offset = Vec2::new(-direction.y, direction.x).normalize() * FIXED_HEIGHT / 2.0;
+
                 if length > MAX_CABLE_LENGTH {
                     sprite.color = hex!("#ff0000");
                 } else {
                     sprite.color = hex!(CABLE_COLOR);
                 }
 
-                transform.translation = ((start + world_position) / 2.0).extend(CABLE_Z_INDEX); // Mid
+                transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX); // Mid
                 transform.rotation = Quat::from_rotation_z(angle); // Align with direction
-                transform.scale = Vec3::new(length, CABLE_THICKNESS, 1.0); // Adjust size
+                transform.scale = Vec3::new(length, FIXED_HEIGHT, 1.0); // Adjust size
             }
         }
     }

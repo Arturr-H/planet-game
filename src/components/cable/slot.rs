@@ -1,5 +1,5 @@
 /* Imports */
-use super::slot_state::SlotCablePlacementResource;
+use super::{cable::CableMaterial, slot_state::SlotCablePlacementResource};
 use crate::{
     camera::HIGH_RES_LAYERS, components::{
         cable::cable::{Cable, CablePreview, MAX_CABLE_LENGTH},
@@ -89,6 +89,9 @@ impl CableSlot {
         mut slot_res: ResMut<SlotCablePlacementResource>,
         cable_preview_q: Query<Entity, With<CablePreview>>,
         mut events: EventWriter<OpenStats>,
+        mut cable_materials: ResMut<Assets<CableMaterial>>,
+        mut meshes: ResMut<Assets<Mesh>>,
+        // mut cable_material: ResMut<Assets<CableMaterial>>,
     ) {
         click.propagate(false);
 
@@ -118,6 +121,8 @@ impl CableSlot {
                             other_entity,
                             id,
                             slot.tile_id,
+                            cable_materials,
+                            meshes,
                         );
                     });
 
@@ -127,7 +132,10 @@ impl CableSlot {
                 }
             } else {
                 slot_res.set_active(slot.tile_id, click.entity(), transform.translation);
-                Cable::spawn_preview(&mut commands, click.entity());
+                Cable::spawn_preview(
+                    &mut commands, click.entity(),
+                    cable_materials, meshes,
+                );
                 Self::highlight(
                     Some(true),
                     Some(true),
