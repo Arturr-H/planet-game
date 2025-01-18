@@ -11,4 +11,3 @@ Planet game is a small 2D multiplayer and management game where the incentive is
 ## Contributions?
 We are not actively seeking contributors at the moment. However, if you have ideas or changes you believe would improve the project, feel free to open a pull request. You’re also welcome to check out the [Issues](#issues) tab to see if there’s anything you can assist with!
 
-###### This work is licensed under the CC BY-NC 4.0 International License.
