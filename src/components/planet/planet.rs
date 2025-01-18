@@ -507,7 +507,7 @@ impl PlanetPlugin {
                 if tile.can_distribute_energy() {
                     Tile::distribute_energy(
                         tile.energy_output(),
-                        tile.tile_identifier,
+                        tile.tile_id,
                         &mut planet
                     );
                 }

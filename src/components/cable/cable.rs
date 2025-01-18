@@ -120,7 +120,6 @@ impl Cable {
                 let height = height.clamp(1.2, MAX_HEIGHT_CABLE);
 
                 let angle = direction.y.atan2(direction.x);
-                println!("length: {}, height: {}", length, height);
 
                 let midpoint = (right + left) / 2.0;
                 let offset = Vec2::new(-direction.y, direction.x).normalize() * height / 2.0;
