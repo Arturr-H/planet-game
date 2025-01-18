@@ -19,7 +19,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let distance_from_line = abs(uv.y - bent_y);
 
     if (distance_from_line < thickness) {
-        return vec4<f32>(0.01, 0.01, 0.05, 1.0); // cable line
+        return vec4<f32>(0.008, 0.016, 0.063, 1.0); // cable line
     }
     return vec4<f32>(0.0, 0.0, 0.0, 0.0);
 }

@@ -8,7 +8,7 @@ use super::slot::CableSlot;
 /* Constants */
 const CABLE_Z_INDEX: f32 = 3.0;
 const CABLE_THICKNESS: f32 = 12.5;
-const FIXED_HEIGHT: f32 = 18.0;
+const MAX_HEIGHT_CABLE: f32 = 18.0;
 const CABLE_COLOR: &str = "#020410";
 pub const MAX_CABLE_LENGTH: f32 = 200.0;
 
@@ -103,15 +103,21 @@ impl Cable {
                 let start = start_transform.translation.truncate();
                 let end = end_transform.translation.truncate();
 
-                let (left, right) = if start.x <= end.x { (start, end) } else { (end, start) };
+                let start_angle = start.y.atan2(start.x);
+                let end_angle = end.y.atan2(end.x);
+
+                // Determine which is further away between start and end to ensure the cable is drawn in the correct direction
+                let (left, right) = if (end_angle - start_angle + 2.0 * PI) % (2.0 * PI) < PI {
+                    (end, start)
+                } else {
+                    (start, end)
+                };
 
                 let direction = left - right;
                 let length = direction.length();
-                // Jag har ingen aning hur detta funkar men det ger helt okej resultat, känns nästan random
-                // let height = (FIXED_HEIGHT * (1.0 - (length - 60.0).abs() / 60.0).max(0.0)).max(2.0); 
-                let height = 1.2 + (FIXED_HEIGHT - 1.2) * 
+                let height = 1.2 + (MAX_HEIGHT_CABLE - 1.2) * 
                 (1.0 - (-length / 80.0).exp());
-                let height = height.clamp(1.2, FIXED_HEIGHT);
+                let height = height.clamp(1.2, MAX_HEIGHT_CABLE);
 
                 let angle = direction.y.atan2(direction.x);
                 println!("length: {}, height: {}", length, height);
@@ -125,7 +131,7 @@ impl Cable {
                 }
 
                 transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX);
-                                        // + Vec3::new((angle + PI / 2.0).cos() * FIXED_HEIGHT, (angle + PI / 2.0).sin() * FIXED_HEIGHT, 0.0); // Mid
+                                        // + Vec3::new((angle + PI / 2.0).cos() * MAX_HEIGHT_CABLE, (angle + PI / 2.0).sin() * MAX_HEIGHT_CABLE, 0.0); // Mid
                 transform.rotation = Quat::from_rotation_z(angle); // Align with direction
                 transform.scale = Vec3::new(length, height, 1.0); // Adjust size
             }
@@ -175,7 +181,7 @@ impl Cable {
                 let angle = direction.y.atan2(direction.x);
 
                 let midpoint = (start + world_position) / 2.0;
-                let offset = Vec2::new(-direction.y, direction.x).normalize() * FIXED_HEIGHT / 2.0;
+                let offset = Vec2::new(-direction.y, direction.x).normalize() * MAX_HEIGHT_CABLE / 2.0;
 
                 if length > MAX_CABLE_LENGTH {
                     sprite.color = hex!("#ff0000");
@@ -185,7 +191,7 @@ impl Cable {
 
                 transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX); // Mid
                 transform.rotation = Quat::from_rotation_z(angle); // Align with direction
-                transform.scale = Vec3::new(length, FIXED_HEIGHT, 1.0); // Adjust size
+                transform.scale = Vec3::new(length, MAX_HEIGHT_CABLE, 1.0); // Adjust size
             }
         }
     }
