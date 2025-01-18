@@ -1,5 +1,5 @@
 <h1 align="center">Planet game</h1> 
-Planet game is a small 2D multiplayer and management game where the incentive is to conqure the solar system along with the other players planets. The game is built on the Bevy game engine. The full game mechanics are not yet decided, or the core gameplay loop. We've been using shaders and manual 2d meshes for creating the planets.
+Planet game is a small 2D multiplayer and management game where the incentive is to conqure the solar system along with the other players' planets. The game is built on the Bevy game engine. The full game mechanics are not yet decided, or the core gameplay loop. We've been using shaders and manual 2d meshes for creating the planets.
 
 <details>
 <summary><h2>In-game images </h2></summary>
