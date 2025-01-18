@@ -5,7 +5,7 @@ Planet game is a small 2D multiplayer and management game where the incentive is
 <summary><h2>In-game images </h2></summary>
   
   ![bild](https://github.com/user-attachments/assets/39bf7c0e-0775-4c93-8f64-abb55aaffc3c)
-  ![bild](https://github.com/user-attachments/assets/298bfecc-4ddc-493a-98c4-97b5dcbec68f)
+![bild](https://github.com/user-attachments/assets/3cad211d-3f1e-4db4-9893-93c10867fe8c)
 </details>
 
 ## Contributions?
