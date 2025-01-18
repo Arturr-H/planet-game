@@ -1,9 +1,8 @@
-use std::mem::discriminant;
-
 /* Imports */
+use std::mem::discriminant;
 use bevy::{prelude::*, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
-use super::{spawn::TileSpawnPlugin, types::{battery::Battery, debug::DebugTile, drill::{Drill, DrillPlugin}, empty::EmptyTile, landed_rocket::LandedRocket, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
+use super::{spawn::{TileSpawnEvent, TileSpawnEventParams, TileSpawnPlugin}, types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, landed_rocket::LandedRocket, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
 
 /* Constants */
 pub const TILE_SIZE: f32 = 20.0;
@@ -99,7 +98,7 @@ impl Tile {
 
         match &self.tile_type {
             SolarPanel(_) => 1.0,
-            &WindTurbine(_) => 5.0,
+            WindTurbine(_) => 5.0,
             DebugTile(_) | Empty(_) => 0.0,
             PowerPole(_) => 0.0,
             Drill(_) => 0.0,
@@ -136,6 +135,36 @@ impl Tile {
         }
     }
 
+    /// Generates a spread of indexes based on a given width and starting index, with wrapping around at boundaries.
+    /// # Returns
+    /// 
+    /// A `Vec<usize>` containing the calculated indexes in the spread. The spread grows primarily to the right if
+    /// `width` is even, or symmetrically left and right if `width` is odd. If the spread exceeds the boundaries of
+    /// the available indexes, it wraps around to the other end.
+    pub fn get_tile_spread(width: usize, index: usize, boundary: usize) -> Vec<usize> {
+        assert!(width > 0, "Width must be at least 1.");
+        assert!(index < boundary, "Index must be within the range of available indexes.");
+    
+        let mut spread = Vec::with_capacity(width);
+        let half_width = width / 2;
+    
+        for i in 0..width {
+            let offset = if width % 2 == 1 {
+                // If width is odd, grow left and right
+                i as isize - half_width as isize
+            }else {
+                // If width is even, grow primarily to the right
+                i as isize - (half_width as isize - 1)
+            };
+    
+            let wrapped_index = ((index as isize + offset).rem_euclid(boundary as isize)) as usize;
+            spread.push(wrapped_index);
+        }
+    
+        spread.sort(); // Ensures consistent ordering of results
+        spread
+    }
+
     pub fn tile_identifier(&self) -> usize { self.tile_identifier }
     pub fn powergrid_status(&self) -> &PowergridStatus { &self.powergrid_status }
     pub fn powergrid_status_mut(&mut self) -> &mut PowergridStatus { &mut self.powergrid_status }
@@ -151,9 +180,31 @@ pub struct TilePlugin;
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_plugins((
-                DrillPlugin,
+            .add_plugins(
+                // DrillPlugin,
                 TileSpawnPlugin
-            ));
+            );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_tile_spread() {
+        let spread = Tile::get_tile_spread(2, 0, 5);
+        assert_eq!(spread, vec![0, 1]);
+
+        let spread = Tile::get_tile_spread(3, 0, 5);
+        assert_eq!(spread, vec![0, 1, 4]);
+
+        let spread = Tile::get_tile_spread(3, 5, 20);
+        assert_eq!(spread, vec![4, 5, 6]);
+
+        let spread = Tile::get_tile_spread(7, 5, 20);
+        assert_eq!(spread, vec![2, 3, 4, 5, 6, 7, 8]);
+        let spread = Tile::get_tile_spread(8, 5, 20);
+        assert_eq!(spread, vec![2, 3, 4, 5, 6, 7, 8, 9]);
     }
 }

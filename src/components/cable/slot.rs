@@ -44,6 +44,7 @@ impl CableSlot {
         commands.spawn((
             Self { tile_id },
             transform.with_translation(transform.translation
+                .with_z(transform.translation.z + 0.1)
                 + Planet::forward(&transform) * TILE_SIZE / 2.0),
             CableSlotColored,
             Sprite {

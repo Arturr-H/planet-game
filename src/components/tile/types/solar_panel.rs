@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::cable::slot::CableSlot, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}};
 
 /// A solar panel is a tile that generates energy
 /// if sun is shining on it.
@@ -10,22 +10,22 @@ impl GenericTile for SolarPanel {
     fn spawn(
         &self,
         commands: &mut ChildBuilder,
-        preview: bool,
-        transform: Transform,
-        asset_server: &Res<AssetServer>,
-        _: &mut ResMut<Assets<TextureAtlasLayout>>,
-        tile_id: usize,
+        spawn_params: &mut TileSpawnEventParams,
+        spawn_data: &TileSpawnEvent,
     ) -> Entity {
-        if !preview {
+        let transform = spawn_params.planet.index_to_transform(
+            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width());
+        
+        if !spawn_data.is_preview {
             CableSlot::spawn(
-                commands, asset_server, tile_id, transform
+                commands, &spawn_params.asset_server, spawn_data.tile_id, transform
             );
         }
 
         commands.spawn((
             transform,
             Sprite {
-                image: asset_server.load("machines/solar-panel.png"),
+                image: spawn_params.asset_server.load("machines/solar-panel.png"),
                 anchor: Anchor::BottomCenter,
                 // custom_size: Some(Vec2::new(20.0, 20.0)),
                 ..default()

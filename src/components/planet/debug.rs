@@ -37,7 +37,6 @@ pub fn on_update(
     planet_materials: ResMut<Assets<PlanetMaterial>>,
     planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
     planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
-    texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
 ) -> () {
@@ -54,7 +53,6 @@ pub fn on_update(
                 planet_materials,
                 planet_atmosphere_materials,
                 camera_q,
-                texture_atlas_layouts,
                 config,
                 asset_server
             );

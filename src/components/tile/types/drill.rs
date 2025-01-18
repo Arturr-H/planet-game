@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{stone::Stone, PointOfInterestType}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
@@ -23,23 +23,24 @@ impl GenericTile for Drill {
     fn spawn(
         &self,
         commands: &mut ChildBuilder,
-        preview: bool,
-        transform: Transform,
-        asset_server: &Res<AssetServer>,
-        texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
-        tile_id: usize,
+        spawn_params: &mut TileSpawnEventParams,
+        spawn_data: &TileSpawnEvent,
     ) -> Entity {
-        if !preview {
+        let transform = spawn_params.planet.index_to_transform(
+            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width()
+        );
+
+        if !spawn_data.is_preview {
             CableSlot::spawn(
-                commands, asset_server, tile_id, transform
+                commands, &spawn_params.asset_server, spawn_data.tile_id, transform
                     .with_translation(transform.translation.with_z(2.0)
                         + Planet::forward(&transform) * 20.0)
             );
         }
 
-        let texture = asset_server.load("machines/drill.png");
+        let texture = spawn_params.asset_server.load("machines/drill.png");
         let layout = TextureAtlasLayout::from_grid(UVec2::splat(32), 4, 1, None, None);
-        let texture_atlas_layout = texture_atlas_layouts.add(layout);
+        let texture_atlas_layout = spawn_params.texture_atlas_layouts.add(layout);
         let animation_indices = AnimationIndices { first: 0, last: 3 };
 
         commands.spawn((
@@ -87,7 +88,6 @@ impl GenericTile for Drill {
                             // If we have enough energy, mine one stone.
                             if e.powergrid_status.energy_stored >= 5.0 {
                                 e.powergrid_status.energy_stored = 0.0;
-                                logger::log::bright_red("drill", "Mined one stone");
                                 planet.resources.add(PlanetResource::Stone, 1);
                             }
                         });

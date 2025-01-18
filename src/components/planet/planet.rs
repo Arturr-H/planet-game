@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -127,7 +127,6 @@ impl Planet {
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
         mut camera_q: Query<&mut Transform, With<OuterCamera>>,
-        mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>
     ) -> () {
@@ -192,15 +191,15 @@ impl Planet {
         });
 
         /* Landed rocket */
-        planet_bundle.with_children(|parent| {
-            let entity = TileType::LandedRocket(LandedRocket).spawn(
-                parent, false,
-                planet.index_to_transform(0, 0.0, 5.0),
-                &asset_server, &mut texture_atlas_layouts, 0
-            );
+        // planet_bundle.with_children(|parent| {
+        //     let entity = TileType::LandedRocket(LandedRocket).spawn(
+        //         parent, false,
+        //         planet.index_to_transform(0, 0.0, 5.0),
+        //         &asset_server, &mut texture_atlas_layouts, 0
+        //     );
 
-            planet.tiles.insert(0, Tile::new(0, TileType::LandedRocket(LandedRocket), entity));
-        });
+        //     planet.tiles.insert(0, Tile::new(0, TileType::LandedRocket(LandedRocket), entity));
+        // });
 
         /* Initialize POI:s */
         planet_bundle.with_children(|parent| {
@@ -391,9 +390,11 @@ impl Planet {
         let rotation = Quat::from_rotation_z(surface_radians + PI);
         Transform { translation: Vec3::new(new.x, new.y, z), rotation, ..default() }
     }
-    pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32) -> Transform {
+    pub fn index_to_transform(&self, index: usize, origin_offset: f32, z: f32, tile_width: usize) -> Transform {
         assert!(index < self.tile_places(), "Index needs to be less than the amount of tile places on the planet");
-        let radians = index as f32 * self.angular_step();
+        
+        let a = if tile_width % 2 == 0 { self.angular_step() / 2.0 } else { 0.0 };
+        let radians = index as f32 * self.angular_step() + a;
         self.radians_to_transform(radians, origin_offset, z)
     }
     pub fn normalize_radians(angle: f32) -> f32 {

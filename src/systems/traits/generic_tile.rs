@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{components::{planet::Planet, poi::PointOfInterestType}, tile::TileType, systems::game::PlanetResource};
+use crate::{components::{planet::Planet, poi::PointOfInterestType}, tile::{TileType, spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::game::PlanetResource};
 
 #[enum_delegate::register]
 #[allow(unused_variables)]
@@ -8,12 +8,9 @@ pub trait GenericTile {
     /// Spawn logic (bevy)
     fn spawn(
         &self,
-        commands: &mut ChildBuilder, // Often child of planet
-        preview: bool,
-        transform: Transform,
-        asset_server: &Res<AssetServer>,
-        texture_atlas_layouts: &mut ResMut<Assets<TextureAtlasLayout>>,
-        tile_id: usize,
+        commands: &mut ChildBuilder,
+        spawn_params: &mut TileSpawnEventParams,
+        spawn_data: &TileSpawnEvent,
     ) -> Entity;
 
     /// What resources this tile costs
@@ -27,6 +24,9 @@ pub trait GenericTile {
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // Default is to do nothing
     }
+    
+    /// How many tile slots this takes up
+    fn width(&self) -> usize { 1 }
 
     /// What POI:s this tile interacts with
     fn interacts_with(&self) -> Vec<PointOfInterestType> { Vec::new() }

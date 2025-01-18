@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, planet::Planet}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}};
 
 /* Constants */
 const POWER_SLOT_OFFSET: f32 = 50.0;
@@ -13,17 +13,16 @@ impl GenericTile for PowerPole {
     fn spawn(
         &self,
         commands: &mut ChildBuilder,
-        preview: bool,
-        transform: Transform,
-        asset_server: &Res<AssetServer>,
-        _: &mut ResMut<Assets<TextureAtlasLayout>>,
-        tile_id: usize,
+        spawn_params: &mut TileSpawnEventParams,
+        spawn_data: &TileSpawnEvent,
     ) -> Entity {
+        let transform = spawn_params.planet.index_to_transform(
+            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width());
 
         /* Power pole sprite */
         let id = commands.spawn((
             Sprite {
-                image: asset_server.load("machines/power-pole.png"),
+                image: spawn_params.asset_server.load("machines/power-pole.png"),
                 anchor: Anchor::BottomCenter,
                 ..default()
             },
@@ -31,9 +30,9 @@ impl GenericTile for PowerPole {
             PowerPole,
         )).id();
 
-        if !preview {
+        if !spawn_data.is_preview {
             CableSlot::spawn(
-                commands, asset_server, tile_id,
+                commands, &spawn_params.asset_server, spawn_data.tile_id,
                 transform.with_translation(transform.translation
                     + Planet::forward(&transform) * POWER_SLOT_OFFSET
                 )
