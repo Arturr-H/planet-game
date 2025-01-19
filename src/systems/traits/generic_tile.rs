@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{components::{planet::Planet, poi::PointOfInterestType}, tile::{TileType, spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::game::PlanetResource};
+use crate::{components::{planet::Planet, poi::PointOfInterestType}, tile::{Tile, TileType, spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::game::PlanetResource};
 
 #[enum_delegate::register]
 #[allow(unused_variables)]
@@ -27,7 +27,7 @@ pub trait GenericTile {
 
     /// Tiles that produce energy should implement this, like
     /// solar panels, wind turbines, etc. (Energy per gametick)
-    fn energy_output(&self) -> Option<f32> { None }
+    fn energy_output(&self, tile: &Tile) -> Option<f32> { None }
 
     /// Tiles that store energy should implement this, like
     /// batteries, etc.

@@ -1,7 +1,7 @@
 /* Imports */
 use std::f32::consts::TAU;
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, foliage::animation::Rotate, planet::Planet, tile::{spawn::{TileSpawnEvent, TileSpawnEventParams}, TileType}}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, foliage::animation::Rotate, planet::Planet, tile::{spawn::{TileSpawnEvent, TileSpawnEventParams}, Tile, TileType}}, systems::{game::PlanetResource, traits::GenericTile}};
 
 /* Constants */
 const CABLE_SLOT_OFFSET: f32 = 28.0;
@@ -23,13 +23,12 @@ impl GenericTile for WindTurbine {
                 commands, &spawn_params.asset_server, spawn_data.tile.tile_id, transform
                     .with_translation(transform.translation
                         .with_z(transform.translation.z + 0.1)
-                        + Planet::forward(&transform) * (CABLE_SLOT_OFFSET + spawn_data.tile.tile_level as f32 * 12.15))
+                        + Planet::forward(&transform) * CABLE_SLOT_OFFSET)
             );
         }
 
         commands.spawn((
-            transform
-                .with_scale(Vec3::new(1.0, 1.0 + spawn_data.tile.tile_level as f32 * 0.3, 1.0)),
+            transform,
             Visibility::Visible,
             self.clone(),
         ))
@@ -71,17 +70,8 @@ impl GenericTile for WindTurbine {
         ]
     }
 
-    fn energy_output(&self) -> Option<f32> { Some(5.0) }
+    fn energy_output(&self, _tile: &Tile) -> Option<f32> { Some(5.0) }
     fn display_name(&self) -> String { "Wind turbine".to_string() }
-    fn upgrades(&self) -> Vec<Vec<(PlanetResource,usize)> > {
-        vec![
-            vec![(PlanetResource::Wood, 20)],
-            vec![(PlanetResource::Wood, 20)],
-            vec![(PlanetResource::Wood, 20)],
-            vec![(PlanetResource::Wood, 20)],
-            vec![(PlanetResource::Wood, 20)],
-        ]
-    }
 
     // So wind turbine rotors don't overlap
     fn keep_distance_from(&self) -> Vec<(usize,crate::components::tile::TileType)> {

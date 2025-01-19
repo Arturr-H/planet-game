@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, tile::{spawn::{TileSpawnEvent, TileSpawnEventParams}, Tile}}, systems::{game::PlanetResource, traits::GenericTile}};
 
 /// A solar panel is a tile that generates energy
 /// if sun is shining on it.
@@ -35,7 +35,16 @@ impl GenericTile for SolarPanel {
     }
 
     fn display_name(&self) -> String { "Solar panel".to_string() }
-    fn energy_output(&self) -> Option<f32> { Some(1.0) }
+    fn energy_output(&self, tile: &Tile) -> Option<f32> {
+        Some(match tile.tile_level {
+            0 => 1.0,
+            1 => 2.0,
+            2 => 3.0,
+            3 => 4.0,
+            4 => 5.0,
+            _ => unimplemented!()
+        })
+    }
     fn upgrades(&self) -> Vec<Vec<(PlanetResource,usize)> > {
         vec![
             vec![(PlanetResource::Wood, 4)],

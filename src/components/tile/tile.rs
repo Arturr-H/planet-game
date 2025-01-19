@@ -100,7 +100,7 @@ impl Tile {
         }
     }
     pub fn energy_output(&self) -> Option<f32> {
-        self.tile_type.energy_output()
+        self.tile_type.energy_output(self)
     }
     pub fn can_recieve_energy(&self) -> bool {
         self.tile_type.can_recieve_energy()
