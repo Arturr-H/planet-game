@@ -68,9 +68,8 @@ impl GenericTile for Drill {
         ]
     }
 
-    fn display_name(&self) -> String {
-        "Drill".to_string()
-    }
+    fn display_name(&self) -> String { "Drill".to_string() }
+    fn can_recieve_energy(&self) -> bool { true }
 
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // The position index of the drill

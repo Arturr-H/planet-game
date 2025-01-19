@@ -33,13 +33,9 @@ impl GenericTile for DebugTile {
         )).id()
     }
 
-    fn width(&self) -> usize {
-        6
-    }
-
-    fn display_name(&self) -> String {
-        "Debug tile".to_string()
-    }
+    fn width(&self) -> usize { 6 }
+    fn display_name(&self) -> String { "Debug tile".to_string() }
+    fn can_recieve_energy(&self) -> bool { true }
 
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![

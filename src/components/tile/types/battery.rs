@@ -32,14 +32,9 @@ impl GenericTile for Battery {
         )).id()
     }
 
-    fn display_name(&self) -> String {
-        "Battery".to_string()
-    }
-
-
-    fn width(&self) -> usize {
-        2
-    }
+    fn display_name(&self) -> String { "Battery".to_string() }
+    fn width(&self) -> usize { 2 }
+    fn can_recieve_energy(&self) -> bool { true }
 
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![

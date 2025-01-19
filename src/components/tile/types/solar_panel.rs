@@ -34,9 +34,8 @@ impl GenericTile for SolarPanel {
         )).id()
     }
 
-    fn display_name(&self) -> String {
-        "Solar panel".to_string()
-    }
+    fn display_name(&self) -> String { "Solar panel".to_string() }
+    fn energy_output(&self) -> Option<f32> { Some(1.0) }
 
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![

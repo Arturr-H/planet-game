@@ -504,9 +504,9 @@ impl PlanetPlugin {
             let keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
             for key in keys {
                 let tile = planet.tiles.get(&key).unwrap();
-                if tile.can_distribute_energy() {
+                if let Some(energy_output) = tile.energy_output() {
                     Tile::distribute_energy(
-                        tile.energy_output(),
+                        energy_output,
                         tile.tile_id,
                         &mut planet
                     );

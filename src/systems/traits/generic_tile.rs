@@ -24,7 +24,15 @@ pub trait GenericTile {
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // Default is to do nothing
     }
-    
+
+    /// Tiles that produce energy should implement this, like
+    /// solar panels, wind turbines, etc. (Energy per gametick)
+    fn energy_output(&self) -> Option<f32> { None }
+
+    /// Tiles that store energy should implement this, like
+    /// batteries, etc.
+    fn can_recieve_energy(&self) -> bool { false }
+
     /// How many tile slots this takes up
     fn width(&self) -> usize { 1 }
 

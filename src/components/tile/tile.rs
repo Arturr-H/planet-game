@@ -99,18 +99,11 @@ impl Tile {
             }
         }
     }
-    pub fn energy_output(&self) -> f32 {
-        use TileType::*;
-
-        match &self.tile_type {
-            SolarPanel(_) => 1.0,
-            WindTurbine(_) => 5.0,
-            DebugTile(_) | Empty(_) => 0.0,
-            PowerPole(_) => 0.0,
-            Drill(_) => 0.0,
-            Battery(_) => 0.0,
-            LandedRocket(_) => 0.0,
-        }
+    pub fn energy_output(&self) -> Option<f32> {
+        self.tile_type.energy_output()
+    }
+    pub fn can_recieve_energy(&self) -> bool {
+        self.tile_type.can_recieve_energy()
     }
 
     /// Adds energy to all tiles implementing `EnergyStorage`
@@ -123,22 +116,6 @@ impl Tile {
         
         let tile_type = planet.tiles[&tile_id].tile_type.clone();
         tile_type.on_energy_recieved(tile_id, planet);
-    }
-    pub fn can_recieve_energy(&self) -> bool {
-        use TileType::*;
-
-        match self.tile_type {
-            DebugTile(_) | Drill(_) | Battery(_) => true,
-            SolarPanel(_) | PowerPole(_) | Empty(_) | WindTurbine(_) | LandedRocket(_) => false,
-        }
-    }
-    pub fn can_distribute_energy(&self) -> bool {
-        use TileType::*;
-
-        match self.tile_type {
-            SolarPanel(_) | WindTurbine(_) => true,
-            DebugTile(_) | PowerPole(_) | Empty(_) | Drill(_) | Battery(_) | LandedRocket(_) => false,
-        }
     }
 
     /// Generates a spread of indexes based on a given width and starting index, with wrapping around at boundaries.
