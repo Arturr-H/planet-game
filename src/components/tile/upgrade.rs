@@ -15,9 +15,25 @@ impl Command for UpgradeTileCommand {
         let Self { tile_id } = self.clone();
         
         let mut query_state = world.query_filtered::<&mut Planet, With<PlayerPlanet>>();
-        if let Ok(planet) = query_state.get_single_mut(world) {
-            /* Remove cables */
+        if let Ok(mut planet) = query_state.get_single_mut(world) {
             let Some(tile) = planet.tiles.get(&tile_id).cloned() else { return };
+            let tile_upgrades = tile.tile_type.upgrades();
+            let upgrade_costs = match tile_upgrades.get(tile.tile_level + 1) {
+                Some(e) => e,
+                None => {
+                    logger::log::bright_red("tile_upgrade", "No more upgrades available for this tile");
+                    return
+                },
+            };
+
+            // Try buy upgrade
+            match planet.resources.try_spend(&upgrade_costs) {
+                Ok(_) => {},
+                Err(e) => {
+                    logger::log::bright_red("tile_upgrade", &e);
+                    return;
+                }
+            }
 
             /* Remove cable previews and other highlights */
             RemoveAllCableSlotHighlightsCommand.apply(world);
@@ -29,10 +45,11 @@ impl Command for UpgradeTileCommand {
             RemoveCableSlotCommand { tile_id, remove_visual_cables: false }.apply(world);
 
             /* Spawn new tile */
-            logger::log::bright_green("tile_upgrade",
-                &format!("Upgraded tile {:?} at index {}", tile.tile_type.display_name(), tile.tile_id));
             world.resource_mut::<Events<TileSpawnEvent>>()
                 .send(TileSpawnEvent { tile: tile.clone(), is_preview: false, upgrade: true });
+            
+            logger::log::bright_green("tile_upgrade",
+                &format!("Upgraded tile {:?} at index {}", tile.tile_type.display_name(), tile.tile_id));
         }
     }
 }

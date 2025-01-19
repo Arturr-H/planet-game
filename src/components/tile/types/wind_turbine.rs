@@ -23,12 +23,13 @@ impl GenericTile for WindTurbine {
                 commands, &spawn_params.asset_server, spawn_data.tile.tile_id, transform
                     .with_translation(transform.translation
                         .with_z(transform.translation.z + 0.1)
-                        + Planet::forward(&transform) * CABLE_SLOT_OFFSET)
+                        + Planet::forward(&transform) * (CABLE_SLOT_OFFSET + spawn_data.tile.tile_level as f32 * 12.15))
             );
         }
 
         commands.spawn((
-            transform,
+            transform
+                .with_scale(Vec3::new(1.0, 1.0 + spawn_data.tile.tile_level as f32 * 0.3, 1.0)),
             Visibility::Visible,
             self.clone(),
         ))
@@ -72,6 +73,15 @@ impl GenericTile for WindTurbine {
 
     fn energy_output(&self) -> Option<f32> { Some(5.0) }
     fn display_name(&self) -> String { "Wind turbine".to_string() }
+    fn upgrades(&self) -> Vec<Vec<(PlanetResource,usize)> > {
+        vec![
+            vec![(PlanetResource::Wood, 20)],
+            vec![(PlanetResource::Wood, 20)],
+            vec![(PlanetResource::Wood, 20)],
+            vec![(PlanetResource::Wood, 20)],
+            vec![(PlanetResource::Wood, 20)],
+        ]
+    }
 
     // So wind turbine rotors don't overlap
     fn keep_distance_from(&self) -> Vec<(usize,crate::components::tile::TileType)> {

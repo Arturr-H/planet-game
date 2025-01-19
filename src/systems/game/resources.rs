@@ -47,9 +47,9 @@ impl PlanetResources {
 
     /// Returns a user-friendly error message if player has
     /// insufficient amount of materials (e.g buying a powerpole)
-    pub fn try_spend(&mut self, resources: Vec<(PlanetResource, usize)>) -> Result<(), String> {
+    pub fn try_spend(&mut self, resources: &Vec<(PlanetResource, usize)>) -> Result<(), String> {
         /* Try spend materials */
-        for (resource, cost) in &resources {
+        for (resource, cost) in resources {
             if !self.has(*resource, *cost) {
                 let player_has = self.get(*resource);
                 let items_left = cost - player_has;
@@ -58,7 +58,7 @@ impl PlanetResources {
         }
 
         /* Spend */
-        for (resource, cost) in resources { self.remove(resource, cost); }
+        for (resource, cost) in resources { self.remove(*resource, *cost); }
         Ok(())
     }
 }

@@ -19,6 +19,9 @@ struct StatsUI;
 #[derive(Component)]
 struct Label;
 
+#[derive(Component)]
+struct TileUpgradeButton;
+
 pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
     fn build(&self, app: &mut App) {
@@ -87,7 +90,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             Transform::from_xyz(0.0, 10.0, 10.0),
             Button,
             Node {
-                width: Val::Px(150.0),
+                width: Val::Px(250.0),
                 height: Val::Px(65.0),
                 border: UiRect::all(Val::Px(5.0)),
                 justify_content: JustifyContent::Center,
@@ -96,6 +99,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             },
             BorderColor(Color::BLACK),
             BorderRadius::MAX,
+            TileUpgradeButton
         )).with_child((
             Text::new("Upgrade"),
             TextFont {
@@ -113,6 +117,9 @@ fn update(
     mut label: Query<&mut Text, With<Label>>,
     mut ui_state: ResMut<StatsUIState>,
     mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
+
+    mut tile_upgrade_button: Query<(&mut Visibility, &Children), (With<TileUpgradeButton>, Without<Label>, Without<StatsUI>)>,
+    mut tile_upgrade_button_text: Query<&mut Text, (With<TileUpgradeButton>, Without<Label>, Without<StatsUI>)>,
 ) {
     let planet = planet_q.single_mut();
 
@@ -127,23 +134,36 @@ fn update(
 
         if event.open {
             ui_state.stats = Some(event.clone());
-            
         } else {
             ui_state.stats = None;
         }
     }
     
     let Some(stats) = &ui_state.stats else { return };
-    if let Some(tile_id) = &stats.tile_id {
-        let tile = planet.tiles[tile_id].clone();
-        for mut text in &mut label {
-            text.0 = format!("{}\nEnergy: {}\n Level: {}",
-                tile.tile_type.display_name(),
-                tile.powergrid_status.energy_stored,
-                tile.tile_level,
-            );
+    let Some(tile_id) = &stats.tile_id else { return };
+    
+    let tile = planet.tiles[tile_id].clone();
+    for mut text in &mut label {
+        text.0 = format!("{}\nEnergy: {}\n Level: {}",
+            tile.tile_type.display_name(),
+            tile.powergrid_status.energy_stored,
+            tile.tile_level,
+        );
+    }
+
+    for (mut visibility, children) in &mut tile_upgrade_button {
+        if tile.tile_level > tile.tile_type.upgrades().len() {
+            *visibility = Visibility::Hidden;
+        }
+
+        // Update the text of the upgrade button
+        if let Ok(mut text) = tile_upgrade_button_text.get_mut(children[0]) {
+            text.0 = format!("Upgrade (costs {})", tile.tile_type.upgrades()[tile.tile_level].iter().map(|(k, v)| {
+                format!("{}x {:?}, ", v, k)
+            }).collect::<String>());
         }
     }
+
 }
 
 fn on_delete(

@@ -17,7 +17,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         1.0
     );
 
-    let thickness = 0.6 / dimensions.y;
+    let thickness = 0.8 / dimensions.y;
     let distance_from_line = abs(uv.y - bent_y);
 
     if (distance_from_line < thickness) {

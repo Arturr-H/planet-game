@@ -39,6 +39,14 @@ pub trait GenericTile {
     /// What POI:s this tile interacts with
     fn interacts_with(&self) -> Vec<PointOfInterestType> { Vec::new() }
 
+    /// What upgrades this tile has.
+    /// 
+    /// The outer vector is the upgrade level, the inner vector
+    /// is the cost of the upgrade. So `.upgrades()[0]` is the cost
+    /// of upgrading to level 1. The cost of actually building the
+    /// tile is not included in this vector, it can be found in [`Self::cost`]
+    fn upgrades(&self) -> Vec<Vec<(PlanetResource, usize)>> { Vec::new() }
+
     /// What tiles this tile needs to "keep distance" from
     /// to avoid collisions looking ugly. Like wind turbines
     /// which would cause the rotors to overlap.

@@ -36,6 +36,15 @@ impl GenericTile for SolarPanel {
 
     fn display_name(&self) -> String { "Solar panel".to_string() }
     fn energy_output(&self) -> Option<f32> { Some(1.0) }
+    fn upgrades(&self) -> Vec<Vec<(PlanetResource,usize)> > {
+        vec![
+            vec![(PlanetResource::Wood, 4)],
+            vec![(PlanetResource::Stone, 4)],
+            vec![(PlanetResource::Stone, 4)],
+            vec![(PlanetResource::Stone, 4)],
+            vec![(PlanetResource::Stone, 4)],
+        ]
+    }
 
     fn cost(&self) -> Vec<(PlanetResource, usize)> {
         vec![

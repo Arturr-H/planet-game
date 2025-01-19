@@ -11,7 +11,7 @@ const TILE_PREVIEW_ELEVATION: f32 = 10.0;
 /// (won't always suceed because of e.g not enough resources
 /// or the tile is not allowed to be placed there). Will be
 /// sent from system methods in struct `tile::Tile`
-#[derive(Event)]
+#[derive(Event, Clone)]
 pub struct TileSpawnEvent {
     // pub tile_type: TileType,
     pub tile: Tile,
@@ -99,7 +99,7 @@ impl TileSpawnPlugin {
                     };
 
                     // If we have enough resources - spend them
-                    if let Err(e) = spawn_params.planet.resources.try_spend(spawn_data.tile.tile_type.cost()) {
+                    if let Err(e) = spawn_params.planet.resources.try_spend(&spawn_data.tile.tile_type.cost()) {
                         logger::log::red("tile_plugin", e);
                         return
                     };
@@ -112,15 +112,21 @@ impl TileSpawnPlugin {
                 // If we're upgrading a tile, the tile has already been
                 // removed by the `TileUpgradeCommand` command
                 commands.entity(planet_entity).with_children(|parent| {
-                    tile_entity = Some(spawn_data.tile.tile_type.spawn(parent, &mut spawn_params, &spawn_data));
+                    let mut new_spawn_data = spawn_data.clone();
+                    if spawn_data.upgrade {
+                        let tile = &mut spawn_params.planet.tiles.get_mut(&spawn_data.tile.tile_id).unwrap();
+                        tile.tile_level += 1;
+                        new_spawn_data.tile.tile_level = tile.tile_level;
+                    }
+                    
+                    tile_entity = Some(spawn_data.tile.tile_type.spawn(parent, &mut spawn_params, &new_spawn_data));
                 });
 
                 // Add / update the new tile to game state
                 if spawn_data.upgrade {
-                    let tile = spawn_params.planet.tiles.get_mut(&spawn_data.tile.tile_id).unwrap();
-                    tile.tile_level += 1;
+                    let tile = &mut spawn_params.planet.tiles.get_mut(&spawn_data.tile.tile_id).unwrap();
                     tile.entity = tile_entity.unwrap();
-                } else {
+                }else {
                     spawn_params.planet.tiles.insert(spawn_data.tile.tile_id, Tile::new(
                         spawn_data.tile.tile_id,
                         spawn_data.tile.tile_type.clone(),
