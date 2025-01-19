@@ -16,9 +16,14 @@ pub struct Tile {
     pub powergrid_status: PowergridStatus,
     pub entity: Entity,
 
+    /// What level of upgrade the tile is on. 0 = base level,
+    /// and with this number increasing, the tile will improve
+    /// and change appearance.
+    pub tile_level: usize,
+
     /// Aka planet_position_index. The index of the tile
     /// in the planet's tile grid.
-    pub tile_identifier: usize,
+    pub tile_id: usize,
 }
 
 /// Something that can be placed in a slot
@@ -45,11 +50,12 @@ impl PartialEq for TileType {
 
 impl Tile {
     /// Creates a new tile
-    pub fn new(tile_identifier: usize, tile_type: TileType, entity: Entity) -> Self {
+    pub fn new(tile_id: usize, tile_type: TileType, tile_level: usize, entity: Entity) -> Self {
         Self {
             tile_type,
             powergrid_status: PowergridStatus::default(),
-            tile_identifier,
+            tile_id,
+            tile_level,
             entity
         }
     }
@@ -165,7 +171,7 @@ impl Tile {
         spread
     }
 
-    pub fn tile_identifier(&self) -> usize { self.tile_identifier }
+    pub fn tile_id(&self) -> usize { self.tile_id }
     pub fn powergrid_status(&self) -> &PowergridStatus { &self.powergrid_status }
     pub fn powergrid_status_mut(&mut self) -> &mut PowergridStatus { &mut self.powergrid_status }
 }

@@ -27,12 +27,12 @@ impl GenericTile for Drill {
         spawn_data: &TileSpawnEvent,
     ) -> Entity {
         let transform = spawn_params.planet.index_to_transform(
-            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width()
+            spawn_data.tile.tile_id, 0.0, 1.0, spawn_data.tile.tile_type.width()
         );
 
         if !spawn_data.is_preview {
             CableSlot::spawn(
-                commands, &spawn_params.asset_server, spawn_data.tile_id, transform
+                commands, &spawn_params.asset_server, spawn_data.tile.tile_id, transform
                     .with_translation(transform.translation.with_z(2.0)
                         + Planet::forward(&transform) * 20.0)
             );
@@ -74,7 +74,7 @@ impl GenericTile for Drill {
 
     fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
         // The position index of the drill
-        let position_index = planet.tiles[&tile_id].tile_identifier.clone();
+        let position_index = planet.tiles[&tile_id].tile_id.clone();
 
         // Must be at least DRILL_RANGE tile indexes
         // away from the POI to drill it.

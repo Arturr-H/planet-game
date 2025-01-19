@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{camera::UI_LAYERS, components::{planet::{Planet, PlayerPlanet}, tile::{RemoveTileCommand, Tile}}, systems::traits::GenericTile, utils::color::hex};
+use crate::{camera::UI_LAYERS, components::{planet::{Planet, PlayerPlanet}, tile::{upgrade::UpgradeTileCommand, RemoveTileCommand, Tile}}, systems::traits::GenericTile, utils::color::hex};
 
 #[derive(Event, Resource, Clone)]
 pub struct OpenStats {
@@ -39,7 +39,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             height: Val::Vh(15.0),
             bottom: Val::Px(10.0),
             left: Val::Vw(25.0),
-            flex_direction: FlexDirection::Column,
+            flex_direction: FlexDirection::Row,
             justify_content: JustifyContent::SpaceBetween,
             padding: UiRect::all(Val::Px(10.0)),
             ..default()
@@ -53,7 +53,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
         parent.spawn((
             Text::new("Type: [], Energy: 0"),
             TextFont {
-                font_size: 22.0,
+                font_size: 14.0,
                 ..default()
             },
             Label,
@@ -81,6 +81,29 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             },
         ))
         .observe(on_delete);
+
+        /* Upgrade tile button */
+        parent.spawn((
+            Transform::from_xyz(0.0, 10.0, 10.0),
+            Button,
+            Node {
+                width: Val::Px(150.0),
+                height: Val::Px(65.0),
+                border: UiRect::all(Val::Px(5.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BorderColor(Color::BLACK),
+            BorderRadius::MAX,
+        )).with_child((
+            Text::new("Upgrade"),
+            TextFont {
+                font_size: 12.0,
+                ..default()
+            },
+        ))
+        .observe(on_upgrade);
     });
 }
 
@@ -91,7 +114,7 @@ fn update(
     mut ui_state: ResMut<StatsUIState>,
     mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
 ) {
-    let mut planet = planet_q.single_mut();
+    let planet = planet_q.single_mut();
 
     for event in events.read() {
         for mut visibility in query.iter_mut() {
@@ -114,9 +137,10 @@ fn update(
     if let Some(tile_id) = &stats.tile_id {
         let tile = planet.tiles[tile_id].clone();
         for mut text in &mut label {
-            text.0 = format!("{}\nEnergy: {}",
+            text.0 = format!("{}\nEnergy: {}\n Level: {}",
                 tile.tile_type.display_name(),
                 tile.powergrid_status.energy_stored,
+                tile.tile_level,
             );
         }
     }
@@ -131,6 +155,19 @@ fn on_delete(
     if let Some(stats) = &ui_state.stats {
         if let Some(tile_id) = stats.tile_id {
             commands.queue(RemoveTileCommand { tile_id });
+        }
+    }
+    events.send(OpenStats { open: false, tile_id: None });
+}
+fn on_upgrade(
+    _: Trigger<Pointer<Down>>,
+    mut commands: Commands,
+    mut events: EventWriter<OpenStats>,
+    ui_state: Res<StatsUIState>,
+) -> () {
+    if let Some(stats) = &ui_state.stats {
+        if let Some(tile_id) = stats.tile_id {
+            commands.queue(UpgradeTileCommand { tile_id });
         }
     }
     events.send(OpenStats { open: false, tile_id: None });

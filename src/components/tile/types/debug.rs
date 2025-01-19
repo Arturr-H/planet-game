@@ -12,13 +12,13 @@ impl GenericTile for DebugTile {
         spawn_data: &TileSpawnEvent,
     ) -> Entity {
         let transform = spawn_params.planet.index_to_transform(
-            spawn_data.tile_id, 0.0, 1.0, spawn_data.tile_type.width());
+            spawn_data.tile.tile_id, 0.0, 1.0, spawn_data.tile.tile_type.width());
         
             println!("Spawned debug tile at {:?}", transform.translation);
 
         if !spawn_data.is_preview {
             CableSlot::spawn(
-                commands, &spawn_params.asset_server, spawn_data.tile_id, transform
+                commands, &spawn_params.asset_server, spawn_data.tile.tile_id, transform
             );
         }
 

@@ -34,7 +34,6 @@ impl Command for RemoveTileCommand {
         }
 
         /* Remove cable previews and other highlights */
-        println!("!hAHA");
         RemoveAllCableSlotHighlightsCommand.apply(world);
 
         /* Despawn tile & its children */

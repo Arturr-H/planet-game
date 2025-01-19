@@ -90,9 +90,8 @@ impl CableSlot {
         mut slot_res: ResMut<SlotCablePlacementResource>,
         cable_preview_q: Query<Entity, With<CablePreview>>,
         mut events: EventWriter<OpenStats>,
-        mut cable_materials: ResMut<Assets<CableMaterial>>,
-        mut meshes: ResMut<Assets<Mesh>>,
-        // mut cable_material: ResMut<Assets<CableMaterial>>,
+        cable_materials: ResMut<Assets<CableMaterial>>,
+        meshes: ResMut<Assets<Mesh>>,
     ) {
         click.propagate(false);
 
