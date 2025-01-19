@@ -2,6 +2,8 @@
 
 @group(2) @binding(0)
 var<uniform> dimensions: vec2<f32>;
+@group(2) @binding(1)
+var<uniform> exceeded_length: u32;
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -19,6 +21,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let distance_from_line = abs(uv.y - bent_y);
 
     if (distance_from_line < thickness) {
+        if (exceeded_length == 1u) {
+            return vec4<f32>(1.0, 0.0, 0.0, 1.0); // no cable line
+        }
         return vec4<f32>(0.008, 0.016, 0.063, 1.0); // cable line
     }
     return vec4<f32>(0.0, 0.0, 0.0, 0.0);

@@ -17,6 +17,9 @@ pub const MAX_CABLE_LENGTH: f32 = 200.0;
 pub struct CableMaterial {
     #[uniform(0)]
     pub dimensions: Vec2<>,
+    /// 0 if not exceeded, 1 if exceeded, bools are not implemented in ShaderType
+    #[uniform(1)]
+    pub exceeded_length: u32,
 }
 
 impl Material2d for CableMaterial {
@@ -77,7 +80,7 @@ impl Cable {
             //     ..default()
             // },
             Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
-            MeshMaterial2d(cable_materials.add(CableMaterial {dimensions: Vec2::new(1.0, 1.0)})),
+            MeshMaterial2d(cable_materials.add(CableMaterial {dimensions: Vec2::new(1.0, 1.0), exceeded_length: 0})),
             Transform::from_xyz(0.0, 0.0, CABLE_Z_INDEX),
             Cable {
                 start_entity,
@@ -120,7 +123,6 @@ impl Cable {
                 let height = height.clamp(1.2, MAX_HEIGHT_CABLE);
 
                 let angle = direction.y.atan2(direction.x);
-                println!("length: {}, height: {}", length, height);
 
                 let midpoint = (right + left) / 2.0;
                 let offset = Vec2::new(-direction.y, direction.x).normalize() * height / 2.0;
@@ -153,22 +155,24 @@ impl Cable {
             //     ..default()
             // },
             Mesh2d(meshes.add(Rectangle::new(1.0, 1.0))),
-            MeshMaterial2d(cable_materials.add(CableMaterial { dimensions: Vec2::new(1.0, 1.0) })),
+            MeshMaterial2d(cable_materials.add(CableMaterial {dimensions: Vec2::new(1.0, 1.0), exceeded_length: 0})),
             Transform::from_xyz(0.0, 0.0, CABLE_Z_INDEX),
+
             CablePreview { start_entity },
         ));
     }
 
     /// Update system for cable preview
     pub fn update_previews(
-        mut query: Query<(&mut Transform, &mut Sprite, &CablePreview)>,
+        mut query: Query<(&mut Transform, &mut MeshMaterial2d<CableMaterial>, &CablePreview)>,
         slots_q: Query<&GlobalTransform, (With<CableSlot>, Without<Cable>)>,
         windows_q: Query<&Window>,
         camera_q: Query<(&Camera, &GlobalTransform), With<OuterCamera>>,
+        mut cable_material: ResMut<Assets<CableMaterial>>,
     ) {
         let window = windows_q.single();
         let (camera, camera_transform) = camera_q.single();
-        let Ok((mut transform, mut sprite, cable)) = query.get_single_mut() else { return };
+        let Ok((mut transform, mesh_material, cable)) = query.get_single_mut() else { return };
         if let Some(world_position) = window
             .cursor_position()
             .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())
@@ -176,22 +180,46 @@ impl Cable {
             if let Ok(start_transform) = slots_q.get(cable.start_entity) {
                 let start = start_transform.translation().truncate();
 
-                let direction = world_position - start;
+                let start_angle = start.y.atan2(start.x);
+                let end_angle = world_position.y.atan2(world_position.x);
+
+                // Determine which is further away between start and end to ensure the cable is drawn in the correct direction
+                let (left, right) = if (end_angle - start_angle + 2.0 * PI) % (2.0 * PI) < PI {
+                    (world_position, start)
+                } else {
+                    (start, world_position)
+                };
+
+                let direction = left - right;
                 let length = direction.length();
+                let height = 1.2 + (MAX_HEIGHT_CABLE - 1.2) * 
+                (1.0 - (-length / 80.0).exp());
+                let height = height.clamp(1.2, MAX_HEIGHT_CABLE);
+
                 let angle = direction.y.atan2(direction.x);
 
-                let midpoint = (start + world_position) / 2.0;
-                let offset = Vec2::new(-direction.y, direction.x).normalize() * MAX_HEIGHT_CABLE / 2.0;
+                let midpoint = (right + left) / 2.0;
+                let offset = Vec2::new(-direction.y, direction.x).normalize() * height / 2.0;
 
-                if length > MAX_CABLE_LENGTH {
-                    sprite.color = hex!("#ff0000");
-                } else {
-                    sprite.color = hex!(CABLE_COLOR);
+                // if length > MAX_CABLE_LENGTH {
+                //     // sprite.color = hex!("#ff0000");
+                // } else {
+                //     // sprite.color = hex!(CABLE_COLOR);
+                // }
+
+                if let Some(material) = cable_material.get_mut(&mesh_material.0) {
+                    material.dimensions = Vec2::new(length, height);
+
+                    if length > MAX_CABLE_LENGTH {
+                        material.exceeded_length = 1;
+                    } else {
+                        material.exceeded_length = 0;
+                    }
                 }
 
-                transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX); // Mid
+                transform.translation = (midpoint + offset).extend(CABLE_Z_INDEX);
                 transform.rotation = Quat::from_rotation_z(angle); // Align with direction
-                transform.scale = Vec3::new(length, MAX_HEIGHT_CABLE, 1.0); // Adjust size
+                transform.scale = Vec3::new(length, height, 1.0); // Adjust size
             }
         }
     }
