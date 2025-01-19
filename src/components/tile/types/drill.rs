@@ -86,7 +86,7 @@ impl GenericTile for Drill {
                         planet.tiles.get_mut(&tile_id).map(|e| {
                             // If we have enough energy, mine one stone.
                             if e.powergrid_status.energy_stored >= 5.0 {
-                                e.powergrid_status.energy_stored = 0.0;
+                                e.powergrid_status.energy_stored -= 5.0;
                                 planet.resources.add(PlanetResource::Stone, 1);
                             }
                         });

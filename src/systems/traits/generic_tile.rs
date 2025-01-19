@@ -29,6 +29,9 @@ pub trait GenericTile {
     /// solar panels, wind turbines, etc. (Energy per gametick)
     fn energy_output(&self, tile: &Tile) -> Option<f32> { None }
 
+    /// How much energy this tile can store, as a maximum
+    fn energy_capacity(&self, tile: &Tile) -> f32 { 50.0 }
+
     /// Tiles that store energy should implement this, like
     /// batteries, etc.
     fn can_recieve_energy(&self) -> bool { false }

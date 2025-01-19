@@ -62,7 +62,18 @@ impl Tile {
 
     /// Distribute energy across cables from this tile.
     /// Only runs from generators.
-    pub fn distribute_energy(energy_output: f32, cable_slot_id: usize, planet: &mut Planet) -> () {
+    /// 
+    /// `energy_to_add` is a HashMap containing the tile_id
+    /// and the amount of energy to add to that tile. We need
+    /// to have an external variable beacuse this function is 
+    /// run for each individual tile, and we only want to run
+    /// the `.on_energy_recieved` function once for each tile.
+    pub fn distribute_energy_from(
+        tile_id: usize,
+        energy_output: f32,
+        energy_to_add: &mut HashMap<usize, f32>,
+        planet: &Planet
+    ) -> () {
         // HashMap<tile_id, will_recieve_energy>
         let mut visited: HashMap<usize, bool> = HashMap::new();
         let mut recievers = 0;
@@ -70,14 +81,19 @@ impl Tile {
         Self::search_tile(
             &mut recievers,
             planet,
-            cable_slot_id,
+            tile_id,
             &mut visited
         );
 
         let energy_per_reciever = energy_output / recievers.max(1) as f32;
         for (tile_id, will_recieve_energy) in visited {
             if will_recieve_energy {
-                Self::add_energy(planet, tile_id, energy_per_reciever);
+                match energy_to_add.get_mut(&tile_id) {
+                    Some(e) => *e += energy_per_reciever,
+                    None => {
+                        energy_to_add.insert(tile_id, energy_per_reciever);
+                    }
+                }
             }
         }
     }
@@ -110,7 +126,10 @@ impl Tile {
     pub fn add_energy(planet: &mut Planet, tile_id: usize, energy: f32) -> () {
         // Add energy to the tile
         match planet.tiles.get_mut(&tile_id) {
-            Some(e) => e.powergrid_status.energy_stored += energy,
+            Some(e) => {
+                let stored = e.powergrid_status.energy_stored;
+                e.powergrid_status.energy_stored = (stored + energy).min(e.tile_type.energy_capacity(&e))
+            },
             None => (),
         };
         

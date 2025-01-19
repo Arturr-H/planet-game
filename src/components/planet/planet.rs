@@ -226,7 +226,6 @@ impl Planet {
         keyboard_input: Res<ButtonInput<KeyCode>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
-
     ) -> () {
         let planet = planet_q.single();
         if let Ok((mut camera_transform, projection)) = camera_q.get_single_mut() {
@@ -501,16 +500,23 @@ impl PlanetPlugin {
     /// Ticks every planet
     fn tick(mut planets: Query<&mut Planet>) -> () {
         for mut planet in planets.iter_mut() {
-            let keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
-            for key in keys {
+            let mut energy_to_add: HashMap<usize, f32> = HashMap::new();
+            let tile_keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
+            for key in tile_keys {
                 let tile = planet.tiles.get(&key).unwrap();
                 if let Some(energy_output) = tile.energy_output() {
-                    Tile::distribute_energy(
-                        energy_output,
+                    Tile::distribute_energy_from(
                         tile.tile_id,
+                        energy_output,
+                        &mut energy_to_add,
                         &mut planet
                     );
                 }
+            }
+
+            // Apply the energy to tiles
+            for (tile_id, energy) in energy_to_add {
+                Tile::add_energy(&mut planet, tile_id, energy);
             }
         }
     }
