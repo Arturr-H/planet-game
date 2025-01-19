@@ -26,7 +26,7 @@ impl Command for UpgradeTileCommand {
             DespawnRecursive { entity: tile.entity, warn: true }.apply(world);
 
             /* Despawn slots related to the tile if they exist */
-            RemoveCableSlotCommand { tile_id }.apply(world);
+            RemoveCableSlotCommand { tile_id, remove_visual_cables: false }.apply(world);
 
             /* Spawn new tile */
             logger::log::bright_green("tile_upgrade",

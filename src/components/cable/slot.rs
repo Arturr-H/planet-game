@@ -306,6 +306,7 @@ impl Command for RemoveAllCableSlotHighlightsCommand {
 
 pub struct RemoveCableSlotCommand {
     pub tile_id: usize,
+    pub remove_visual_cables: bool
 }
 impl Command for RemoveCableSlotCommand {
     fn apply(self, commands: &mut World) {
@@ -319,16 +320,18 @@ impl Command for RemoveCableSlotCommand {
         }
 
         /* Remove cables previews */
-        let mut cable_q = commands.query_filtered::<(Entity, &Cable), With<Cable>>();
-        let mut entities_to_despawn = Vec::new();
-        for (entity, cable) in cable_q.iter(commands) {
-            if cable.start_tile_id == tile_id || cable.end_tile_id == tile_id {
-                entities_to_despawn.push(entity);
+        if self.remove_visual_cables {
+            let mut cable_q = commands.query_filtered::<(Entity, &Cable), With<Cable>>();
+            let mut entities_to_despawn = Vec::new();
+            for (entity, cable) in cable_q.iter(commands) {
+                if cable.start_tile_id == tile_id || cable.end_tile_id == tile_id {
+                    entities_to_despawn.push(entity);
+                }
             }
-        }
 
-        for entity in entities_to_despawn {
-            DespawnRecursive { entity, warn: true }.apply(commands);
+            for entity in entities_to_despawn {
+                DespawnRecursive { entity, warn: true }.apply(commands);
+            }
         }
     }
 }

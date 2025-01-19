@@ -147,7 +147,7 @@ impl TileSpawnPlugin {
     /// cursor pos)
     fn update_preview(
         mut commands: Commands,
-        mut query: Query<(&mut Transform, &TilePreview), With<TilePreview>>,
+        mut query: Query<(Entity, &mut Transform, &TilePreview), With<TilePreview>>,
         mut event_writer: EventWriter<TileSpawnEvent>,
         mb: Res<ButtonInput<MouseButton>>,
         planet_q: Query<(&Planet, &Transform), (With<Planet>, With<PlayerPlanet>, Without<TilePreview>)>,
@@ -155,7 +155,7 @@ impl TileSpawnPlugin {
         camera_q: Query<(&Camera, &GlobalTransform), With<OuterCamera>>,
     ) -> () {
         // If we have a preview active or not
-        let Ok((mut transform, TilePreview { tile_type })) = query.get_single_mut() else { return };
+        let Ok((tile_preview_entity, mut transform, TilePreview { tile_type })) = query.get_single_mut() else { return };
 
         let window = windows_q.single();
         let (camera, camera_transform) = camera_q.single();
@@ -198,6 +198,13 @@ impl TileSpawnPlugin {
             if let Some(mut entity) = commands.get_entity(entity) { 
                 entity.insert(PointOfInterestHighlight::red());
             };
+        };
+
+        // If the tile does not fit, highlight the tile as red
+        if !Self::tile_fits(&planet, &tile_type.width(), index) {
+            commands.get_entity(tile_preview_entity).map(|mut e| {
+                e.try_insert(PointOfInterestHighlight::red());
+            });
         };
 
         // Offset the placement with 1 unit to make sure the object is wedged into the ground
@@ -281,10 +288,8 @@ impl TileSpawnPlugin {
             }
         }
 
-        println!("{:?}", occupied);
         for position in Tile::get_tile_spread(*width, index, planet.tile_places()) {
             if occupied.contains(&position) {
-                println!("ahoahouawhodhuawd");
                 return false
             }
         }

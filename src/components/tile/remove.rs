@@ -42,6 +42,6 @@ impl Command for RemoveTileCommand {
         }
 
         /* Despawn slots related to the tile if they exist */
-        RemoveCableSlotCommand { tile_id }.apply(world);
+        RemoveCableSlotCommand { tile_id, remove_visual_cables: true }.apply(world);
     }
 }
