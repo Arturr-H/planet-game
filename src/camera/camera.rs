@@ -205,24 +205,19 @@ impl CameraDebugPlugin {
                     );
                 }
             }
-        } 
-        
-        
-        
-        else {
-            if camera_settings.is_panning {
-                if let Ok((_, _, transform)) = camera_transform_q.get_single() {
-                    if let Ok(planet) = planet_q.get_single() {
-                        let pos = transform.translation.truncate();
-                        let pos_angle = pos.y.atan2(pos.x);
-                        let (translation, _) = planet.radians_to_radii(pos_angle, 0.0);
+            camera_settings.is_panning = true;
+        } else if camera_settings.is_panning{
+            if let Ok((_, _, transform)) = camera_transform_q.get_single() {
+                if let Ok(planet) = planet_q.get_single() {
+                    let pos = transform.translation.truncate();
+                    let pos_angle = pos.y.atan2(pos.x);
+                    let (translation, _) = planet.radians_to_radii(pos_angle, 0.0);
 
-                        camera_settings.elevation = pos.length() - translation.length();
-                        camera_rotation.radians = pos_angle - PI / 2.0;
-                    }
+                    camera_settings.elevation = pos.length() - translation.length();
+                    camera_rotation.radians = pos_angle - PI / 2.0;
                 }
-                camera_settings.is_panning = false;
             }
+            camera_settings.is_panning = false;
         }
 
         for event in scroll.read() {
