@@ -117,53 +117,69 @@ fn update(
     mut label: Query<&mut Text, With<Label>>,
     mut ui_state: ResMut<StatsUIState>,
     mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
-
     mut tile_upgrade_button: Query<(&mut Visibility, &Children), (With<TileUpgradeButton>, Without<Label>, Without<StatsUI>)>,
-    mut tile_upgrade_button_text: Query<&mut Text, (With<TileUpgradeButton>, Without<Label>, Without<StatsUI>)>,
+    mut tile_upgrade_button_text: Query<&mut Text, (Without<Label>, Without<StatsUI>)>,
 ) {
     let planet = planet_q.single_mut();
+    let mut ui_visibility = query.single_mut();
 
+    // Handle open/close events first
     for event in events.read() {
-        for mut visibility in query.iter_mut() {
-            *visibility = if event.open {
-                Visibility::Visible
-            } else {
-                Visibility::Hidden
-            };
-        }
-
-        if event.open {
-            ui_state.stats = Some(event.clone());
+        *ui_visibility = if event.open {
+            Visibility::Visible
         } else {
-            ui_state.stats = None;
-        }
+            Visibility::Hidden
+        };
+
+        ui_state.stats = if event.open {
+            Some(event.clone())
+        } else {
+            None
+        };
     }
-    
+
+    // If UI is closed, ensure everything is hidden and exit early
+    if *ui_visibility == Visibility::Hidden {
+        for (mut button_vis, _) in &mut tile_upgrade_button {
+            *button_vis = Visibility::Hidden;
+        }
+        return;
+    }
+
+    // Only update contents if UI is visible
     let Some(stats) = &ui_state.stats else { return };
     let Some(tile_id) = &stats.tile_id else { return };
     
     let tile = planet.tiles[tile_id].clone();
+    
+    // Update main label
     for mut text in &mut label {
-        text.0 = format!("{}\nEnergy: {}\n Level: {}",
+        text.0 = format!("{}\nEnergy: {}\nLevel: {}",
             tile.tile_type.display_name(),
             tile.powergrid_status.energy_stored,
             tile.tile_level,
         );
     }
 
-    for (mut visibility, children) in &mut tile_upgrade_button {
-        if tile.tile_level > tile.tile_type.upgrades().len() {
-            *visibility = Visibility::Hidden;
-        }
-
-        // Update the text of the upgrade button
-        if let Ok(mut text) = tile_upgrade_button_text.get_mut(children[0]) {
-            text.0 = format!("Upgrade (costs {})", tile.tile_type.upgrades()[tile.tile_level].iter().map(|(k, v)| {
-                format!("{}x {:?}, ", v, k)
-            }).collect::<String>());
+    // Update upgrade button
+    for (mut button_vis, children) in &mut tile_upgrade_button {
+        let max_level = tile.tile_type.upgrades().len().saturating_sub(1);
+        
+        if tile.tile_level >= max_level {
+            *button_vis = Visibility::Hidden;
+        } else {
+            *button_vis = Visibility::Visible;
+            
+            // Update cost text
+            if let Ok(mut text) = tile_upgrade_button_text.get_mut(children[0]) {
+                let costs: Vec<String> = tile.tile_type.upgrades()[tile.tile_level]
+                    .iter()
+                    .map(|(resource, amount)| format!("{} {:?}", amount, resource))
+                    .collect();
+                text.0 = format!("Upgrade ({})", costs.join(", "));
+            }
         }
     }
-
 }
 
 fn on_delete(

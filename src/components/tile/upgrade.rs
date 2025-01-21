@@ -18,7 +18,7 @@ impl Command for UpgradeTileCommand {
         if let Ok(mut planet) = query_state.get_single_mut(world) {
             let Some(tile) = planet.tiles.get(&tile_id).cloned() else { return };
             let tile_upgrades = tile.tile_type.upgrades();
-            let upgrade_costs = match tile_upgrades.get(tile.tile_level + 1) {
+            let upgrade_costs = match tile_upgrades.get(tile.tile_level) {
                 Some(e) => e,
                 None => {
                     logger::log::bright_red("tile_upgrade", "No more upgrades available for this tile");
