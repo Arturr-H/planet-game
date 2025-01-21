@@ -509,6 +509,11 @@ impl PlanetPlugin {
         for mut planet in planets.iter_mut() {
             let mut energy_to_add: HashMap<usize, f32> = HashMap::new();
             let tile_keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
+            for key in &tile_keys {
+                let tile_type = planet.tiles[key].tile_type.clone();
+                tile_type.on_tick(*key, &mut planet);
+            }
+
             for key in tile_keys {
                 let tile = planet.tiles.get(&key).unwrap();
                 if let Some(energy_output) = tile.energy_output() {
