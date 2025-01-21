@@ -1,5 +1,7 @@
+use std::f32::consts::PI;
+
 use bevy::{
-    input::mouse::MouseWheel, prelude::*, render::{
+    core_pipeline::post_process, input::mouse::{MouseMotion, MouseWheel}, prelude::*, render::{
         camera::RenderTarget,
         render_resource::{
             Extent3d,
@@ -11,7 +13,7 @@ use bevy::{
         view::RenderLayers
     }, window::WindowResized
 };
-use crate::{components::planet::PlayerPlanet, systems::game::GameState, utils::color::hex, RES_HEIGHT, RES_WIDTH};
+use crate::{components::planet::{CameraPlanetRotation, Planet, PlayerPlanet}, systems::game::GameState, utils::color::hex, RES_HEIGHT, RES_WIDTH};
 use super::post_processing::{PostProcessPlugin, PostProcessSettings};
 
 /// Default render layers for pixel-perfect rendering.
@@ -22,12 +24,35 @@ pub const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(0);
 /// Render layers for UI rendering.
 pub const UI_LAYERS: RenderLayers = RenderLayers::layer(1);
 
+const CAMERA_ELEVATION: f32 = 50.0;
+
+#[derive(Resource)]
+pub struct CameraSettings {
+    pub elevation: f32,
+    pub is_panning: bool,
+
+    pub total_delta: Vec2,
+    pub start_transform: Transform,
+}
+
+impl Default for CameraSettings {
+    fn default() -> Self {
+        Self {
+            elevation: CAMERA_ELEVATION,
+            is_panning: false,
+            total_delta: Vec2::ZERO,
+            start_transform: Transform::default(),
+        }
+    }
+}
+
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugins(PostProcessPlugin)
             .insert_resource(ClearColor(hex!("#000000")))
+            .insert_resource(CameraSettings::default())
             .add_systems(Startup, Self::initialize)
             .add_systems(Update, Self::update_camera_scale);
             // .add_systems(Update, fit_canvas);
@@ -93,21 +118,6 @@ impl CameraPlugin {
 
         let _image_handle = images.add(canvas);
 
-        // commands.spawn((
-        //     Camera2d,
-        //     Camera {
-        //         // render before the "main pass" camera
-        //         order: -1,
-        //         target: RenderTarget::Image(image_handle.clone()),
-        //         ..default()
-        //     },
-        //     Msaa::Off,
-        //     InGameCamera,
-        //     PIXEL_PERFECT_LAYERS,
-        // ));
-
-        // commands.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
-        // let ratio = window.single().size().x / RES_WIDTH;
         commands.spawn((
             Camera2d,
             Msaa::Off,
@@ -144,38 +154,97 @@ impl CameraPlugin {
             let mut settings = settings.single_mut();
             settings.screen_width = event.width;
             settings.screen_height = event.height;
-            // projection.scale = 1. / h_scale.min(v_scale).round();
         }
     }
 }
 
 impl CameraDebugPlugin {
-    /// Zooms the camera in and out using the mouse wheel.
     pub fn debug_control(
-        mut query: Query<(&mut OrthographicProjection, &mut PostProcessSettings), With<OuterCamera>>,
+        mut camera_transform_q: Query<(&mut OrthographicProjection, &mut PostProcessSettings, &mut Transform), With<OuterCamera>>,
         mut scroll: EventReader<MouseWheel>,
-        kb: Res<ButtonInput<KeyCode>>
+        kb: Res<ButtonInput<KeyCode>>,
+        mut camera_settings: ResMut<CameraSettings>,
+        mut camera_rotation: ResMut<CameraPlanetRotation>,
+        planet_q: Query<&Planet, With<PlayerPlanet>>,
+        mut mouse_motion: EventReader<MouseMotion>,
+        mouse: Res<ButtonInput<MouseButton>>,
     ) {
+        let pan_speed = 1.0;
+        let mut pan_delta = Vec2::ZERO;
+        
+        for event in mouse_motion.read() {
+            // let (_, _, transform) = camera_transform_q.single();
+            // let rotation_z = transform.rotation.to_euler(EulerRot::YXZ).2;
+            // pan_delta += Vec2::new(
+            //     event.delta.x * rotation_z.cos() - event.delta.y * rotation_z.sin(),
+            //     event.delta.x * rotation_z.sin() + event.delta.y * rotation_z.cos()
+            // );
+            pan_delta += event.delta;
+        }
+
+
+        if mouse.pressed(MouseButton::Right) {
+            if let Ok((mut projection, _, mut transform)) = camera_transform_q.get_single_mut() {
+                if let Ok(planet) = planet_q.get_single() {
+                    let rotation = transform.rotation;
+                    
+                    let world_delta = rotation * Vec3::new(
+                        -pan_delta.x * projection.scale * pan_speed,
+                        pan_delta.y * projection.scale * pan_speed,
+                        0.0
+                    );
+
+                    transform.translation += world_delta;
+
+                    let pos = transform.translation.truncate();
+                    let pos_angle = pos.y.atan2(pos.x);
+                    let (translation, surface_angle) = planet.radians_to_radii(pos_angle, 0.0);
+
+                    transform.rotation = Quat::from_rotation_z(
+                        Planet::normalize_radians(surface_angle + PI)
+                    );
+                }
+            }
+        } 
+        
+        
+        
+        else {
+            if camera_settings.is_panning {
+                if let Ok((_, _, transform)) = camera_transform_q.get_single() {
+                    if let Ok(planet) = planet_q.get_single() {
+                        let pos = transform.translation.truncate();
+                        let pos_angle = pos.y.atan2(pos.x);
+                        let (translation, _) = planet.radians_to_radii(pos_angle, 0.0);
+
+                        camera_settings.elevation = pos.length() - translation.length();
+                        camera_rotation.radians = pos_angle - PI / 2.0;
+                    }
+                }
+                camera_settings.is_panning = false;
+            }
+        }
+
         for event in scroll.read() {
-            for (mut projection, mut settings) in query.iter_mut() {
-                projection.scale *= 1. + event.y * -0.04;
+            for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
+                projection.scale *= 1.0 + event.y * -0.04;
                 settings.camera_scale = projection.scale;
             }
         }
 
         if kb.just_pressed(KeyCode::Backspace) {
-            for (mut projection, mut settings) in query.iter_mut() {
+            for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
                 projection.scale = 1.;
                 settings.camera_scale = projection.scale;
             }
         }
         if kb.pressed(KeyCode::KeyL) {
-            for (mut projection, mut settings) in query.iter_mut() {
+            for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
                 projection.scale *= 1.01;
                 settings.camera_scale = projection.scale;
             }
         }else if kb.pressed(KeyCode::KeyO) {
-            for (mut projection, mut settings) in query.iter_mut() {
+            for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
                 projection.scale *= 0.99;
                 settings.camera_scale = projection.scale;
             }

@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::prelude::*;
 use bevy_inspector_egui::prelude::*;
-use crate::{camera::OuterCamera, systems::game::GameState, RES_WIDTH};
+use crate::{camera::{CameraSettings, OuterCamera}, systems::game::GameState, RES_WIDTH};
 use super::{Planet, PlanetAtmosphereMaterial, PlanetMaterial, PlayerPlanet};
 
 #[derive(Reflect, Resource, InspectorOptions)]
@@ -39,6 +39,7 @@ pub fn on_update(
     planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
     camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
+    camera_settings: Res<CameraSettings>,
 ) -> () {
     if config.is_changed() {
         if let Ok((_planet, entity)) = planet_q.get_single() {
@@ -54,7 +55,8 @@ pub fn on_update(
                 planet_atmosphere_materials,
                 camera_q,
                 config,
-                asset_server
+                asset_server,
+                camera_settings,
             );
         }
     }

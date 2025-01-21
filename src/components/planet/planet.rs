@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -128,7 +128,8 @@ impl Planet {
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
         mut camera_q: Query<&mut Transform, With<OuterCamera>>,
         config: ResMut<PlanetConfiguration>,
-        asset_server: Res<AssetServer>
+        asset_server: Res<AssetServer>,
+        camera_settings: Res<CameraSettings>,
     ) -> () {
         let radius = config.radius.max(15.0);
         let seed = config.seed;
@@ -209,7 +210,7 @@ impl Planet {
         planet_bundle.insert(planet.clone());
         match camera_q.get_single_mut() {
             Ok(mut transform) => {
-                Self::update_camera_transform(&planet, 0.0, &mut transform);
+                Self::update_camera_transform(&planet, 0.0, &mut transform, camera_settings.elevation);
             },
             Err(_) => (),
         };
@@ -226,6 +227,7 @@ impl Planet {
         keyboard_input: Res<ButtonInput<KeyCode>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
+        camera_settings: Res<CameraSettings>,
     ) -> () {
         let planet = planet_q.single();
         if let Ok((mut camera_transform, projection)) = camera_q.get_single_mut() {
@@ -246,14 +248,19 @@ impl Planet {
             });
 
             if update {
-                Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform);
+                Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform, camera_settings.elevation);
             }
         }
     }
-    fn update_camera_transform(planet: &Planet, radians: f32, camera_transform: &mut Transform) -> () {
+    fn update_camera_transform(
+        planet: &Planet,
+        radians: f32,
+        camera_transform: &mut Transform,
+        elevation: f32,
+    ) -> () {
         let camera_radians = Self::normalize_radians(radians + PI / 2.0);
-        let (translation, surface_angle) = planet.radians_to_radii(camera_radians, CAMERA_ELEVATION);
-        let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + CAMERA_ELEVATION);
+        let (translation, surface_angle) = planet.radians_to_radii(camera_radians, elevation);
+        let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + elevation);
         camera_transform.translation = Vec3::new(
             (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
             (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING,
@@ -299,7 +306,7 @@ impl Planet {
     /// 
     /// Returns (radii (elevation position from center), angle (slope
     /// of current point))
-    fn radians_to_radii(&self, radians: f32, origin_offset: f32) -> (Vec2, f32) {
+    pub fn radians_to_radii(&self, radians: f32, origin_offset: f32) -> (Vec2, f32) {
         let radians = radians % TAU;
         let radians_normalized = (Self::normalize_radians(radians) / self.angular_step()) / self.tile_places() as f32;
         let radii_index = self.resolution() as f32 * radians_normalized;
