@@ -1,6 +1,6 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, planet::Planet, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet, tile::{material::TileMaterialOutline, spawn::{TileSpawnEvent, TileSpawnEventParams}}}, systems::{game::PlanetResource, traits::GenericTile}};
 
 #[derive(Component, Clone, Debug)]
 pub struct Battery;
@@ -21,13 +21,16 @@ impl GenericTile for Battery {
             );
         }
 
+        
+
         commands.spawn((
+            Mesh2d(spawn_params.meshes.add(Rectangle::new(32.0, 48.0))), //32.0, 48.0
             transform,
-            Sprite {
-                image: spawn_params.asset_server.load("machines/battery.png"),
-                anchor: Anchor::BottomCenter,
-                ..default()
-            },
+            MeshMaterial2d (spawn_params.outline_material.add(TileMaterialOutline{
+                color: LinearRgba::new(1.0, 0.0, 0.0, 1.0),
+                thickness: 0.01,
+                texture: spawn_params.asset_server.load("machines/battery.png"
+            )})),
             self.clone(),
         )).id()
     }

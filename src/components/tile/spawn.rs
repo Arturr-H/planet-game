@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use bevy::{prelude::*, render::texture, utils::hashbrown::HashSet};
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::stats::{OpenStats, StatsPlugin}, utils::{color::hex, logger}};
-use super::{types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
+use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
@@ -31,6 +31,9 @@ pub struct TileSpawnEventParams<'a> {
     pub asset_server: Res<'a, AssetServer>,
     pub texture_atlas_layouts: ResMut<'a, Assets<TextureAtlasLayout>>,
     pub planet: Mut<'a, Planet>,
+    pub meshes: ResMut<'a, Assets<Mesh>>,
+    pub outline_material : ResMut<'a, Assets<TileMaterialOutline>>,
+
 }
 
 /// A component that is added to the preview tile (marker)
@@ -48,13 +51,18 @@ impl TileSpawnPlugin {
         asset_server: Res<AssetServer>,
         texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
         preview_q: Query<Entity, With<TilePreview>>,
+        meshes: ResMut<Assets<Mesh>>,
+        outline_material : ResMut<Assets<TileMaterialOutline>>,
+
     ) {
         let planet = planet_q.single_mut();
         let planet_entity = planet.planet_entity();
         let mut spawn_params = TileSpawnEventParams {
             asset_server,
             texture_atlas_layouts,
-            planet
+            planet,
+            meshes,
+            outline_material
         };
 
         for spawn_data in tile_spawn_events.read() {

@@ -198,7 +198,7 @@ impl CameraDebugPlugin {
 
                     let pos = transform.translation.truncate();
                     let pos_angle = pos.y.atan2(pos.x);
-                    let (translation, surface_angle) = planet.radians_to_radii(pos_angle, 0.0);
+                    let (_, surface_angle) = planet.radians_to_radii(pos_angle, 0.0);
 
                     transform.rotation = Quat::from_rotation_z(
                         Planet::normalize_radians(surface_angle + PI)
