@@ -135,9 +135,6 @@ impl Tile {
             },
             None => (),
         };
-        
-        let tile_type = planet.tiles[&tile_id].tile_type.clone();
-        tile_type.on_energy_recieved(tile_id, planet);
     }
 
     /// Generates a spread of indexes based on a given width and starting index, with wrapping around at boundaries.

@@ -19,9 +19,9 @@ pub trait GenericTile {
     /// Returns the name of the object that will be displayed in game.
     fn display_name(&self) -> String;
 
-    /// What will happen when this tile recieves
-    /// energy (energy already added before this point)
-    fn on_energy_recieved(&self, tile_id: usize, planet: &mut Planet) -> () {
+    /// What will happen every tick, before this tile recieves
+    /// energy.
+    fn on_tick(&self, tile_id: usize, planet: &mut Planet) -> () {
         // Default is to do nothing
     }
 
