@@ -6,8 +6,8 @@ pub struct TileMaterialOutline {
     #[uniform(0)]
     pub color: LinearRgba,
     /// The thickness of the outline. Preferred values between 0.01 and 0.005.
-    #[uniform(0)]
-    pub thickness: f32,
+    // #[uniform(0)]
+    // pub thickness: f32,
     /// The texture to outline.
     #[texture(1)]
     #[sampler(2)]
