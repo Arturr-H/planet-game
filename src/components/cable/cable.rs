@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 /* Imports */
 use bevy::{prelude::*, render::render_resource::{AsBindGroup, ShaderRef}, sprite::{AlphaMode2d, Material2d, Material2dPlugin}};
-use crate::{camera::OuterCamera, utils::color::hex};
+use crate::{camera::OuterCamera, ui::info_text::SpawnInfoText, utils::color::hex};
 use super::slot::CableSlot;
 
 /* Constants */
@@ -147,6 +147,7 @@ impl Cable {
         mut cable_materials: ResMut<Assets<CableMaterial>>,
         mut meshes: ResMut<Assets<Mesh>>,
     ) {
+        commands.queue(SpawnInfoText("Press ESC to cancel".to_string()));
         commands.spawn((
             PickingBehavior::IGNORE,
             // Sprite {

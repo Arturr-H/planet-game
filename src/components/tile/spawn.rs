@@ -1,7 +1,7 @@
 /* Imports */
 use std::f32::consts::PI;
 use bevy::{prelude::*, render::texture, utils::hashbrown::HashSet};
-use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::stats::{OpenStats, StatsPlugin}, utils::{color::hex, logger}};
+use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::{info_text::SpawnInfoText, stats::{OpenStats, StatsPlugin}}, utils::{color::hex, logger}};
 use super::{types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
@@ -169,6 +169,8 @@ impl TileSpawnPlugin {
         let planet_rotation_z = planet_transform.rotation.to_euler(EulerRot::XYZ).2 - PI / 2.0;
         let planet_pos = planet_transform.translation.truncate();
 
+        commands.queue(SpawnInfoText("Press ESC to cancel".to_string()));
+        
         let Some(cursor_pos) = window
             .cursor_position()
             .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor).ok())

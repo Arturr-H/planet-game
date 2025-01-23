@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use rand::Rng;
-use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, utils::{audio::{game_sounds, play_audio}, color::hex, logger}};
+use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, ui::info_text::SpawnInfoText, utils::{audio::{game_sounds, play_audio}, color::hex, logger}};
 
 /// Some component that can be damaged
 #[derive(Component)]
@@ -100,7 +100,8 @@ impl Damageable {
                 let Some((resource, amount)) = drop else { continue; };
                 let Ok(mut planet) = world.query_filtered::<&mut Planet, With<PlayerPlanet>>().get_single_mut(world) else { continue; };
                 planet.resources.add(resource, amount);
-                logger::log::bright_green("resource", format!("Dropped {:?} x{}", resource, amount));
+                world.commands().queue(SpawnInfoText(format!("{}x {}", amount, format!("{:?}", resource).to_ascii_lowercase())));
+                logger::log::bright_green("resource", format!("Dropped {} x{}", format!("{:?}", resource).to_ascii_lowercase(), amount));
             }
 
             if let Some(callback) = callback {

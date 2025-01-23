@@ -70,6 +70,7 @@ fn main() {
 
             ui::hud::HudPlugin,
             ui::stats::StatsPlugin,
+            ui::info_text::InfoTextPlugin,
             PointOfInterestPlugin,
             tile::TilePlugin,
         ))
