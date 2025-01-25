@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -150,6 +150,7 @@ impl Planet {
         ));
 
         planet_bundle.with_children(|parent| {
+            /* Atmosphere */
             parent.spawn((
                 Mesh2d(mesh),
                 MeshMaterial2d(planet_atmosphere_materials.add(PlanetAtmosphereMaterial {
@@ -158,6 +159,7 @@ impl Planet {
                 })),
                 Transform::from_xyz(0.0, 0.0, -10.0).with_scale(Vec3::splat((radius + 800.0) / radius)),
             ));
+
         });
 
         /* Insert the Planet component */
@@ -207,6 +209,11 @@ impl Planet {
             planet.generate_pois(parent, &asset_server);
         });
         
+        /* Flag */
+        planet_bundle.queue(SpawnFlag {
+            transform: planet.index_to_transform(0, 0.0, 10.0, 1),
+        });
+
         planet_bundle.insert(planet.clone());
         match camera_q.get_single_mut() {
             Ok(mut transform) => {

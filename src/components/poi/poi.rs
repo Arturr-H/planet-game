@@ -5,7 +5,7 @@ use bevy::{prelude::*, text::cosmic_text::ttf_parser::loca};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use super::{stone::Stone, tree::Tree};
+use super::{flag::flag, stone::Stone, tree::Tree};
 use crate::{components::{cable::slot::RemoveAllCableSlotHighlightsCommand, planet::Planet}, systems::traits::GenericPointOfInterest, utils::color::hex};
 
 /// Some point of interest on the planet, like a stone or a tree.
@@ -177,6 +177,7 @@ pub struct PointOfInterestPlugin;
 impl Plugin for PointOfInterestPlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_plugins(flag::FlagPlugin)
             .add_systems(Update, PointOfInterestHighlight::update);
     }
 }

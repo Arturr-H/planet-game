@@ -68,7 +68,6 @@ impl InfoTextPlugin {
         for event in events.read() {
             // Update existing text and reset timer
             if let Ok((mut text, entity)) = text_q.get_mut(fading_text.0) {
-                println!("Updating text: {}", event.0);
                 text.0 = event.0.clone();
 
                 commands.entity(entity)

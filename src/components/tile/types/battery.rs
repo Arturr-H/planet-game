@@ -28,6 +28,7 @@ impl GenericTile for Battery {
         commands.spawn((
             transform,
             self.clone(),
+            Visibility::Visible,
         ))
         .with_children(|parent| {
             // let outline_offset = Planet::forward(&transform) * (mesh_size.y / 2.0);
