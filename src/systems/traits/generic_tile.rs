@@ -50,6 +50,9 @@ pub trait GenericTile {
     /// tile is not included in this vector, it can be found in [`Self::cost`]
     fn upgrades(&self) -> Vec<Vec<(PlanetResource, usize)>> { Vec::new() }
 
+    /// Tiles that can't be removed by the player, like the rocketship
+    fn indestructible(&self) -> bool { false }
+
     /// What tiles this tile needs to "keep distance" from
     /// to avoid collisions looking ugly. Like wind turbines
     /// which would cause the rotors to overlap.

@@ -22,7 +22,7 @@ impl GenericPointOfInterest for Tree {
         transform: Transform,
     ) -> Entity {
         let mut rng = rand::thread_rng();
-        let initial_age = rng.gen_range(0..4);
+        let initial_age = rng.gen_range(0..5);
 
         commands.spawn((
             transform.with_scale(Vec3::splat(rng.gen_range(0.8..1.2))),

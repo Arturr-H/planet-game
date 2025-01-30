@@ -46,7 +46,12 @@ impl Command for UpgradeTileCommand {
 
             /* Spawn new tile */
             world.resource_mut::<Events<TileSpawnEvent>>()
-                .send(TileSpawnEvent { tile: tile.clone(), is_preview: false, upgrade: true });
+                .send(TileSpawnEvent {
+                    tile: tile.clone(),
+                    is_preview: false,
+                    upgrade: true,
+                    play_sound: false
+                });
             
             logger::log::bright_green("tile_upgrade",
                 &format!("Upgraded tile {:?} at index {}", tile.tile_type.display_name(), tile.tile_id));

@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{spawn::SpawnTileCommand, types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -193,17 +193,6 @@ impl Planet {
             );
         });
 
-        /* Landed rocket */
-        // planet_bundle.with_children(|parent| {
-        //     let entity = TileType::LandedRocket(LandedRocket).spawn(
-        //         parent, false,
-        //         planet.index_to_transform(0, 0.0, 5.0),
-        //         &asset_server, &mut texture_atlas_layouts, 0
-        //     );
-
-        //     planet.tiles.insert(0, Tile::new(0, TileType::LandedRocket(LandedRocket), entity));
-        // });
-
         /* Initialize POI:s */
         planet_bundle.with_children(|parent| {
             planet.generate_pois(parent, &asset_server);
@@ -222,8 +211,12 @@ impl Planet {
             Err(_) => (),
         };
 
-        /* Atmosphere */
-        
+        /* Landed rocket */
+        planet_bundle.queue(SpawnTileCommand {
+            tile_id: 2,
+            tile_type: TileType::LandedRocket(LandedRocket),
+            play_sound: false
+        });
     }
 
     // Update

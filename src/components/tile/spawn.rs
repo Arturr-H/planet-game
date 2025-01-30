@@ -1,6 +1,6 @@
 /* Imports */
 use std::f32::consts::PI;
-use bevy::{prelude::*, render::texture, utils::hashbrown::HashSet};
+use bevy::{ecs::entity, prelude::*, render::texture, utils::hashbrown::HashSet};
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::{info_text::SpawnInfoText, stats::{OpenStats, StatsPlugin}}, utils::{color::hex, logger}};
 use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
@@ -23,6 +23,8 @@ pub struct TileSpawnEvent {
     /// we won't insert the new tile into the planet tiles.
     /// We'll just increase the tile_level of the existing tile.
     pub upgrade: bool,
+
+    pub play_sound: bool,
 }
 
 /// Some bevy system parameters that are passed to the
@@ -33,7 +35,6 @@ pub struct TileSpawnEventParams<'a> {
     pub planet: Mut<'a, Planet>,
     pub meshes: ResMut<'a, Assets<Mesh>>,
     pub outline_material : ResMut<'a, Assets<TileMaterialOutline>>,
-
 }
 
 /// A component that is added to the preview tile (marker)
@@ -53,7 +54,6 @@ impl TileSpawnPlugin {
         preview_q: Query<Entity, With<TilePreview>>,
         meshes: ResMut<Assets<Mesh>>,
         outline_material : ResMut<Assets<TileMaterialOutline>>,
-
     ) {
         let planet = planet_q.single_mut();
         let planet_entity = planet.planet_entity();
@@ -66,6 +66,7 @@ impl TileSpawnPlugin {
         };
 
         for spawn_data in tile_spawn_events.read() {
+            println!("3");
             let mut tile_entity = None;
 
             // [PREVIEW] Spawn tile
@@ -84,6 +85,7 @@ impl TileSpawnPlugin {
 
             // Spawn tile
             else {
+                println!("4");
                 if !spawn_data.upgrade {
                     // Check if position is occupied
                     let false = &spawn_params.planet.tiles.values()
@@ -95,13 +97,21 @@ impl TileSpawnPlugin {
 
                     // If we have enough distance from other tiles
                     // that require it
-                    if !Self::is_keeping_distance_from(&spawn_params.planet, &spawn_data.tile.tile_type.keep_distance_from(), spawn_data.tile.tile_id).is_empty() {
+                    if !Self::is_keeping_distance_from(
+                        &spawn_params.planet,
+                        &spawn_data.tile.tile_type.keep_distance_from(),
+                        spawn_data.tile.tile_id
+                    ).is_empty() {
                         logger::log::red("tile_plugin", "Not enough distance from other tiles");
                         return
                     };
                     
                     // If the tile fits within the tile grid
-                    if Self::tile_fits(&spawn_params.planet, &spawn_data.tile.tile_type.width(), spawn_data.tile.tile_id) == false {
+                    if Self::tile_fits(
+                        &spawn_params.planet,
+                        &spawn_data.tile.tile_type.width(),
+                        spawn_data.tile.tile_id
+                    ) == false {
                         logger::log::red("tile_plugin", "Tile does not fit");
                         return
                     };
@@ -112,10 +122,15 @@ impl TileSpawnPlugin {
                         return
                     };
                 }
+                println!("5");
 
                 // Play sound
-                let place_sound = spawn_params.asset_server.load("../assets/audio/place.wav");
-                commands.spawn((AudioPlayer::new(place_sound), PlaybackSettings::DESPAWN));
+                if spawn_data.play_sound {
+                    let place_sound = spawn_params.asset_server.load("../assets/audio/place.wav");
+                    commands.spawn((AudioPlayer::new(place_sound), PlaybackSettings::DESPAWN));
+                }
+
+                println!("6");
 
                 // If we're upgrading a tile, the tile has already been
                 // removed by the `TileUpgradeCommand` command
@@ -127,22 +142,28 @@ impl TileSpawnPlugin {
                         new_spawn_data.tile.tile_level = tile.tile_level;
                     }
                     
+                    println!("7");
                     tile_entity = Some(spawn_data.tile.tile_type.spawn(parent, &mut spawn_params, &new_spawn_data));
                 });
+
+                println!("8");
 
                 // Add / update the new tile to game state
                 if spawn_data.upgrade {
                     let tile = &mut spawn_params.planet.tiles.get_mut(&spawn_data.tile.tile_id).unwrap();
                     tile.entity = tile_entity.unwrap();
                 }else {
+                    println!("9");
                     spawn_params.planet.tiles.insert(spawn_data.tile.tile_id, Tile::new(
                         spawn_data.tile.tile_id,
                         spawn_data.tile.tile_type.clone(),
                         spawn_data.tile.tile_level,
                         tile_entity.unwrap()
                     ));
+                    println!("10");
                 }
 
+                println!("11");
                 // On click method
                 let tile_id = spawn_data.tile.tile_id.clone();
                 commands.entity(tile_entity.unwrap()).observe(
@@ -151,7 +172,10 @@ impl TileSpawnPlugin {
                     Self::on_click(tile_id, events);
                 });
 
+                println!("12");
+                
                 for entity in preview_q.iter() { commands.entity(entity).despawn_recursive(); }
+                println!("13");
             }
         }
     }
@@ -193,6 +217,7 @@ impl TileSpawnPlugin {
                 tile: Tile::new(index, tile_type.clone(), 0, Entity::PLACEHOLDER),
                 upgrade: false,
                 is_preview: false,
+                play_sound: true,
             });
         }
 
@@ -256,7 +281,8 @@ impl TileSpawnPlugin {
             event_writer.send(TileSpawnEvent {
                 tile: Tile::new(0, tile.clone(), 0, Entity::PLACEHOLDER),
                 upgrade: false,
-                is_preview: true
+                is_preview: true,
+                play_sound: false,
             });
         }
     }
@@ -311,6 +337,23 @@ impl TileSpawnPlugin {
         }
     
         true
+    }
+}
+
+pub struct SpawnTileCommand {
+    pub tile_type: TileType,
+    pub tile_id: usize,
+    pub play_sound: bool,
+}
+
+impl EntityCommand for SpawnTileCommand {
+    fn apply(self, _: Entity, world: &mut World) {
+        world.send_event(TileSpawnEvent {
+            tile: Tile::new(self.tile_id, self.tile_type, 0, Entity::PLACEHOLDER),
+            upgrade: false,
+            is_preview: false,
+            play_sound: self.play_sound,
+        });
     }
 }
 
