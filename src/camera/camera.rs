@@ -223,6 +223,7 @@ impl CameraDebugPlugin {
         for event in scroll.read() {
             for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
                 projection.scale *= 1.0 + event.y * -0.04;
+                // if settings.camera_scale > 2.0 { return }
                 settings.camera_scale = projection.scale;
             }
         }
@@ -235,6 +236,8 @@ impl CameraDebugPlugin {
         }
         if kb.pressed(KeyCode::KeyL) {
             for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
+                println!("Scale: {}", settings.camera_scale);
+                if settings.camera_scale > 10.0 { return }
                 projection.scale *= 1.01;
                 settings.camera_scale = projection.scale;
             }
