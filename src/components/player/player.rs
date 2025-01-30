@@ -1,6 +1,5 @@
 /* Imports */
 use bevy::prelude::*;
-
 use crate::{components::planet::{self, Planet, PlayerPlanet}, utils::color::hex};
 
 /* Constants */
@@ -8,15 +7,6 @@ use crate::{components::planet::{self, Planet, PlayerPlanet}, utils::color::hex}
 /// Player component
 #[derive(Component)]
 pub struct Player;
-
-pub struct PlayerPlugin;
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_systems(Startup, Player::setup)
-            .add_systems(Update, Player::update);
-    }
-}
 
 impl Player {
     pub fn setup(
@@ -35,4 +25,13 @@ impl Player {
         ));
     }
     pub fn update() -> () {}
+}
+
+pub struct PlayerPlugin;
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(Startup, Player::setup.after(Planet::setup))
+            .add_systems(Update, Player::update);
+    }
 }
