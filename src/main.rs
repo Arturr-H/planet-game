@@ -16,7 +16,7 @@ use bevy::{
 use camera::background::background::BackgroundPlugin;
 use functional::damageable;
 use systems::game;
-use components::{cable::{cable, slot}, foliage::animation::FoliageAnimationPlugin, planet, poi::PointOfInterestPlugin, tile};
+use components::{cable::{cable, slot}, foliage::animation::FoliageAnimationPlugin, planet, player::player::PlayerPlugin, poi::PointOfInterestPlugin, tile};
 use utils::color::hex;
 
 /// In-game resolution width.
@@ -74,6 +74,7 @@ fn main() {
             ui::info_text::InfoTextPlugin,
             PointOfInterestPlugin,
             tile::TilePlugin,
+            PlayerPlugin,
         ))
 
         /* Debug */

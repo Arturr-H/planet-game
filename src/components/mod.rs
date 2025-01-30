@@ -4,3 +4,4 @@ pub mod foliage;
 pub mod tile;
 pub mod debug;
 pub mod poi;
+pub mod player;
