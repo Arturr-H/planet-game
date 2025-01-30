@@ -21,6 +21,8 @@ struct Label;
 
 #[derive(Component)]
 struct TileUpgradeButton;
+#[derive(Component)]
+struct TileRemovalButton;
 
 pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
@@ -76,6 +78,7 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
             },
             BorderColor(Color::BLACK),
             BorderRadius::MAX,
+            TileRemovalButton
         )).with_child((
             Text::new("Delete"),
             TextFont {
@@ -111,13 +114,15 @@ fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
     });
 }
 
+// Ugly function please rewrite
 fn update(
     mut events: EventReader<OpenStats>,
     mut query: Query<&mut Visibility, With<StatsUI>>,
+    mut remove_btn_visibility_q: Query<&mut Visibility, (With<TileRemovalButton>, Without<Label>, Without<StatsUI>, Without<TileUpgradeButton>)>,
     mut label: Query<&mut Text, With<Label>>,
     mut ui_state: ResMut<StatsUIState>,
     mut planet_q: Query<&mut Planet, With<PlayerPlanet>>,
-    mut tile_upgrade_button: Query<(&mut Visibility, &Children), (With<TileUpgradeButton>, Without<Label>, Without<StatsUI>)>,
+    mut tile_upgrade_button: Query<(&mut Visibility, &Children), (With<TileUpgradeButton>, Without<Label>, Without<StatsUI>, Without<TileRemovalButton>)>,
     mut tile_upgrade_button_text: Query<&mut Text, (Without<Label>, Without<StatsUI>)>,
 ) {
     let planet = planet_q.single_mut();
@@ -149,7 +154,6 @@ fn update(
     // Only update contents if UI is visible
     let Some(stats) = &ui_state.stats else { return };
     let Some(tile_id) = &stats.tile_id else { return };
-    
     let tile = planet.tiles[tile_id].clone();
     
     // Update main label
@@ -159,6 +163,13 @@ fn update(
             tile.powergrid_status.energy_stored,
             tile.tile_level,
         );
+    }
+
+    // Update delete button visibility based on tile type
+    if let Ok(mut vis) = remove_btn_visibility_q.get_single_mut() {
+        if tile.tile_type.indestructible() {
+            *vis = Visibility::Hidden;
+        }
     }
 
     // Update upgrade button
