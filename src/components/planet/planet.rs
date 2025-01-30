@@ -211,12 +211,12 @@ impl Planet {
             Err(_) => (),
         };
 
-        /* Landed rocket */
-        planet_bundle.queue(SpawnTileCommand {
-            tile_id: 2,
-            tile_type: TileType::LandedRocket(LandedRocket),
-            play_sound: false
-        });
+        // /* Landed rocket */
+        // commands.queue(SpawnTileCommand {
+        //     tile_id: 2,
+        //     tile_type: TileType::LandedRocket(LandedRocket),
+        //     play_sound: false
+        // });
     }
 
     // Update
@@ -294,7 +294,6 @@ impl Planet {
             
             let noise = perlin.get([x, y]) as f32;
             let height = noise * amplitude + config.radius;
-            println!("{height}");
     
             radii.push((angle, height));
         }

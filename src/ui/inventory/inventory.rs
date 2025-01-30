@@ -1,12 +1,12 @@
 /* Imports */
-use bevy::prelude::*;
-
+use bevy::{prelude::*, utils::HashMap};
 use crate::{camera::UI_LAYERS, utils::color::hex};
 
-/* Constants */
+use super::slot::InventorySlot;
 
+/* Constants */
 pub struct Inventory {
-    // pub items: Vec<Item>,
+    // pub items: HashMap<usize, Item>,
 }
 
 impl Inventory {
@@ -43,7 +43,7 @@ impl Inventory {
                 BackgroundColor(hex!("#2d2d2d")),
             )).with_children(|parent| {
                 /* Row */
-                for _i in 0..4 {
+                for col in 0..4 {
                     parent.spawn((
                         Node {
                             width: Val::Percent(100.0),
@@ -56,18 +56,9 @@ impl Inventory {
                         },
                         BackgroundColor(hex!("#ff77aa00")),
                     )).with_children(|parent| {
-                        for _i in 0..3 {
+                        for cell in 0..3 {
                             /* Elements */
-                            parent.spawn((
-                                Node {
-                                    flex_grow: 1.0,
-                                    height: Val::Percent(100.0),
-                                    
-                                    ..default()
-                                },
-                                BorderRadius::all(Val::Px(10.0)),
-                                BackgroundColor(hex!("#232323")),
-                            ));
+                            InventorySlot::spawn(parent, col * 3 + cell);
                         }
                     });
                 }
@@ -78,7 +69,7 @@ impl Inventory {
 
 pub struct InventoryPlugin;
 impl Plugin for InventoryPlugin {
-    fn build(&self, _app: &mut App) {
-        // app.add_systems(Startup, Inventory::setup);
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, Inventory::setup);
     }
 }

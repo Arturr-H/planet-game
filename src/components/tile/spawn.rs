@@ -55,7 +55,7 @@ impl TileSpawnPlugin {
         meshes: ResMut<Assets<Mesh>>,
         outline_material : ResMut<Assets<TileMaterialOutline>>,
     ) {
-        let planet = planet_q.single_mut();
+        let Ok(planet) = planet_q.get_single_mut() else { return };
         let planet_entity = planet.planet_entity();
         let mut spawn_params = TileSpawnEventParams {
             asset_server,
@@ -147,6 +147,7 @@ impl TileSpawnPlugin {
                 });
 
                 println!("8");
+                println!("{:?}", tile_entity);
 
                 // Add / update the new tile to game state
                 if spawn_data.upgrade {
@@ -346,8 +347,8 @@ pub struct SpawnTileCommand {
     pub play_sound: bool,
 }
 
-impl EntityCommand for SpawnTileCommand {
-    fn apply(self, _: Entity, world: &mut World) {
+impl Command for SpawnTileCommand {
+    fn apply(self, world: &mut World) {
         world.send_event(TileSpawnEvent {
             tile: Tile::new(self.tile_id, self.tile_type, 0, Entity::PLACEHOLDER),
             upgrade: false,
