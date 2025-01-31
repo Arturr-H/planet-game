@@ -217,7 +217,16 @@ impl CameraDebugPlugin {
 
                     let pos = transform.translation.truncate();
                     let pos_angle = pos.y.atan2(pos.x);
-                    let (_, surface_angle) = planet.radians_to_radii(pos_angle, 0.0);
+                    let (surface_pos, surface_angle) = planet.radians_to_radii(pos_angle, 0.0);
+                    let surface_radius = surface_pos.length();
+                    let current_elevation = pos.length() - surface_radius;
+                    let clamped_elevation = current_elevation.clamp(-5.0, 120.0);
+
+                    if clamped_elevation != current_elevation {
+                        let direction = pos.normalize();
+                        let new_pos = direction * (surface_radius + clamped_elevation);
+                        transform.translation = Vec3::new(new_pos.x, new_pos.y, transform.translation.z);
+                    }
 
                     transform.rotation = Quat::from_rotation_z(
                         Planet::normalize_radians(surface_angle + PI)
@@ -233,7 +242,7 @@ impl CameraDebugPlugin {
                     let pos_angle = pos.y.atan2(pos.x);
                     let (translation, _) = planet.radians_to_radii(pos_angle, 0.0);
 
-                    camera_settings.elevation = pos.length() - translation.length();
+                    camera_settings.elevation = (pos.length() - translation.length()).clamp(-5.0, 120.0);
                     camera_rotation.radians = pos_angle;
                 }
             }
@@ -255,15 +264,6 @@ impl CameraDebugPlugin {
                             camera_settings.elevation,
                         );
                     }
-                    // camera_rotation.radians = player.radians;
-                    // if let Ok(planet) = planet_q.get_single() {
-                    //     CameraPlugin::update_camera_transform(
-                    //         planet,
-                    //         camera_rotation.radians,
-                    //         &mut transform,
-                    //         camera_settings.elevation,
-                    //     );
-                    // }
                 }
             }
         }
