@@ -1,6 +1,5 @@
 use std::f32::consts::PI;
 
-const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
 
 
 use bevy::{
@@ -26,14 +25,13 @@ use super::post_processing::{PostProcessPlugin, PostProcessSettings};
 pub const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(0);
 /// Render layers for UI rendering.
 pub const UI_LAYERS: RenderLayers = RenderLayers::layer(1);
-
+const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
 const CAMERA_ELEVATION: f32 = 50.0;
 
 #[derive(Resource)]
 pub struct CameraSettings {
     pub elevation: f32,
     pub is_panning: bool,
-
     pub total_delta: Vec2,
     pub start_transform: Transform,
 }
@@ -57,22 +55,10 @@ impl Plugin for CameraPlugin {
             .insert_resource(ClearColor(hex!("#000000")))
             .insert_resource(CameraSettings::default())
             .add_systems(Startup, Self::initialize)
-            .add_systems(Update, Self::update_camera_scale);
-            // .add_systems(Update, fit_canvas);
+            .add_systems(Update, (Self::update_camera_scale, Self::camera_control).after(Player::update));
     }
 }
 
-pub struct CameraDebugPlugin;
-impl Plugin for CameraDebugPlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_systems(Update, Self::debug_control.after(Player::update));
-    }
-}
-
-// Camera that renders the pixel-perfect world to the [`Canvas`].
-// #[derive(Component)]
-// pub struct InGameCamera;
 
 /// This camera primarily is used to render the pixel-perfect
 /// [`Canvas`] to the screen. But this camera can also render
@@ -86,16 +72,14 @@ pub struct UiCamera;
 
 /// Rendered to the high-resolution camera. The pixel-perfect
 /// game view is rendered to this Canvas.
-#[derive(Component)]
-struct Canvas;
+// #[derive(Component)]
+// struct Canvas;
 
 impl CameraPlugin {
     /// Set up cameras and canvas.
     pub fn initialize(
         mut commands: Commands,
         mut images: ResMut<Assets<Image>>,
-        player_q: Query<&Transform, With<Player>>,
-        planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
         let canvas_size = Extent3d {
             width: RES_WIDTH as u32,
@@ -169,8 +153,6 @@ impl CameraPlugin {
         camera_transform: &mut Transform,
         elevation: f32,
     ) -> () {
-        // let planet = planet_q.single();
-        // let camera_radians = Planet::normalize_radians(radians + PI / 2.0);
         let camera_radians = Planet::normalize_radians(radians);
         let (translation, surface_angle) = planet.radians_to_radii(camera_radians, elevation);
         let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + elevation);
@@ -181,10 +163,8 @@ impl CameraPlugin {
         );
         camera_transform.rotation = Quat::from_rotation_z(Planet::normalize_radians(surface_angle + PI));
     }
-}
 
-impl CameraDebugPlugin {
-    pub fn debug_control(
+    fn camera_control (
         mut camera_transform_q: Query<(&mut OrthographicProjection, &mut PostProcessSettings, &mut Transform), With<OuterCamera>>,
         mut scroll: EventReader<MouseWheel>,
         kb: Res<ButtonInput<KeyCode>>,
@@ -270,8 +250,7 @@ impl CameraDebugPlugin {
 
         for event in scroll.read() {
             for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
-                projection.scale *= 1.0 + event.y * -0.04;
-                // if settings.camera_scale > 2.0 { return }
+                projection.scale = (projection.scale * (1.0 + event.y * -0.04)).clamp(0.2, 10.0);
                 settings.camera_scale = projection.scale;
             }
         }
@@ -284,8 +263,8 @@ impl CameraDebugPlugin {
         }
         if kb.pressed(KeyCode::KeyL) {
             for (mut projection, mut settings, _) in camera_transform_q.iter_mut() {
-                println!("Scale: {}", settings.camera_scale);
-                if settings.camera_scale > 10.0 { return }
+                // println!("Scale: {}", settings.camera_scale);
+                // if settings.camera_scale > 10.0 { return }
                 projection.scale *= 1.01;
                 settings.camera_scale = projection.scale;
             }

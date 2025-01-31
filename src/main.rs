@@ -79,7 +79,7 @@ fn main() {
 
         /* Debug */
         .add_plugins((
-            camera::CameraDebugPlugin,
+            // camera::CameraDebugPlugin,
 
             FpsOverlayPlugin {
                 config: FpsOverlayConfig {
