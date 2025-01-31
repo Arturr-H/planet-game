@@ -204,12 +204,12 @@ impl Planet {
         });
 
         planet_bundle.insert(planet.clone());
-        match camera_q.get_single_mut() {
-            Ok(mut transform) => {
-                Self::update_camera_transform(&planet, 0.0, &mut transform, camera_settings.elevation);
-            },
-            Err(_) => (),
-        };
+        // match camera_q.get_single_mut() {
+        //     Ok(mut transform) => {
+        //         Self::update_camera_transform(&planet, 0.0, &mut transform, camera_settings.elevation);
+        //     },
+        //     Err(_) => (),
+        // };
 
         // /* Landed rocket */
         // commands.queue(SpawnTileCommand {
@@ -232,42 +232,27 @@ impl Planet {
         let planet = planet_q.single();
         if let Ok((mut camera_transform, projection)) = camera_q.get_single_mut() {
             let mut update = false;
-            if keyboard_input.pressed(KeyCode::ArrowRight)
-            || keyboard_input.pressed(KeyCode::KeyD) {
-                camera_rotation.radians -= (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(0.018);
-                update = true;
-            }
-            else if keyboard_input.pressed(KeyCode::ArrowLeft)
-                || keyboard_input.pressed(KeyCode::KeyA) {
-                    camera_rotation.radians += (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(0.018);
-                update = true;
-            }
+            // if keyboard_input.pressed(KeyCode::ArrowRight)
+            // || keyboard_input.pressed(KeyCode::KeyD) {
+            //     camera_rotation.radians -= (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(0.018);
+            //     update = true;
+            // }
+            // else if keyboard_input.pressed(KeyCode::ArrowLeft)
+            //     || keyboard_input.pressed(KeyCode::KeyA) {
+            //         camera_rotation.radians += (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(0.018);
+            //     update = true;
+            // }
 
             planet_atmosphere_materials.iter_mut().for_each(|(_, mat)| {
                 mat.zoom = projection.scale;
             });
 
-            if update {
-                Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform, camera_settings.elevation);
-            }
+            // if update {
+            //     Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform, camera_settings.elevation);
+            // }
         }
     }
-    fn update_camera_transform(
-        planet: &Planet,
-        radians: f32,
-        camera_transform: &mut Transform,
-        elevation: f32,
-    ) -> () {
-        let camera_radians = Self::normalize_radians(radians + PI / 2.0);
-        let (translation, surface_angle) = planet.radians_to_radii(camera_radians, elevation);
-        let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + elevation);
-        camera_transform.translation = Vec3::new(
-            (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
-            (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING,
-            camera_transform.translation.z
-        );
-        camera_transform.rotation = Quat::from_rotation_z(Self::normalize_radians(surface_angle + PI));
-    }
+    
 
     // | vv ------- PLANET SURFACE MESH ------- vv | \\
     // | vv ------- PLANET SURFACE MESH ------- vv | \\

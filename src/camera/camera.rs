@@ -1,5 +1,8 @@
 use std::f32::consts::PI;
 
+const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
+
+
 use bevy::{
     core_pipeline::post_process, input::mouse::{MouseMotion, MouseWheel}, prelude::*, render::{
         camera::RenderTarget,
@@ -13,7 +16,7 @@ use bevy::{
         view::RenderLayers
     }, window::WindowResized
 };
-use crate::{components::planet::{CameraPlanetRotation, Planet, PlayerPlanet}, systems::game::GameState, utils::color::hex, RES_HEIGHT, RES_WIDTH};
+use crate::{components::{planet::{CameraPlanetRotation, Planet, PlayerPlanet}, player::player::Player}, systems::game::GameState, utils::color::hex, RES_HEIGHT, RES_WIDTH};
 use super::post_processing::{PostProcessPlugin, PostProcessSettings};
 
 /// Default render layers for pixel-perfect rendering.
@@ -63,7 +66,7 @@ pub struct CameraDebugPlugin;
 impl Plugin for CameraDebugPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(Update, Self::debug_control);
+            .add_systems(Update, Self::debug_control.after(Player::update));
     }
 }
 
@@ -91,6 +94,8 @@ impl CameraPlugin {
     pub fn initialize(
         mut commands: Commands,
         mut images: ResMut<Assets<Image>>,
+        player_q: Query<&Transform, With<Player>>,
+        planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
         let canvas_size = Extent3d {
             width: RES_WIDTH as u32,
@@ -132,6 +137,7 @@ impl CameraPlugin {
                 ..default()
             },
         ));
+
         commands.spawn((
             Camera2d,
             IsDefaultUiCamera,
@@ -156,6 +162,25 @@ impl CameraPlugin {
             settings.screen_height = event.height;
         }
     }
+
+    fn update_camera_transform(
+        planet: &Planet,
+        radians: f32,
+        camera_transform: &mut Transform,
+        elevation: f32,
+    ) -> () {
+        // let planet = planet_q.single();
+        // let camera_radians = Planet::normalize_radians(radians + PI / 2.0);
+        let camera_radians = Planet::normalize_radians(radians);
+        let (translation, surface_angle) = planet.radians_to_radii(camera_radians, elevation);
+        let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + elevation);
+        camera_transform.translation = Vec3::new(
+            (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
+            (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING,
+            camera_transform.translation.z
+        );
+        camera_transform.rotation = Quat::from_rotation_z(Planet::normalize_radians(surface_angle + PI));
+    }
 }
 
 impl CameraDebugPlugin {
@@ -168,23 +193,17 @@ impl CameraDebugPlugin {
         planet_q: Query<&Planet, With<PlayerPlanet>>,
         mut mouse_motion: EventReader<MouseMotion>,
         mouse: Res<ButtonInput<MouseButton>>,
+        player_q: Query<&Player, With<Player>>,
     ) {
         let pan_speed = 1.0;
         let mut pan_delta = Vec2::ZERO;
         
         for event in mouse_motion.read() {
-            // let (_, _, transform) = camera_transform_q.single();
-            // let rotation_z = transform.rotation.to_euler(EulerRot::YXZ).2;
-            // pan_delta += Vec2::new(
-            //     event.delta.x * rotation_z.cos() - event.delta.y * rotation_z.sin(),
-            //     event.delta.x * rotation_z.sin() + event.delta.y * rotation_z.cos()
-            // );
             pan_delta += event.delta;
         }
 
-
         if mouse.pressed(MouseButton::Right) {
-            if let Ok((mut projection, _, mut transform)) = camera_transform_q.get_single_mut() {
+            if let Ok((projection, _, mut transform)) = camera_transform_q.get_single_mut() {
                 if let Ok(planet) = planet_q.get_single() {
                     let rotation = transform.rotation;
                     
@@ -209,15 +228,44 @@ impl CameraDebugPlugin {
         } else if camera_settings.is_panning{
             if let Ok((_, _, transform)) = camera_transform_q.get_single() {
                 if let Ok(planet) = planet_q.get_single() {
+                    
                     let pos = transform.translation.truncate();
                     let pos_angle = pos.y.atan2(pos.x);
                     let (translation, _) = planet.radians_to_radii(pos_angle, 0.0);
 
                     camera_settings.elevation = pos.length() - translation.length();
-                    camera_rotation.radians = pos_angle - PI / 2.0;
+                    camera_rotation.radians = pos_angle;
                 }
             }
             camera_settings.is_panning = false;
+        } else {
+            if let Ok(player) = player_q.get_single() {
+                if let Ok((_, _, mut transform)) = camera_transform_q.get_single_mut() {
+                    if let Ok(planet) = planet_q.get_single() {
+                        let target_rotation = player.radians;
+
+                        let rotation_delta = (target_rotation - camera_rotation.radians + PI).rem_euclid(2.0 * PI) - PI;
+                        // let rotation_delta = (target_rotation - camera_rotation.radians);
+                        camera_rotation.radians += rotation_delta * 0.1;
+
+                        CameraPlugin::update_camera_transform(
+                            planet,
+                            camera_rotation.radians,
+                            &mut transform,
+                            camera_settings.elevation,
+                        );
+                    }
+                    // camera_rotation.radians = player.radians;
+                    // if let Ok(planet) = planet_q.get_single() {
+                    //     CameraPlugin::update_camera_transform(
+                    //         planet,
+                    //         camera_rotation.radians,
+                    //         &mut transform,
+                    //         camera_settings.elevation,
+                    //     );
+                    // }
+                }
+            }
         }
 
         for event in scroll.read() {
