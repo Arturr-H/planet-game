@@ -8,6 +8,7 @@ use crate::{components::planet::{self, Planet, PlayerPlanet}, utils::color::hex}
 #[derive(Component)]
 pub struct Player {
     pub radians: f32,
+    pub speed: f32,
 }
 
 impl Player {
@@ -17,7 +18,7 @@ impl Player {
     ) -> () {
         let planet = planet_q.single();
         commands.spawn((
-            Player { radians: 0.0 },
+            Player { radians: 0.0, speed: 10.0, },
             Sprite {
                 color: hex!("1e81b0"),
                 custom_size: Some(Vec2::new(10.0, 20.0)),
@@ -33,9 +34,20 @@ impl Player {
         planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
         let planet = planet_q.single(); 
+
+        if kb.pressed(KeyCode::ShiftLeft) {
+            for (_, mut player) in player_q.iter_mut() {
+                player.speed = 20.0;
+            }
+        } else {
+            for (_, mut player) in player_q.iter_mut() {
+                player.speed = 10.0;
+            }
+        }
+
         if kb.pressed(KeyCode::KeyA) {
             for (mut transform, mut player) in player_q.iter_mut() {
-                player.radians += 0.001;
+                player.radians += player.speed / 10000.0;
 
                 let new_transform = planet.radians_to_transform(player.radians, 0.0, 10.0);
                 transform.translation = new_transform.translation;
@@ -44,7 +56,7 @@ impl Player {
         }
         if kb.pressed(KeyCode::KeyD) {
             for (mut transform, mut player) in player_q.iter_mut() {
-                player.radians -= 0.001;
+                player.radians -= player.speed / 10000.0;
 
                 let new_transform = planet.radians_to_transform(player.radians, 0.0, 10.0);
                 transform.translation = new_transform.translation;
