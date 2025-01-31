@@ -15,6 +15,7 @@ impl Player {
     pub fn setup(
         mut commands: Commands,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
+        asset_server: Res<AssetServer>,
     ) -> () {
         let planet = planet_q.single();
         commands.spawn((
@@ -23,6 +24,7 @@ impl Player {
                 color: hex!("1e81b0"),
                 custom_size: Some(Vec2::new(10.0, 20.0)),
                 anchor: Anchor::BottomCenter,
+                image: asset_server.load("../assets/player/player.png"),
                 ..default()
             },
             planet.index_to_transform(0, 0.0, 10.0, 1)
@@ -30,37 +32,41 @@ impl Player {
     }
     pub fn update(
         kb: Res<ButtonInput<KeyCode>>,
-        mut player_q: Query<(&mut Transform, &mut Player), With<Player>>,
+        mut player_q: Query<(&mut Transform, &mut Player, &mut Sprite), With<Player>>,
         planet_q: Query<&Planet, With<PlayerPlanet>>,
     ) -> () {
         let planet = planet_q.single(); 
 
         if kb.pressed(KeyCode::ShiftLeft) {
-            for (_, mut player) in player_q.iter_mut() {
+            for (_, mut player, _) in player_q.iter_mut() {
                 player.speed = 20.0;
             }
         } else {
-            for (_, mut player) in player_q.iter_mut() {
+            for (_, mut player, _) in player_q.iter_mut() {
                 player.speed = 10.0;
             }
         }
 
         if kb.pressed(KeyCode::KeyA) {
-            for (mut transform, mut player) in player_q.iter_mut() {
+            for (mut transform, mut player, mut sprite) in player_q.iter_mut() {
                 player.radians += player.speed / 10000.0;
 
                 let new_transform = planet.radians_to_transform(player.radians, 0.0, 10.0);
                 transform.translation = new_transform.translation;
                 transform.rotation = new_transform.rotation;
+                
+                sprite.flip_x = true;
             }
         }
         if kb.pressed(KeyCode::KeyD) {
-            for (mut transform, mut player) in player_q.iter_mut() {
+            for (mut transform, mut player, mut sprite) in player_q.iter_mut() {
                 player.radians -= player.speed / 10000.0;
 
                 let new_transform = planet.radians_to_transform(player.radians, 0.0, 10.0);
                 transform.translation = new_transform.translation;
                 transform.rotation = new_transform.rotation;
+
+                sprite.flip_x = false;
             }
         }
     }
