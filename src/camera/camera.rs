@@ -157,15 +157,12 @@ impl CameraPlugin {
         let (translation, surface_angle) = planet.radians_to_radii(camera_radians, elevation);
         let mul = (CAMERA_DAMPING - 1.0) * (planet.radius + elevation);
 
-        let raw_x = (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING;
-        let raw_y = (translation.y + mul * camera_radians.sin()) / CAMERA_DAMPING;
 
-        let pixel_size = 1.0 / camera_transform.scale.x;
 
 
         camera_transform.translation = Vec3::new(
-            (raw_x / pixel_size).round() * pixel_size,
-            (raw_y / pixel_size).round() * pixel_size,
+            (translation.x + mul * camera_radians.cos()) / CAMERA_DAMPING,
+            (translation.y + mul * camera_radians.cos()) / CAMERA_DAMPING,
             camera_transform.translation.z
         );
         camera_transform.rotation = Quat::from_rotation_z(Planet::normalize_radians(surface_angle + PI));
@@ -189,8 +186,9 @@ impl CameraPlugin {
             pan_delta += event.delta;
         }
 
+
         if mouse.pressed(MouseButton::Right) {
-            if let Ok((projection, post_process_settings, mut transform)) = camera_transform_q.get_single_mut() {
+            if let Ok((projection, _, mut transform)) = camera_transform_q.get_single_mut() {
                 if let Ok(planet) = planet_q.get_single() {
                     let rotation = transform.rotation;
                     
@@ -237,7 +235,7 @@ impl CameraPlugin {
             camera_settings.is_panning = false;
         } else {
             if let Ok(player) = player_q.get_single() {
-                if let Ok((_, post_process_settings, mut transform)) = camera_transform_q.get_single_mut() {
+                if let Ok((_, _, mut transform)) = camera_transform_q.get_single_mut() {
                     if let Ok(planet) = planet_q.get_single() {
                         let target_rotation = player.radians;
 
@@ -251,7 +249,6 @@ impl CameraPlugin {
                             &mut transform,
                             camera_settings.elevation,
                         );
-
                     }
                 }
             }

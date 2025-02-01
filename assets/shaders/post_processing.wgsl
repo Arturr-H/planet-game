@@ -22,8 +22,8 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
 
     // Scale the UV coordinates to fit the pixel grid
     let scaled_uv = vec2<f32>(
-        round(in.uv.x * pixels_x) / pixels_x,
-        round(in.uv.y * pixels_y) / pixels_y
+        floor(in.uv.x * pixels_x) / pixels_x,
+        floor(in.uv.y * pixels_y) / pixels_y
     );
 
     // Sample the texture at the scaled UV coordinates
