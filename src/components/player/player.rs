@@ -37,15 +37,16 @@ impl Player {
     ) -> () {
         let planet = planet_q.single(); 
 
-        if kb.pressed(KeyCode::ShiftLeft) {
-            for (_, mut player, _) in player_q.iter_mut() {
+        for (_, mut player, _) in player_q.iter_mut() {
+            if kb.pressed(KeyCode::ShiftLeft) {
                 player.speed = 20.0;
-            }
-        } else {
-            for (_, mut player, _) in player_q.iter_mut() {
+            } else if kb.pressed(KeyCode::ControlLeft) {
+                player.speed = 3.0;
+            } else {
                 player.speed = 10.0;
             }
         }
+        
 
         if kb.pressed(KeyCode::KeyA) {
             for (mut transform, mut player, mut sprite) in player_q.iter_mut() {

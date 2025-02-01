@@ -20,11 +20,12 @@ use super::post_processing::{PostProcessPlugin, PostProcessSettings};
 
 /// Default render layers for pixel-perfect rendering.
 /// You can skip adding this component, as this is the default.
-// pub const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
+pub const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 /// Render layers for high-resolution rendering.
-pub const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(0);
+pub const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
 /// Render layers for UI rendering.
-pub const UI_LAYERS: RenderLayers = RenderLayers::layer(1);
+pub const UI_LAYERS: RenderLayers = RenderLayers::layer(2);
+
 const CAMERA_DAMPING: f32 = 1.0; // 1 = no damping 2 = pretty smooth, less than 1 = do not
 const CAMERA_ELEVATION: f32 = 50.0;
 
@@ -55,7 +56,7 @@ impl Plugin for CameraPlugin {
             .insert_resource(ClearColor(hex!("#000000")))
             .insert_resource(CameraSettings::default())
             .add_systems(Startup, Self::initialize)
-            .add_systems(Update, (Self::update_camera_scale, Self::camera_control).after(Player::update));
+            .add_systems(Update, (Self::fit_canvas, Self::camera_control).after(Player::update));
     }
 }
 
@@ -63,6 +64,10 @@ impl Plugin for CameraPlugin {
 /// This camera primarily is used to render the pixel-perfect
 /// [`Canvas`] to the screen. But this camera can also render
 /// other high-resolution entities like UI.
+
+#[derive(Component)]
+pub struct InGameCamera;
+
 #[derive(Component)]
 pub struct OuterCamera;
 
@@ -72,8 +77,8 @@ pub struct UiCamera;
 
 /// Rendered to the high-resolution camera. The pixel-perfect
 /// game view is rendered to this Canvas.
-// #[derive(Component)]
-// struct Canvas;
+#[derive(Component)]
+struct Canvas;
 
 impl CameraPlugin {
     /// Set up cameras and canvas.
@@ -105,21 +110,31 @@ impl CameraPlugin {
 
         canvas.resize(canvas_size);
 
-        let _image_handle = images.add(canvas);
+        let image_handle = images.add(canvas);
+
+        commands.spawn((
+            Camera2d,
+            Camera {
+                order: -1,
+                target: RenderTarget::Image(image_handle.clone()),
+                ..default()
+            },
+            Msaa::Off,
+            InGameCamera,
+            PIXEL_PERFECT_LAYERS,
+        ));
+
+        commands.spawn((
+            Sprite::from_image(image_handle),
+            Canvas,
+            HIGH_RES_LAYERS
+        ));
 
         commands.spawn((
             Camera2d,
             Msaa::Off,
             OuterCamera,
             HIGH_RES_LAYERS,
-
-            PostProcessSettings {
-                base_pixel_size: 1.0,
-                screen_height: 0.0,
-                screen_width: 0.0,
-                camera_scale: 1.0,
-                ..default()
-            },
         ));
 
         commands.spawn((
@@ -136,14 +151,15 @@ impl CameraPlugin {
         ));
     }
 
-    pub fn update_camera_scale(
+    pub fn fit_canvas(
         mut resize_events: EventReader<WindowResized>,
-        mut settings: Query<&mut PostProcessSettings, With<OuterCamera>>,
+        mut projections: Query<&mut OrthographicProjection, With<OuterCamera>>,
     ) {
         for event in resize_events.read() {
-            let mut settings = settings.single_mut();
-            settings.screen_width = event.width;
-            settings.screen_height = event.height;
+            let h_scale = event.width / RES_WIDTH as f32;
+            let v_scale = event.height / RES_HEIGHT as f32;
+            let mut projection = projections.single_mut();
+            projection.scale = 1. / h_scale.min(v_scale).round();
         }
     }
 
