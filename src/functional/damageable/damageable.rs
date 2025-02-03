@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 /* Imports */
 use bevy::{prelude::*, utils::HashMap};
 use rand::Rng;
-use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, ui::info_text::SpawnInfoText, utils::{audio::{game_sounds, play_audio}, color::hex, logger}};
+use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, ui::info_text::SpawnInfoText, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, color::hex, logger}};
 
 /// Some component that can be damaged
 #[derive(Component)]
@@ -54,6 +54,7 @@ impl Damageable {
         mut damage_labels: ResMut<DamageLabels>,
         mut damage_text_q: Query<&mut AnimatedDamageText>,
         asset_server: Res<AssetServer>,
+        mut audio_events: EventWriter<PlayAudioEvent>,
     ) {
         let target_entity = click.entity();
         let damage = (rand::random::<f32>() * 5.0 + 3.0).floor();
@@ -69,7 +70,7 @@ impl Damageable {
             target_entity,
             damage
         );
-        play_audio(&mut commands, &asset_server, game_sounds::tree::DAMAGE, false);
+        play_audio(game_sounds::tree::DAMAGE, false, &mut audio_events);
     }
     
     // Apply damage from events

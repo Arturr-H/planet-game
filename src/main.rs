@@ -17,7 +17,7 @@ use camera::background::background::BackgroundPlugin;
 use functional::damageable;
 use systems::game;
 use components::{cable::{cable, slot}, foliage::animation::FoliageAnimationPlugin, planet, player::player::PlayerPlugin, poi::PointOfInterestPlugin, tile};
-use utils::color::hex;
+use utils::{audio::AudioPlugin, color::hex};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -55,6 +55,7 @@ fn main() {
         .add_plugins((
             game::GameTickPlugin,
             camera::CameraPlugin,
+            AudioPlugin,
         ))
         .add_plugins((
             /* Preferrable called first as many

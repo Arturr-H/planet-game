@@ -1,6 +1,11 @@
 /* Imports */
 use bevy::prelude::*;
-use crate::{components::{planet::Planet, poi::PointOfInterestType}, tile::{Tile, TileType, spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::game::PlanetResource};
+use crate::{
+    components::{planet::Planet, poi::PointOfInterestType},
+    systems::game::PlanetResource,
+    tile::{spawn::{TileSpawnEvent, TileSpawnEventParams}, Tile, TileType},
+    utils::audio::{PlayAudioEvent, game_sounds},
+};
 
 #[enum_delegate::register]
 #[allow(unused_variables)]
@@ -21,7 +26,7 @@ pub trait GenericTile {
 
     /// What will happen every tick, before this tile recieves
     /// energy.
-    fn on_tick(&self, tile_id: usize, planet: &mut Planet) -> () {
+    fn on_tick(&self, tile_id: usize, planet: &mut Planet, audio_events: &mut EventWriter<PlayAudioEvent>) -> () {
         // Default is to do nothing
     }
 

@@ -1,7 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
 use rand::Rng;
-use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{copper::Copper, stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
+use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{copper::Copper, stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
@@ -72,7 +72,7 @@ impl GenericTile for Drill {
     fn display_name(&self) -> String { "Drill".to_string() }
     fn can_recieve_energy(&self) -> bool { true }
 
-    fn on_tick(&self, tile_id: usize, planet: &mut Planet) -> () {
+    fn on_tick(&self, tile_id: usize, planet: &mut Planet, mut audio_events: &mut EventWriter<PlayAudioEvent>) -> () {
         // The position index of the drill
         let position_index = planet.tiles[&tile_id].tile_id.clone();
 
@@ -97,9 +97,11 @@ impl GenericTile for Drill {
                     match selected_poi.poi_type {
                         PointOfInterestType::Stone(_) => {
                             planet.resources.add(PlanetResource::Stone, 1);
+                            play_audio(game_sounds::stone::DAMAGE, false, &mut audio_events);
                         },
                         PointOfInterestType::Copper(_) => {
                             planet.resources.add(PlanetResource::Copper, 1);
+                            play_audio(game_sounds::stone::DAMAGE, false, &mut audio_events);
                         },
                         _ => {}
                     }

@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, copper::Copper, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{spawn::SpawnTileCommand, types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, copper::Copper, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{spawn::SpawnTileCommand, types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::{audio::PlayAudioEvent, color::hex}, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -492,13 +492,13 @@ impl Plugin for PlanetPlugin {
 
 impl PlanetPlugin {
     /// Ticks every planet
-    fn tick(mut planets: Query<&mut Planet>) -> () {
+    fn tick(mut planets: Query<&mut Planet>, mut audio_events: EventWriter<PlayAudioEvent>) -> () {
         for mut planet in planets.iter_mut() {
             let mut energy_to_add: HashMap<usize, f32> = HashMap::new();
             let tile_keys = planet.tiles.keys().cloned().collect::<Vec<usize>>();
             for key in &tile_keys {
                 let tile_type = planet.tiles[key].tile_type.clone();
-                tile_type.on_tick(*key, &mut planet);
+                tile_type.on_tick(*key, &mut planet, &mut audio_events);
             }
 
             for key in tile_keys {
