@@ -70,7 +70,7 @@ impl Damageable {
             target_entity,
             damage
         );
-        play_audio(game_sounds::tree::DAMAGE, false, &mut audio_events);
+        play_audio(game_sounds::tree::DAMAGE, false, true, click.event().hit.position, &mut audio_events);
     }
     
     // Apply damage from events

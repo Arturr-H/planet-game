@@ -72,41 +72,55 @@ impl GenericTile for Drill {
     fn display_name(&self) -> String { "Drill".to_string() }
     fn can_recieve_energy(&self) -> bool { true }
 
-    fn on_tick(&self, tile_id: usize, planet: &mut Planet, mut audio_events: &mut EventWriter<PlayAudioEvent>) -> () {
-        // The position index of the drill
-        let position_index = planet.tiles[&tile_id].tile_id.clone();
-
+    fn on_tick(&self, tile_id: usize, planet: &mut Planet, audio_events: &mut EventWriter<PlayAudioEvent>) {
+        let position_index = planet.tiles[&tile_id].tile_id;
         let mut pois_in_range = Vec::new();
+    
         for poi_pos_index in planet.numbers_in_radius(position_index, DRILL_RANGE) {
             if let Some(local_pois) = planet.points_of_interest.get(&poi_pos_index) {
-                for poi in local_pois {
-                    pois_in_range.push(poi.clone());
-                }
+                pois_in_range.extend(local_pois.iter().cloned());
             }
         }
-
-        // Must be at least DRILL_RANGE tile indexes
-        // away from the POI to drill it.
+    
         if !pois_in_range.is_empty() {
             let mut rng = rand::thread_rng();
-            let selected_poi = pois_in_range[rng.gen_range(0..pois_in_range.len())];
-
-            planet.tiles.get_mut(&tile_id).map(|tile| {
-                if tile.powergrid_status.energy_stored >= 5.0 {
+            let selected_poi = &pois_in_range[rng.gen_range(0..pois_in_range.len())];
+            
+            let (has_energy, width) = match planet.tiles.get_mut(&tile_id) {
+                Some(tile) if tile.powergrid_status.energy_stored >= 5.0 => {
                     tile.powergrid_status.energy_stored -= 5.0;
-                    match selected_poi.poi_type {
-                        PointOfInterestType::Stone(_) => {
-                            planet.resources.add(PlanetResource::Stone, 1);
-                            play_audio(game_sounds::stone::DAMAGE, false, &mut audio_events);
-                        },
-                        PointOfInterestType::Copper(_) => {
-                            planet.resources.add(PlanetResource::Copper, 1);
-                            play_audio(game_sounds::stone::DAMAGE, false, &mut audio_events);
-                        },
-                        _ => {}
-                    }
-                }
-            });
+                    (true, tile.tile_type.width())
+                },
+                _ => (false, 0),
+            };
+    
+            if !has_energy { return; } // break if no energy
+    
+            match selected_poi.poi_type {
+                PointOfInterestType::Stone(_) => {
+                    planet.resources.add(PlanetResource::Stone, 1);
+                    let transform = planet.index_to_transform(position_index, 0.0, 1.0, width);
+                    play_audio(
+                        game_sounds::stone::DAMAGE,
+                        false,
+                        true,
+                        Some(transform.translation),
+                        audio_events
+                    );
+                },
+                PointOfInterestType::Copper(_) => {
+                    planet.resources.add(PlanetResource::Copper, 1);
+                    let transform = planet.index_to_transform(position_index, 0.0, 1.0, width);
+                    play_audio(
+                        game_sounds::stone::DAMAGE,
+                        false,
+                        true,
+                        Some(transform.translation),
+                        audio_events
+                    );
+                },
+                _ => {}
+            }
         }
     }
 

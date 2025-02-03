@@ -33,16 +33,6 @@ pub struct AudioManager {
     asset_server: AssetServer,
 }
 
-pub struct AudioPlugin;
-
-impl Plugin for AudioPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<AudioManager>()
-            .add_systems(Update, handle_audio_events)
-            .add_event::<PlayAudioEvent>();
-    }
-}
-
 impl FromWorld for AudioManager {
     fn from_world(world: &mut World) -> Self {
         let asset_server = world.get_resource::<AssetServer>().unwrap().clone();
@@ -50,10 +40,23 @@ impl FromWorld for AudioManager {
     }
 }
 
+pub struct GameAudioPlugin;
+
+impl Plugin for GameAudioPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<AudioManager>()
+            .add_systems(Update, handle_audio_events)
+            .add_event::<PlayAudioEvent>();
+    }
+}
+
+
 #[derive(Event)]
 pub struct PlayAudioEvent {
     sounds: &'static [&'static str],
     loop_audio: bool,
+    spartial: bool,
+    position: Option<Vec3>,
 }
 
 fn handle_audio_events(
@@ -64,6 +67,8 @@ fn handle_audio_events(
     for event in play_events.read() {
         if let Some(sound_path) = event.sounds.choose(&mut rand::thread_rng()) {
             let sound = audio_manager.asset_server.load(*sound_path);
+
+
             if event.loop_audio {
                 commands.spawn((
                     AudioPlayer::new(sound),
@@ -77,9 +82,11 @@ fn handle_audio_events(
                     AudioPlayer::new(sound),
                     PlaybackSettings {
                         mode: PlaybackMode::Despawn,
+                        spatial: true,
                         speed: rand::thread_rng().gen_range(0.8..1.2),
                         ..Default::default()
-                    }
+                    },
+                    Transform::from_translation(event.position.unwrap_or(Vec3::ZERO)),
                 ));
             }
         }
@@ -89,7 +96,9 @@ fn handle_audio_events(
 pub fn play_audio(
     sounds: &'static [&'static str],
     loop_audio: bool,
+    spartial: bool,
+    position: Option<Vec3>,
     event_writer: &mut EventWriter<PlayAudioEvent>,
 ) {
-    event_writer.send(PlayAudioEvent { sounds, loop_audio });
+    event_writer.send(PlayAudioEvent { sounds, loop_audio, spartial, position });
 }

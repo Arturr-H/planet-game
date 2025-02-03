@@ -10,14 +10,13 @@ mod ui;
 
 /* Imports */
 use bevy::{
-    picking, prelude::*, window::{ PresentMode, WindowTheme },
-    dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin},
+    audio::{AudioPlugin, SpatialScale, Volume}, dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin}, picking, prelude::*, window::{ PresentMode, WindowTheme }
 };
 use camera::background::background::BackgroundPlugin;
 use functional::damageable;
 use systems::game;
 use components::{cable::{cable, slot}, foliage::animation::FoliageAnimationPlugin, planet, player::player::PlayerPlugin, poi::PointOfInterestPlugin, tile};
-use utils::{audio::AudioPlugin, color::hex};
+use utils::{audio::GameAudioPlugin, color::hex};
 
 /// In-game resolution width.
 pub const RES_WIDTH: f32 = 240.0 * 2.0;
@@ -49,13 +48,17 @@ fn main() {
                 }),
                 ..default()
             })
+            .set(AudioPlugin {
+                global_volume: GlobalVolume{ volume: Volume::new(0.5) },
+                default_spatial_scale: SpatialScale::new_2d(1. / 100.),
+            })
         )
 
         /* Important plugins */
         .add_plugins((
             game::GameTickPlugin,
             camera::CameraPlugin,
-            AudioPlugin,
+            GameAudioPlugin,
         ))
         .add_plugins((
             /* Preferrable called first as many

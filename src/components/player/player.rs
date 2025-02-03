@@ -27,6 +27,7 @@ impl Player {
                 image: asset_server.load("../assets/player/player.png"),
                 ..default()
             },
+            SpatialListener::new(200.0), //the distance between the "ears"
             planet.index_to_transform(0, 0.0, 10.0, 1)
         ));
     }
