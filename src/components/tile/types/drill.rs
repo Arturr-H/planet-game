@@ -1,6 +1,7 @@
 /* Imports */
 use bevy::{prelude::*, sprite::Anchor};
-use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
+use rand::Rng;
+use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{copper::Copper, stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::play_audio, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
@@ -75,30 +76,40 @@ impl GenericTile for Drill {
         // The position index of the drill
         let position_index = planet.tiles[&tile_id].tile_id.clone();
 
+        let mut pois_in_range = Vec::new();
+        for poi_pos_index in planet.numbers_in_radius(position_index, DRILL_RANGE) {
+            if let Some(local_pois) = planet.points_of_interest.get(&poi_pos_index) {
+                for poi in local_pois {
+                    pois_in_range.push(poi.clone());
+                }
+            }
+        }
+
         // Must be at least DRILL_RANGE tile indexes
         // away from the POI to drill it.
-        for poi_pos_index in planet.numbers_in_radius(position_index, DRILL_RANGE) {
-            let Some(local_pois) = planet.points_of_interest.get(&poi_pos_index) else { continue; };
+        if !pois_in_range.is_empty() {
+            let mut rng = rand::thread_rng();
+            let selected_poi = pois_in_range[rng.gen_range(0..pois_in_range.len())];
 
-            for poi in local_pois {
-                match poi.poi_type {
-                    PointOfInterestType::Stone(_) => {
-                        planet.tiles.get_mut(&tile_id).map(|e| {
-                            // If we have enough energy, mine one stone.
-                            if e.powergrid_status.energy_stored >= 5.0 {
-                                e.powergrid_status.energy_stored -= 5.0;
-                                planet.resources.add(PlanetResource::Stone, 1);
-                            }
-                        });
-                    },
-                    _ => {}
-                };
-            }
+            planet.tiles.get_mut(&tile_id).map(|tile| {
+                if tile.powergrid_status.energy_stored >= 5.0 {
+                    tile.powergrid_status.energy_stored -= 5.0;
+                    match selected_poi.poi_type {
+                        PointOfInterestType::Stone(_) => {
+                            planet.resources.add(PlanetResource::Stone, 1);
+                        },
+                        PointOfInterestType::Copper(_) => {
+                            planet.resources.add(PlanetResource::Copper, 1);
+                        },
+                        _ => {}
+                    }
+                }
+            });
         }
     }
 
     fn interacts_with(&self) -> Vec<PointOfInterestType> {
-        vec![PointOfInterestType::Stone(Stone)]
+        vec![PointOfInterestType::Stone(Stone), PointOfInterestType::Copper(Copper)]
     }
 }
 

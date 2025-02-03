@@ -5,7 +5,7 @@ use bevy::{prelude::*, text::cosmic_text::ttf_parser::loca};
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use super::{flag::flag, stone::Stone, tree::Tree};
+use super::{copper::Copper, flag::flag, stone::Stone, tree::Tree};
 use crate::{components::{cable::slot::RemoveAllCableSlotHighlightsCommand, planet::Planet}, systems::traits::GenericPointOfInterest, utils::color::hex};
 
 /// Some point of interest on the planet, like a stone or a tree.
@@ -28,6 +28,7 @@ pub struct PointOfInterest {
 #[derive(Clone, Copy, Debug)]
 pub enum PointOfInterestType {
     Stone(Stone),
+    Copper(Copper),
     Tree(Tree),
 }
 
@@ -43,8 +44,8 @@ impl PointOfInterest {
     pub fn new(position_index: usize, poi_type: PointOfInterestType) -> Self {
         Self { position_index, poi_type, entity: Entity::PLACEHOLDER }
     }
-    pub fn spawn_multiple(poi_type: PointOfInterestType) -> PointOfInterestBuilder {
-        PointOfInterestBuilder::new(poi_type)
+    pub fn spawn_multiple() -> PointOfInterestBuilder {
+        PointOfInterestBuilder::new()
     }
 
     /// Returns a vec of the position indices that a POI will occupy.
@@ -69,16 +70,16 @@ impl PointOfInterest {
 }
 
 pub struct PointOfInterestBuilder {
-    poi_type: PointOfInterestType,
+    types: Vec<(PointOfInterestType, f32)>, // type and weight
     z_index: f32,
     origin_offset: f32,
     probability: f32,
     local_seed: u32,
 }
 impl PointOfInterestBuilder {
-    pub fn new(poi_type: PointOfInterestType) -> Self {
+    pub fn new() -> Self {
         Self {
-            poi_type,
+            types: Vec::new(),
             z_index: 0.0,
             origin_offset: 0.0,
             probability: 0.0,
@@ -86,10 +87,12 @@ impl PointOfInterestBuilder {
         }
     }
 
+    pub fn add_type(mut self, poi_type: PointOfInterestType, weight: f32) -> Self { self.types.push((poi_type, weight)); self }
     pub fn with_local_seed(mut self, local_seed: u32) -> Self { self.local_seed = local_seed; self }
     pub fn with_z_index(mut self, z_index: f32) -> Self { self.z_index = z_index; self }
     pub fn with_origin_offset(mut self, origin_offset: f32) -> Self { self.origin_offset = origin_offset; self }
     pub fn with_probability(mut self, probability: f32) -> Self { self.probability = probability; self }
+    // pub fn with_replacement(mut self, poi_type: PointOfInterestType, probability: f32) -> Self { self.replacements.push((poi_type, probability)); self }
 
     /// Spawns POI:s & registers them in the planet.
     pub fn spawn_all(
@@ -99,11 +102,29 @@ impl PointOfInterestBuilder {
         planet: &mut Planet,
     ) {
         assert!(self.probability >= 0.0 && self.probability <= 1.0, "Probability must be between 0.0 and 1.0");
-        for position_index in PointOfInterest::generate_position_indices(planet, self.local_seed, self.probability) {
+        assert!(!self.types.is_empty(), "At least one POI type must be added");
+
+        let position_indices = PointOfInterest::generate_position_indices(planet, self.local_seed, self.probability);
+
+        for position_index in position_indices {
+            let total_weight: f32 = self.types.iter().map(|(_, w)| w).sum();
+            let mut rng = ChaCha8Rng::seed_from_u64(
+                (planet.seed + self.local_seed) as u64 + position_index as u64
+            );
+            let mut random = rng.gen_range(0.0..total_weight);
+
+            let selected_type = self.types.iter()
+                .find(|(_, weight)| {
+                    random -= *weight;
+                    random <= 0.0
+                })
+                .map(|(t, _)| *t)
+                .unwrap_or_else(|| self.types[0].0);
+            
             let z = self.z_index + rand::random::<f32>() * 0.025 - 0.0125;
             let transform = planet.index_to_transform(position_index, self.origin_offset, z, 0);
-            let entity = self.poi_type.spawn(commands, asset_server, transform);
-            let new_poi = PointOfInterest { position_index, poi_type: self.poi_type, entity };
+            let entity = selected_type.spawn(commands, asset_server, transform);
+            let new_poi = PointOfInterest { position_index, poi_type: selected_type, entity };
             
             match planet.points_of_interest.get_mut(&position_index) {
                 Some(e) => e.push(new_poi),
@@ -160,7 +181,7 @@ impl PointOfInterestHighlight {
 
             if highlight.time > highlight.max_time {
                 for child in children {
-                   match highlight_q.get_mut(*child) {
+                    match highlight_q.get_mut(*child) {
                         Ok(mut sprite) => sprite.color = Color::WHITE,
                         Err(_) => ()
                     }

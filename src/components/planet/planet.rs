@@ -6,7 +6,7 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use noise::{NoiseFn, Perlin};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{spawn::SpawnTileCommand, types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
+use crate::{camera::{post_processing::PostProcessSettings, CameraPlugin, CameraSettings, OuterCamera}, components::{foliage::{grass::Grass, rock::Rock, Foliage}, poi::{self, copper::Copper, flag::flag::{Flag, SpawnFlag}, stone::Stone, tree::Tree, PointOfInterest, PointOfInterestType}, tile::{spawn::SpawnTileCommand, types::landed_rocket::LandedRocket, Tile, TileType, TILE_SIZE}}, systems::{game::{GameState, PlanetResources}, traits::{GenericPointOfInterest, GenericTile}}, utils::color::hex, RES_WIDTH};
 use super::{debug::{self, PlanetConfiguration}, mesh::generate_planet_mesh};
 
 /* Constants */
@@ -437,14 +437,17 @@ impl Planet {
 
     /// Generates planet POI:s
     fn generate_pois(&mut self, commands: &mut ChildBuilder, asset_server: &Res<AssetServer>) -> () {
-        PointOfInterest::spawn_multiple(PointOfInterestType::Stone(Stone))
+        PointOfInterest::spawn_multiple()
+            .add_type(PointOfInterestType::Stone(Stone), 0.7)
+            .add_type(PointOfInterestType::Copper(Copper), 0.3)
             .with_origin_offset(-15.0)
             .with_z_index(-1.5)
             .with_probability(0.3)
             .with_local_seed(1)
             .spawn_all(commands, asset_server, self);
-        
-        PointOfInterest::spawn_multiple(PointOfInterestType::Tree(Tree::new()))
+
+        PointOfInterest::spawn_multiple()
+            .add_type(PointOfInterestType::Tree(Tree::new()), 1.0)
             .with_origin_offset(-1.0)
             .with_z_index(-2.0)
             .with_probability(0.4)

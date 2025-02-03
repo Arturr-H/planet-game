@@ -8,6 +8,7 @@ use bevy::utils::HashMap;
 pub enum PlanetResource {
     Wood,
     Stone,
+    Copper,
 }
 
 /// The resources that the player has
@@ -22,6 +23,7 @@ impl Default for PlanetResources {
             map: HashMap::from([
                 (PlanetResource::Wood, 150),
                 (PlanetResource::Stone, 150),
+                (PlanetResource::Copper, 100),
             ]),
         }
     }
