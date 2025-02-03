@@ -73,6 +73,7 @@ impl Damageable {
         play_audio(
             game_sounds::tree::DAMAGE,
             PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Despawn,
                 spatial: true,
                 // volume: Volume::new(0.5),
                 ..Default::default()

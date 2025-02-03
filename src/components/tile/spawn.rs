@@ -126,7 +126,7 @@ impl TileSpawnPlugin {
 
                 // Play sound
                 if spawn_data.play_sound {
-                    play_audio(game_sounds::PLACE, PlaybackSettings { ..Default::default() }, None, &mut spawn_params.audio_events);
+                    play_audio(game_sounds::PLACE, PlaybackSettings { mode: bevy::audio::PlaybackMode::Despawn, ..Default::default() }, None, &mut spawn_params.audio_events);
                 }
 
                 // If we're upgrading a tile, the tile has already been

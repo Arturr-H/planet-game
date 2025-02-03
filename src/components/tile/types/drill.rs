@@ -112,6 +112,7 @@ impl GenericTile for Drill {
                     play_audio(
                         game_sounds::stone::DAMAGE,
                         PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(0.4),
                             spatial: true,
                             ..Default::default()
@@ -126,6 +127,7 @@ impl GenericTile for Drill {
                     play_audio(
                         game_sounds::stone::DAMAGE,
                         PlaybackSettings {
+                            mode: bevy::audio::PlaybackMode::Despawn,
                             volume: Volume::new(0.4),
                             spatial: true,
                             ..Default::default()
