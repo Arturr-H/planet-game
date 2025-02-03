@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 /* Imports */
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{audio::PlaybackMode, prelude::*, utils::HashMap};
 use rand::Rng;
 use crate::{components::planet::{Planet, PlayerPlanet}, systems::game::PlanetResource, ui::info_text::SpawnInfoText, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, color::hex, logger}};
 
@@ -70,7 +70,16 @@ impl Damageable {
             target_entity,
             damage
         );
-        play_audio(game_sounds::tree::DAMAGE, false, true, click.event().hit.position, &mut audio_events);
+        play_audio(
+            game_sounds::tree::DAMAGE,
+            PlaybackSettings {
+                spatial: true,
+                // volume: Volume::new(0.5),
+                ..Default::default()
+            },
+            click.event().hit.position,
+            &mut audio_events
+        );
     }
     
     // Apply damage from events

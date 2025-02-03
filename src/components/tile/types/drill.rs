@@ -1,12 +1,12 @@
 /* Imports */
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{audio::Volume, prelude::*, sprite::Anchor};
 use rand::Rng;
 use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{copper::Copper, stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, logger}};
 
 /* Constants */
 /// How many tiles to the left and the right
 /// this drill will find e.g rocks to drill.
-pub const DRILL_RANGE: usize = 2;
+pub const DRILL_RANGE: usize = 0;
 
 #[derive(Component)]
 struct AnimationIndices {
@@ -68,7 +68,9 @@ impl GenericTile for Drill {
             (PlanetResource::Wood, 4)
         ]
     }
-
+    fn width(&self) -> usize {
+        2
+    }
     fn display_name(&self) -> String { "Drill".to_string() }
     fn can_recieve_energy(&self) -> bool { true }
 
@@ -102,8 +104,11 @@ impl GenericTile for Drill {
                     let transform = planet.index_to_transform(position_index, 0.0, 1.0, width);
                     play_audio(
                         game_sounds::stone::DAMAGE,
-                        false,
-                        true,
+                        PlaybackSettings {
+                            volume: Volume::new(0.4),
+                            spatial: true,
+                            ..Default::default()
+                        },
                         Some(transform.translation),
                         audio_events
                     );
@@ -113,8 +118,11 @@ impl GenericTile for Drill {
                     let transform = planet.index_to_transform(position_index, 0.0, 1.0, width);
                     play_audio(
                         game_sounds::stone::DAMAGE,
-                        false,
-                        true,
+                        PlaybackSettings {
+                            volume: Volume::new(0.4),
+                            spatial: true,
+                            ..Default::default()
+                        },
                         Some(transform.translation),
                         audio_events
                     );
