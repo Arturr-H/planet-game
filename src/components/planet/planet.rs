@@ -126,10 +126,8 @@ impl Planet {
         mut game_state: ResMut<GameState>,
         mut planet_materials: ResMut<Assets<PlanetMaterial>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
-        mut camera_q: Query<&mut Transform, With<OuterCamera>>,
         config: ResMut<PlanetConfiguration>,
         asset_server: Res<AssetServer>,
-        camera_settings: Res<CameraSettings>,
     ) -> () {
         let radius = config.radius.max(15.0);
         let seed = config.seed;
@@ -221,35 +219,13 @@ impl Planet {
 
     // Update
     fn update(
-        time: Res<Time>,
         mut camera_q: Query<(&mut Transform, &OrthographicProjection), With<OuterCamera>>,
-        mut camera_rotation: ResMut<CameraPlanetRotation>,
-        keyboard_input: Res<ButtonInput<KeyCode>>,
-        planet_q: Query<&Planet, With<PlayerPlanet>>,
         mut planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
-        camera_settings: Res<CameraSettings>,
     ) -> () {
-        let planet = planet_q.single();
-        if let Ok((mut camera_transform, projection)) = camera_q.get_single_mut() {
-            let mut update = false;
-            // if keyboard_input.pressed(KeyCode::ArrowRight)
-            // || keyboard_input.pressed(KeyCode::KeyD) {
-            //     camera_rotation.radians -= (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(0.018);
-            //     update = true;
-            // }
-            // else if keyboard_input.pressed(KeyCode::ArrowLeft)
-            //     || keyboard_input.pressed(KeyCode::KeyA) {
-            //         camera_rotation.radians += (time.delta_secs() * PLANET_ROTATION_SPEED * projection.scale / 3.0).max(0.001).min(0.018);
-            //     update = true;
-            // }
-
+        if let Ok((_, projection)) = camera_q.get_single_mut() {
             planet_atmosphere_materials.iter_mut().for_each(|(_, mat)| {
                 mat.zoom = projection.scale;
             });
-
-            // if update {
-            //     Self::update_camera_transform(&planet, camera_rotation.radians, &mut camera_transform, camera_settings.elevation);
-            // }
         }
     }
     

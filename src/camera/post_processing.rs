@@ -290,7 +290,8 @@ pub struct PostProcessSettings {
     pub camera_scale: f32,
 
     // WebGL2 structs must be 16 byte aligned.
-    #[cfg(feature = "webgl2")]
+    // #[allow(unexpected_cfgs)]
+    // #[cfg(feature = "webgl2")]
     pub _webgl2_padding: Vec3,
 }
 

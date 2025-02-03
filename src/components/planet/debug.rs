@@ -37,9 +37,7 @@ pub fn on_update(
     planet_materials: ResMut<Assets<PlanetMaterial>>,
     planet_atmosphere_materials: ResMut<Assets<PlanetAtmosphereMaterial>>,
     planet_q: Query<(&Planet, Entity), With<PlayerPlanet>>,
-    camera_q: Query<&mut Transform, With<OuterCamera>>,
     asset_server: Res<AssetServer>,
-    camera_settings: Res<CameraSettings>,
 ) -> () {
     if config.is_changed() {
         if let Ok((_planet, entity)) = planet_q.get_single() {
@@ -53,10 +51,8 @@ pub fn on_update(
                 game_state,
                 planet_materials,
                 planet_atmosphere_materials,
-                camera_q,
                 config,
                 asset_server,
-                camera_settings,
             );
         }
     }
