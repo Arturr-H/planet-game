@@ -37,6 +37,13 @@ impl GenericTile for Drill {
                     .with_translation(transform.translation.with_z(2.0)
                         + Planet::forward(&transform) * 20.0)
             );
+
+            play_audio(
+                game_sounds::DRILL,
+                PlaybackSettings {mode: bevy::audio::PlaybackMode::Loop, volume: Volume::new(0.1),spatial: true, ..Default::default() },
+                Some(transform.translation),
+                &mut spawn_params.audio_events
+            );
         }
 
         let texture = spawn_params.asset_server.load("machines/drill.png");

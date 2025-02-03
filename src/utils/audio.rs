@@ -25,6 +25,9 @@ pub mod game_sounds {
         ];
     }
 
+    pub const PLACE: &'static [&str] = &["audio/place.wav"];
+    pub const DRILL: &'static [&str] = &["audio/drill.wav"];
+
     pub mod other {}
 }
 
