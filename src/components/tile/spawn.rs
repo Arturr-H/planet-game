@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use bevy::{audio::Volume, ecs::entity, prelude::*, render::texture, utils::hashbrown::HashSet};
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::{info_text::SpawnInfoText, stats::{OpenStats, StatsPlugin}}, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, color::hex, logger}};
-use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
+use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::{Drill, DRILL_RANGE}, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
@@ -213,7 +213,7 @@ impl TileSpawnPlugin {
 
         // Highlight some POI:s (drill highlights stones etc)
         if !tile_type.interacts_with().is_empty() {
-            for poi_pos_index in planet.numbers_in_radius(index, 2) {
+            for poi_pos_index in planet.numbers_in_radius(index, DRILL_RANGE) {
                 let Some(pois) = planet.points_of_interest.get(&poi_pos_index) else { continue };
                 'inner: for poi in pois {
                     if !tile_type.interacts_with().contains(&poi.poi_type) { continue };
