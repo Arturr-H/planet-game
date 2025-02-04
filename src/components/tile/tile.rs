@@ -22,6 +22,11 @@ pub struct Tile {
     /// and change appearance.
     pub tile_level: usize,
 
+    /// How many tiles left and right this tile can interact with,
+    /// e.g 0 = only the tile it's placed on, 1 = the tile it's placed
+    /// on and the tile to the left and right of it.
+    pub interaction_range: usize,
+
     /// Aka planet_position_index. The index of the tile
     /// in the planet's tile grid.
     pub tile_id: usize,
@@ -51,12 +56,13 @@ impl PartialEq for TileType {
 
 impl Tile {
     /// Creates a new tile
-    pub fn new(tile_id: usize, tile_type: TileType, tile_level: usize, entity: Entity) -> Self {
+    pub fn new(tile_id: usize, tile_type: TileType, tile_level: usize, interaction_range: usize, entity: Entity) -> Self {
         Self {
             tile_type,
             powergrid_status: PowergridStatus::default(),
             tile_id,
             tile_level,
+            interaction_range,
             entity
         }
     }

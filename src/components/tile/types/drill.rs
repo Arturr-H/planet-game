@@ -3,10 +3,6 @@ use bevy::{audio::Volume, prelude::*, sprite::Anchor};
 use rand::Rng;
 use crate::{components::{cable::slot::CableSlot, planet::Planet, poi::{copper::Copper, stone::Stone, PointOfInterestType}, tile::spawn::{TileSpawnEvent, TileSpawnEventParams}}, systems::{game::PlanetResource, traits::GenericTile}, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, logger}};
 
-/* Constants */
-/// How many tiles to the left and the right
-/// this drill will find e.g rocks to drill.
-pub const DRILL_RANGE: usize = 0;
 
 #[derive(Component)]
 struct AnimationIndices {
@@ -75,21 +71,25 @@ impl GenericTile for Drill {
             (PlanetResource::Wood, 4)
         ]
     }
-    fn width(&self) -> usize {
-        2
-    }
+
+    fn interaction_range(&self) -> usize { 30 }
+    fn width(&self) -> usize { 2 }
     fn display_name(&self) -> String { "Drill".to_string() }
     fn can_recieve_energy(&self) -> bool { true }
 
     fn on_tick(&self, tile_id: usize, planet: &mut Planet, audio_events: &mut EventWriter<PlayAudioEvent>) {
         let position_index = planet.tiles[&tile_id].tile_id;
         let mut pois_in_range = Vec::new();
-    
-        for poi_pos_index in planet.numbers_in_radius(position_index, DRILL_RANGE) {
+        
+        let tile = planet.tiles.get(&tile_id).unwrap();
+
+        for poi_pos_index in planet.numbers_in_radius(position_index, tile.interaction_range) {
             if let Some(local_pois) = planet.points_of_interest.get(&poi_pos_index) {
                 pois_in_range.extend(local_pois.iter().cloned());
             }
         }
+
+
     
         if !pois_in_range.is_empty() {
             let mut rng = rand::thread_rng();

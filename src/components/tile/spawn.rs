@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use bevy::{audio::Volume, ecs::entity, prelude::*, render::texture, utils::hashbrown::HashSet};
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::{info_text::SpawnInfoText, stats::{OpenStats, StatsPlugin}}, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, color::hex, logger}};
-use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::{Drill, DRILL_RANGE}, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
+use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
@@ -41,7 +41,8 @@ pub struct TileSpawnEventParams<'a> {
 /// A component that is added to the preview tile (marker)
 #[derive(Component)]
 pub struct TilePreview {
-    tile_type: TileType
+    tile_type: TileType,
+    interaction_range: usize,
 }
 
 pub struct TileSpawnPlugin;
@@ -80,7 +81,8 @@ impl TileSpawnPlugin {
                 if let Some(entity) = tile_entity {
                     logger::log::bright_green("tile_spawn", &format!("Spawned preview of {:?}", spawn_data.tile.tile_type.display_name()));
                     commands.entity(entity).insert(TilePreview {
-                        tile_type: spawn_data.tile.tile_type.clone()
+                        tile_type: spawn_data.tile.tile_type.clone(),
+                        interaction_range: spawn_data.tile.interaction_range,
                     });
                 }
             }
@@ -152,6 +154,7 @@ impl TileSpawnPlugin {
                         spawn_data.tile.tile_id,
                         spawn_data.tile.tile_type.clone(),
                         spawn_data.tile.tile_level,
+                        spawn_data.tile.interaction_range,
                         tile_entity.unwrap()
                     ));
                 }
@@ -183,7 +186,7 @@ impl TileSpawnPlugin {
         camera_q: Query<(&Camera, &GlobalTransform), With<OuterCamera>>,
     ) -> () {
         // If we have a preview active or not
-        let Ok((tile_preview_entity, mut transform, TilePreview { tile_type })) = query.get_single_mut() else { return };
+        let Ok((tile_preview_entity, mut transform, TilePreview { tile_type, interaction_range })) = query.get_single_mut() else { return };
 
         let window = windows_q.single();
         let (camera, camera_transform) = camera_q.single();
@@ -204,7 +207,13 @@ impl TileSpawnPlugin {
 
         if mb.just_pressed(MouseButton::Left) {
             event_writer.send(TileSpawnEvent {
-                tile: Tile::new(index, tile_type.clone(), 0, Entity::PLACEHOLDER),
+                tile: Tile::new(
+                    index,
+                    tile_type.clone(),
+                    0,
+                    tile_type.interaction_range(),
+                    Entity::PLACEHOLDER
+                ),
                 upgrade: false,
                 is_preview: false,
                 play_sound: true,
@@ -213,7 +222,7 @@ impl TileSpawnPlugin {
 
         // Highlight some POI:s (drill highlights stones etc)
         if !tile_type.interacts_with().is_empty() {
-            for poi_pos_index in planet.numbers_in_radius(index, DRILL_RANGE) {
+            for poi_pos_index in planet.numbers_in_radius(index, *interaction_range) {
                 let Some(pois) = planet.points_of_interest.get(&poi_pos_index) else { continue };
                 'inner: for poi in pois {
                     if !tile_type.interacts_with().contains(&poi.poi_type) { continue };
@@ -269,7 +278,12 @@ impl TileSpawnPlugin {
 
             // Spawn preview 
             event_writer.send(TileSpawnEvent {
-                tile: Tile::new(0, tile.clone(), 0, Entity::PLACEHOLDER),
+                tile: Tile::new(
+                    0,
+                    tile.clone(),
+                    0,
+                    tile.interaction_range(),
+                    Entity::PLACEHOLDER),
                 upgrade: false,
                 is_preview: true,
                 play_sound: false,
@@ -339,7 +353,7 @@ pub struct SpawnTileCommand {
 impl Command for SpawnTileCommand {
     fn apply(self, world: &mut World) {
         world.send_event(TileSpawnEvent {
-            tile: Tile::new(self.tile_id, self.tile_type, 0, Entity::PLACEHOLDER),
+            tile: Tile::new(self.tile_id, self.tile_type, 0, 0, Entity::PLACEHOLDER),
             upgrade: false,
             is_preview: false,
             play_sound: self.play_sound,

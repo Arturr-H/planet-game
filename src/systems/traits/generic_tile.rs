@@ -47,6 +47,9 @@ pub trait GenericTile {
     /// What POI:s this tile interacts with
     fn interacts_with(&self) -> Vec<PointOfInterestType> { Vec::new() }
 
+    /// How far this tile can interact with other tiles
+    fn interaction_range(&self) -> usize { 0 }
+
     /// What upgrades this tile has.
     /// 
     /// The outer vector is the upgrade level, the inner vector
