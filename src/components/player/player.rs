@@ -109,6 +109,7 @@ impl Player {
             
             Self::animate_run(time, player_q, backwards);
         }
+        //return to first frame if not moving
         // else {
         //     for (_, _, mut sprite, indices, _) in &mut player_q {
         //         if let Some(atlas) = &mut sprite.texture_atlas {
