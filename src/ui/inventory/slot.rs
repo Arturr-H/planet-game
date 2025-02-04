@@ -19,7 +19,34 @@ impl InventorySlot {
                 ..default()
             },
             // BorderRadius::all(Val::Px(10.0)),
-            BackgroundColor(hex!("#232323")),
+            BackgroundColor(hex!("#ff00ff")),
         ));
+    }
+
+    fn on_drop_item(
+        interaction_q: Query<&Interaction, (Changed<Interaction>, With<InventorySlot>)>,
+        // mut slot: Query<&mut InventorySlot>,
+    ) -> () {
+        // for interaction in interaction_q {
+            // match interaction {
+            //     Interaction:: { entity, .. } => {
+            //         if let Ok(slot) = interaction_q.get(entity) {
+            //             InventorySlot::drop_item(entity, slot);
+            //         }
+            //     }
+            //     _ => {}
+            // }
+        // }
+        // if let Ok(mut slot) = slot.get_single_mut() {
+            println!("Dropped item on slot {}", "slot.id");
+        // }
+    }
+}
+
+pub struct InventorySlotPlugin;
+impl Plugin for InventorySlotPlugin {
+    fn build(&self, app: &mut App) {
+        app
+            .add_systems(Update, InventorySlot::on_drop_item);
     }
 }

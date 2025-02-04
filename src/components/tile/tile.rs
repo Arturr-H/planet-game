@@ -2,7 +2,7 @@
 use std::mem::discriminant;
 use bevy::{prelude::*, sprite::Material2dPlugin, utils::HashMap};
 use crate::{components::{planet::Planet, poi::PointOfInterestType}, systems::{game::PlanetResource, traits::{EnergyStorage, GenericTile, PowergridStatus}}};
-use super::{material::TileMaterialOutline, spawn::{TileSpawnEvent, TileSpawnEventParams, TileSpawnPlugin}, types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, landed_rocket::LandedRocket, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
+use super::{material::TileMaterialOutline, spawn::{TileSpawnEvent, TileSpawnEventParams, TileSpawnPlugin}, types::{battery::Battery, debug::DebugTile, drill::Drill, empty::EmptyTile, landed_rocket::LandedRocket, loudspeaker::{Loudspeaker, LoudspeakerPlugin}, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}};
 
 use crate::utils::audio::{PlayAudioEvent, game_sounds};
 /* Constants */
@@ -39,6 +39,7 @@ pub enum TileType {
     PowerPole(PowerPole),
     WindTurbine(WindTurbine),
     LandedRocket(LandedRocket),
+    Loudspeaker(Loudspeaker),
 }
 
 // We only want to compare the type of Tile, the content
@@ -186,7 +187,8 @@ impl Plugin for TilePlugin {
             .add_plugins((
                 // DrillPlugin,
                 Material2dPlugin::<TileMaterialOutline>::default(),
-                TileSpawnPlugin
+                TileSpawnPlugin,
+                LoudspeakerPlugin
             ));
     }
 }

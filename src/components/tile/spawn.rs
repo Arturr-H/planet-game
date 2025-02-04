@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use bevy::{audio::Volume, ecs::entity, prelude::*, render::texture, utils::hashbrown::HashSet};
 use crate::{camera::OuterCamera, components::{planet::{Planet, PlayerPlanet}, poi::{PointOfInterest, PointOfInterestHighlight, PointOfInterestType}}, systems::traits::GenericTile, ui::{info_text::SpawnInfoText, stats::{OpenStats, StatsPlugin}}, utils::{audio::{game_sounds, play_audio, PlayAudioEvent}, color::hex, logger}};
-use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::Drill, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
+use super::{material::TileMaterialOutline, types::{battery::Battery, debug::DebugTile, drill::Drill, loudspeaker::Loudspeaker, power_pole::PowerPole, solar_panel::SolarPanel, wind_turbine::WindTurbine}, Tile, TileType};
 
 /* Constants */
 const TILE_PREVIEW_ELEVATION: f32 = 10.0;
@@ -259,6 +259,7 @@ impl TileSpawnPlugin {
         if kb.just_pressed(KeyCode::KeyR) { tile = Some(TileType::Drill(Drill)); }
         if kb.just_pressed(KeyCode::KeyT) { tile = Some(TileType::Battery(Battery)); }
         if kb.just_pressed(KeyCode::KeyY) { tile = Some(TileType::WindTurbine(WindTurbine)); }
+        if kb.just_pressed(KeyCode::KeyU) { tile = Some(TileType::Loudspeaker(Loudspeaker)); }
         if kb.just_pressed(KeyCode::Escape) {
             for entity in preview_q.iter() { commands.entity(entity).despawn_recursive(); }
         }
